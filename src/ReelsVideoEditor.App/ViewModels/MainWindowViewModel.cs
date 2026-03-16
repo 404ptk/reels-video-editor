@@ -7,7 +7,6 @@ namespace ReelsVideoEditor.App.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private const int TimelineDurationSeconds = 300;
-    private const int TimelinePoints = TimelineDurationSeconds + 1;
     private const double BaseTickWidth = 14;
     private static readonly int[] LabelIntervalsInSeconds = [1, 2, 5, 10, 15, 30, 60, 120, 300];
     private const int MinZoom = 25;
@@ -22,7 +21,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
-    public double TimelineCanvasWidth => TickWidth * TimelinePoints;
+    public double TimelineCanvasWidth => TickWidth * TimelineDurationSeconds;
+
+    private static double TimelineBaseWidth => BaseTickWidth * TimelineDurationSeconds;
 
     public MainWindowViewModel()
     {
@@ -37,7 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RebuildMajorTicks();
     }
 
-    public void ChangeZoomFromWheel(double wheelDelta)
+    public void ChangeZoomFromWheel(double wheelDelta, double viewportWidth)
     {
         if (wheelDelta == 0)
         {
@@ -45,7 +46,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var step = wheelDelta > 0 ? 10 : -10;
-        var nextZoom = Math.Clamp(ZoomPercent + step, MinZoom, MaxZoom);
+        var minZoomForViewport = ResolveMinZoomForViewport(viewportWidth);
+        var nextZoom = Math.Clamp(ZoomPercent + step, minZoomForViewport, MaxZoom);
 
         if (nextZoom != ZoomPercent)
         {
@@ -53,9 +55,20 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private static int ResolveMinZoomForViewport(double viewportWidth)
+    {
+        if (viewportWidth <= 0)
+        {
+            return MinZoom;
+        }
+
+        var fitZoom = (int)Math.Ceiling((viewportWidth / TimelineBaseWidth) * 100);
+        return Math.Clamp(fitZoom, MinZoom, MaxZoom);
+    }
+
     private void BuildMinorTicks()
     {
-        for (var second = 0; second < TimelinePoints; second++)
+        for (var second = 0; second < TimelineDurationSeconds; second++)
         {
             MinorTicks.Add(new TimelineMinorTick());
         }
@@ -66,11 +79,17 @@ public partial class MainWindowViewModel : ViewModelBase
         MajorTicks.Clear();
         var labelIntervalSeconds = ResolveLabelIntervalSeconds();
 
-        for (var second = 0; second <= TimelineDurationSeconds; second += labelIntervalSeconds)
+        for (var second = 0; second < TimelineDurationSeconds; second += labelIntervalSeconds)
         {
             var label = $"{second / 60:D2}:{second % 60:D2}";
             var remaining = TimelineDurationSeconds - second;
-            var segmentSeconds = Math.Min(labelIntervalSeconds, Math.Max(remaining, 1));
+            var segmentSeconds = Math.Min(labelIntervalSeconds, remaining);
+
+            if (segmentSeconds <= 0)
+            {
+                continue;
+            }
+
             var width = segmentSeconds * TickWidth;
 
             MajorTicks.Add(new TimelineMajorTick(label, width));

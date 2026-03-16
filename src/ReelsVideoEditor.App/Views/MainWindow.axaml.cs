@@ -13,9 +13,9 @@ public partial class MainWindow : Window
 
     private void TimelineScrollViewer_OnPointerWheelChanged(object? sender, PointerWheelEventArgs eventArgs)
     {
-        if (DataContext is MainWindowViewModel viewModel)
+        if (DataContext is MainWindowViewModel viewModel && sender is ScrollViewer scrollViewer)
         {
-            viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y);
+            viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y, scrollViewer.Bounds.Width);
             eventArgs.Handled = true;
         }
     }
