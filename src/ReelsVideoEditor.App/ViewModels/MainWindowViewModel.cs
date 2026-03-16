@@ -70,7 +70,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         for (var second = 0; second < TimelineDurationSeconds; second++)
         {
-            MinorTicks.Add(new TimelineMinorTick());
+            MinorTicks.Add(new TimelineMinorTick(second > 0));
         }
     }
 
@@ -112,6 +112,6 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 }
 
-public sealed record TimelineMinorTick();
+public sealed record TimelineMinorTick(bool ShowLine);
 
 public sealed record TimelineMajorTick(string Label, double Width);

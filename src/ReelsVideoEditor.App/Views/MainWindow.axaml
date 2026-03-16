@@ -61,6 +61,7 @@
                                                     Height="14"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Top"
+                                                    IsVisible="{Binding ShowLine}"
                                                     Background="{StaticResource AccentSubtle}" />
                                         </Grid>
                                     </DataTemplate>
