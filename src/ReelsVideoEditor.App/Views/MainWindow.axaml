@@ -21,14 +21,31 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="*,Auto" Background="{StaticResource BaseBg}">
-        <Border Margin="16,16,16,8"
+    <Grid Background="{StaticResource BaseBg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="3*" MinHeight="140" />
+            <RowDefinition Height="8" />
+            <RowDefinition Height="2*" MinHeight="140" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Margin="16,16,16,8"
                 CornerRadius="16"
                 Background="{StaticResource BaseBgSoft}"
                 BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="1" />
 
-        <Border Grid.Row="1"
+        <GridSplitter Grid.Row="1"
+                      Margin="16,0"
+                      Height="8"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      ResizeDirection="Rows"
+                      ResizeBehavior="PreviousAndNext"
+                      ShowsPreview="True"
+                      Background="{StaticResource AccentSubtle}" />
+
+        <Border Grid.Row="2"
                 Margin="16,8,16,16"
                 Padding="14"
                 CornerRadius="16"
