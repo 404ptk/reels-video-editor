@@ -1,16 +1,44 @@
-﻿namespace ReelsVideoEditor.App.ViewModels;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
+
+namespace ReelsVideoEditor.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    public string Title { get; } = "Reels Video Editor";
+    private const int TimelineDurationSeconds = 300;
+    private const double BaseTickWidth = 14;
 
-    public string SourceStatus { get; } = "No file selected yet — the UI shell is ready for the next implementation step.";
+    [ObservableProperty]
+    private int zoomPercent = 100;
 
-    public string InputAspectRatio { get; } = "16:9";
+    public ObservableCollection<TimelineTick> Ticks { get; } = [];
 
-    public string OutputAspectRatio { get; } = "9:16";
+    public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
-    public string BackgroundMode { get; } = "Blurred background + centered source framing";
+    public double TimelineCanvasWidth => TickWidth * TimelineDurationSeconds;
 
-    public string OverlayText { get; } = "Your custom caption will appear here.";
+    public MainWindowViewModel()
+    {
+        BuildTicks();
+    }
+
+    partial void OnZoomPercentChanged(int value)
+    {
+        OnPropertyChanged(nameof(TickWidth));
+        OnPropertyChanged(nameof(TimelineCanvasWidth));
+    }
+
+    private void BuildTicks()
+    {
+        for (var second = 0; second <= TimelineDurationSeconds; second++)
+        {
+            var label = second % 5 == 0
+                ? $"{second / 60:D2}:{second % 60:D2}"
+                : string.Empty;
+
+            Ticks.Add(new TimelineTick(label));
+        }
+    }
 }
+
+public sealed record TimelineTick(string Label);
