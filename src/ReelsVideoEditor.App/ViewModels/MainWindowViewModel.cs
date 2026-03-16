@@ -7,6 +7,7 @@ namespace ReelsVideoEditor.App.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private const int TimelineDurationSeconds = 300;
+    private const int TimelinePoints = TimelineDurationSeconds + 1;
     private const double BaseTickWidth = 14;
     private static readonly int[] LabelIntervalsInSeconds = [1, 2, 5, 10, 15, 30, 60, 120, 300];
     private const int MinZoom = 25;
@@ -21,7 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
-    public double TimelineCanvasWidth => TickWidth * TimelineDurationSeconds;
+    public double TimelineCanvasWidth => TickWidth * TimelinePoints;
 
     public MainWindowViewModel()
     {
@@ -54,7 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void BuildMinorTicks()
     {
-        for (var second = 0; second <= TimelineDurationSeconds; second++)
+        for (var second = 0; second < TimelinePoints; second++)
         {
             MinorTicks.Add(new TimelineMinorTick());
         }

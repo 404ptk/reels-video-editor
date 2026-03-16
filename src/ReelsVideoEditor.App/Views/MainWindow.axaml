@@ -40,6 +40,8 @@
                           PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
                 <StackPanel Spacing="10">
                     <Border Height="52"
+                            Width="{Binding TimelineCanvasWidth}"
+                            HorizontalAlignment="Left"
                             Background="{StaticResource BaseBg}"
                             BorderBrush="{StaticResource AccentSubtle}"
                             BorderThickness="1"
@@ -89,6 +91,7 @@
 
                     <Border Height="72"
                             Width="{Binding TimelineCanvasWidth}"
+                            HorizontalAlignment="Left"
                             Background="{StaticResource BaseBg}"
                             BorderBrush="{StaticResource AccentSubtle}"
                             BorderThickness="1"
