@@ -21,36 +21,23 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" Background="{StaticResource BaseBg}">
-        <Border Padding="16,12"
+    <Grid RowDefinitions="*,Auto" Background="{StaticResource BaseBg}">
+        <Border Margin="16,16,16,8"
+                CornerRadius="16"
                 Background="{StaticResource BaseBgSoft}"
                 BorderBrush="{StaticResource AccentSubtle}"
-                BorderThickness="0,0,0,1">
-            <Grid ColumnDefinitions="*,240">
-                <Border Grid.Column="1"
-                        Padding="12,8"
-                        CornerRadius="10"
-                        Background="{StaticResource BaseBg}"
-                        BorderBrush="{StaticResource AccentSubtle}"
-                        BorderThickness="1">
-                    <Slider Minimum="25"
-                            Maximum="300"
-                            Value="{Binding ZoomPercent, Mode=TwoWay}"
-                            TickFrequency="25"
-                            IsSnapToTickEnabled="False" />
-                </Border>
-            </Grid>
-        </Border>
+                BorderThickness="1" />
 
         <Border Grid.Row="1"
-                Margin="16"
+                Margin="16,8,16,16"
                 Padding="14"
                 CornerRadius="16"
                 Background="{StaticResource BaseBgSoft}"
                 BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="1">
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Disabled">
+                          VerticalScrollBarVisibility="Disabled"
+                          PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
                 <StackPanel Spacing="10">
                     <Border Height="44"
                             Background="{StaticResource BaseBg}"
@@ -82,21 +69,7 @@
                         </ItemsControl>
                     </Border>
 
-                    <Border Height="64"
-                            Width="{Binding TimelineCanvasWidth}"
-                            Background="{StaticResource BaseBg}"
-                            BorderBrush="{StaticResource AccentSubtle}"
-                            BorderThickness="1"
-                            CornerRadius="8" />
-
-                    <Border Height="64"
-                            Width="{Binding TimelineCanvasWidth}"
-                            Background="{StaticResource BaseBg}"
-                            BorderBrush="{StaticResource AccentSubtle}"
-                            BorderThickness="1"
-                            CornerRadius="8" />
-
-                    <Border Height="64"
+                    <Border Height="72"
                             Width="{Binding TimelineCanvasWidth}"
                             Background="{StaticResource BaseBg}"
                             BorderBrush="{StaticResource AccentSubtle}"
