@@ -9,20 +9,28 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="Reels Video Editor">
 
+    <Window.Resources>
+        <SolidColorBrush x:Key="BaseBg" Color="#222222" />
+        <SolidColorBrush x:Key="BaseBgSoft" Color="#DD222222" />
+        <SolidColorBrush x:Key="Accent" Color="#C2D8C4" />
+        <SolidColorBrush x:Key="AccentMuted" Color="#99C2D8C4" />
+        <SolidColorBrush x:Key="AccentSubtle" Color="#33C2D8C4" />
+    </Window.Resources>
+
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*" Background="#10131A">
+    <Grid RowDefinitions="Auto,*" Background="{StaticResource BaseBg}">
         <Border Padding="28,18"
-                Background="#171B24"
-                BorderBrush="#2B3140"
+                Background="{StaticResource BaseBgSoft}"
+                BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="0,0,0,1">
             <Grid>
                 <StackPanel Spacing="6">
                     <TextBlock FontSize="28"
                                FontWeight="SemiBold"
-                               Foreground="White"
+                               Foreground="{StaticResource Accent}"
                                Text="{Binding Title}" />
                 </StackPanel>
             </Grid>
@@ -34,59 +42,59 @@
               Margin="24">
             <Border Padding="20"
                     CornerRadius="20"
-                    Background="#171B24"
-                    BorderBrush="#2B3140"
+                    Background="{StaticResource BaseBgSoft}"
+                    BorderBrush="{StaticResource AccentSubtle}"
                     BorderThickness="1">
                 <StackPanel Spacing="18">
                     <TextBlock FontSize="20"
                                FontWeight="SemiBold"
-                               Foreground="White"
+                               Foreground="{StaticResource Accent}"
                                Text="Project settings" />
 
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="#A8B3C7" Text="Video source" />
+                        <TextBlock Foreground="{StaticResource AccentMuted}" Text="Video source" />
                         <Border Padding="14"
                                 CornerRadius="12"
-                                Background="#202636">
-                            <TextBlock Foreground="White" Text="{Binding SourceStatus}" />
+                                Background="{StaticResource BaseBg}">
+                            <TextBlock Foreground="{StaticResource Accent}" Text="{Binding SourceStatus}" />
                         </Border>
                     </StackPanel>
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <StackPanel Spacing="8">
-                            <TextBlock Foreground="#A8B3C7" Text="Input aspect ratio" />
+                            <TextBlock Foreground="{StaticResource AccentMuted}" Text="Input aspect ratio" />
                             <Border Padding="14"
                                     CornerRadius="12"
-                                    Background="#202636">
-                                <TextBlock Foreground="White" Text="{Binding InputAspectRatio}" />
+                                    Background="{StaticResource BaseBg}">
+                                <TextBlock Foreground="{StaticResource Accent}" Text="{Binding InputAspectRatio}" />
                             </Border>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Spacing="8">
-                            <TextBlock Foreground="#A8B3C7" Text="Output aspect ratio" />
+                            <TextBlock Foreground="{StaticResource AccentMuted}" Text="Output aspect ratio" />
                             <Border Padding="14"
                                     CornerRadius="12"
-                                    Background="#202636">
-                                <TextBlock Foreground="White" Text="{Binding OutputAspectRatio}" />
+                                    Background="{StaticResource BaseBg}">
+                                <TextBlock Foreground="{StaticResource Accent}" Text="{Binding OutputAspectRatio}" />
                             </Border>
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="#A8B3C7" Text="Background" />
+                        <TextBlock Foreground="{StaticResource AccentMuted}" Text="Background" />
                         <Border Padding="14"
                                 CornerRadius="12"
-                                Background="#202636">
-                            <TextBlock Foreground="White" Text="{Binding BackgroundMode}" />
+                                Background="{StaticResource BaseBg}">
+                            <TextBlock Foreground="{StaticResource Accent}" Text="{Binding BackgroundMode}" />
                         </Border>
                     </StackPanel>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Foreground="#A8B3C7" Text="Text overlay" />
+                        <TextBlock Foreground="{StaticResource AccentMuted}" Text="Text overlay" />
                         <Border Padding="14"
                                 CornerRadius="12"
-                                Background="#202636">
-                            <TextBlock Foreground="White" Text="{Binding OverlayText}" TextWrapping="Wrap" />
+                                Background="{StaticResource BaseBg}">
+                            <TextBlock Foreground="{StaticResource Accent}" Text="{Binding OverlayText}" TextWrapping="Wrap" />
                         </Border>
                     </StackPanel>
                 </StackPanel>
@@ -94,15 +102,15 @@
 
             <Grid Grid.Column="1">
                 <Border CornerRadius="24"
-                        Background="#171B24"
-                        BorderBrush="#2B3140"
+                        Background="{StaticResource BaseBgSoft}"
+                        BorderBrush="{StaticResource AccentSubtle}"
                         BorderThickness="1"
                         Padding="28">
                     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
                         <StackPanel Spacing="8">
                             <TextBlock FontSize="20"
                                        FontWeight="SemiBold"
-                                       Foreground="White"
+                                       Foreground="{StaticResource Accent}"
                                        Text="9:16 frame preview" />
                         </StackPanel>
 
@@ -110,16 +118,16 @@
                                 HorizontalAlignment="Center"
                                 Width="360"
                                 CornerRadius="32"
-                                Background="#0E1117"
-                                BorderBrush="#323A4A"
+                                Background="{StaticResource BaseBg}"
+                                BorderBrush="{StaticResource AccentSubtle}"
                                 BorderThickness="1"
                                 Padding="18">
                             <Grid RowDefinitions="*,Auto">
                                 <Border CornerRadius="22"
-                                        Background="#243042"
+                                        Background="{StaticResource BaseBgSoft}"
                                         ClipToBounds="True">
                                     <Grid>
-                                        <Border Background="#384B66"
+                                        <Border Background="{StaticResource Accent}"
                                                 Opacity="0.5"
                                                 Margin="0"
                                                 CornerRadius="22" />
@@ -127,20 +135,20 @@
                                                 Height="348"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
-                                                Background="#0B0D12"
+                                                Background="{StaticResource BaseBg}"
                                                 CornerRadius="20"
-                                                BorderBrush="#4A5568"
+                                                BorderBrush="{StaticResource AccentSubtle}"
                                                 BorderThickness="1" />
                                         <Border HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Bottom"
                                                 Margin="18"
                                                 Padding="14,10"
-                                                Background="#CC111827"
+                                                Background="#EE222222"
                                                 CornerRadius="14">
                                             <TextBlock Text="{Binding OverlayText}"
                                                        TextWrapping="Wrap"
                                                        TextAlignment="Center"
-                                                       Foreground="White"
+                                                       Foreground="{StaticResource Accent}"
                                                        FontWeight="SemiBold" />
                                         </Border>
                                     </Grid>
@@ -151,18 +159,18 @@
                                       ColumnDefinitions="Auto,*,Auto"
                                       ColumnSpacing="12"
                                       VerticalAlignment="Center">
-                                    <TextBlock Foreground="#A8B3C7" Text="00:00" />
+                                    <TextBlock Foreground="{StaticResource AccentMuted}" Text="00:00" />
                                     <Border Grid.Column="1"
                                             Height="8"
                                             VerticalAlignment="Center"
                                             CornerRadius="999"
-                                            Background="#202636">
+                                            Background="{StaticResource AccentSubtle}">
                                         <Border Width="110"
                                                 HorizontalAlignment="Left"
                                                 CornerRadius="999"
-                                                Background="#7C9DFF" />
+                                                Background="{StaticResource Accent}" />
                                     </Border>
-                                    <TextBlock Grid.Column="2" Foreground="#A8B3C7" Text="00:45" />
+                                    <TextBlock Grid.Column="2" Foreground="{StaticResource AccentMuted}" Text="00:45" />
                                 </Grid>
                             </Grid>
                         </Border>
@@ -170,20 +178,20 @@
                         <WrapPanel Grid.Row="2" Orientation="Horizontal" ItemHeight="0" ItemWidth="0">
                             <Border Margin="0,0,12,0"
                                     Padding="14,10"
-                                    Background="#202636"
+                                    Background="{StaticResource AccentSubtle}"
                                     CornerRadius="12">
-                                <TextBlock Foreground="White" Text="Import footage" />
+                                <TextBlock Foreground="{StaticResource Accent}" Text="Import footage" />
                             </Border>
                             <Border Margin="0,0,12,0"
                                     Padding="14,10"
-                                    Background="#202636"
+                                    Background="{StaticResource AccentSubtle}"
                                     CornerRadius="12">
-                                <TextBlock Foreground="White" Text="Blur background" />
+                                <TextBlock Foreground="{StaticResource Accent}" Text="Blur background" />
                             </Border>
                             <Border Padding="14,10"
-                                    Background="#4F46E5"
+                                    Background="{StaticResource Accent}"
                                     CornerRadius="12">
-                                <TextBlock Foreground="White" Text="Export to MP4" />
+                                <TextBlock Foreground="{StaticResource BaseBg}" Text="Export to MP4" />
                             </Border>
                         </WrapPanel>
                     </Grid>
