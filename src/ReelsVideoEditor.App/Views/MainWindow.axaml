@@ -39,34 +39,52 @@
                           VerticalScrollBarVisibility="Disabled"
                           PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
                 <StackPanel Spacing="10">
-                    <Border Height="44"
+                    <Border Height="52"
                             Background="{StaticResource BaseBg}"
                             BorderBrush="{StaticResource AccentSubtle}"
                             BorderThickness="1"
                             CornerRadius="8">
-                        <ItemsControl ItemsSource="{Binding Ticks}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Width="{Binding $parent[Window].DataContext.TickWidth}"
-                                          Height="44">
-                                        <Border Width="1"
-                                                Height="18"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Top"
-                                                Background="{StaticResource AccentSubtle}" />
-                                        <TextBlock Margin="4,21,0,0"
-                                                   FontSize="11"
-                                                   Foreground="{StaticResource AccentMuted}"
-                                                   Text="{Binding Label}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <Grid RowDefinitions="18,*">
+                            <ItemsControl ItemsSource="{Binding MinorTicks}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="{Binding $parent[Window].DataContext.TickWidth}"
+                                              Height="18">
+                                            <Border Width="1"
+                                                    Height="14"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Top"
+                                                    Background="{StaticResource AccentSubtle}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <ItemsControl Grid.Row="1"
+                                          ItemsSource="{Binding MajorTicks}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="{Binding Width}"
+                                              Height="34">
+                                            <TextBlock Margin="3,3,0,0"
+                                                       FontSize="11"
+                                                       Foreground="{StaticResource AccentMuted}"
+                                                       Text="{Binding Label}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
                     </Border>
 
                     <Border Height="72"

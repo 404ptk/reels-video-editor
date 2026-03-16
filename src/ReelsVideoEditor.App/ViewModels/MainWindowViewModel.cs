@@ -8,13 +8,16 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private const int TimelineDurationSeconds = 300;
     private const double BaseTickWidth = 14;
+    private static readonly int[] LabelIntervalsInSeconds = [1, 2, 5, 10, 15, 30, 60, 120, 300];
     private const int MinZoom = 25;
     private const int MaxZoom = 300;
 
     [ObservableProperty]
     private int zoomPercent = 100;
 
-    public ObservableCollection<TimelineTick> Ticks { get; } = [];
+    public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
+
+    public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
@@ -22,13 +25,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        BuildTicks();
+        BuildMinorTicks();
+        RebuildMajorTicks();
     }
 
     partial void OnZoomPercentChanged(int value)
     {
         OnPropertyChanged(nameof(TickWidth));
         OnPropertyChanged(nameof(TimelineCanvasWidth));
+        RebuildMajorTicks();
     }
 
     public void ChangeZoomFromWheel(double wheelDelta)
@@ -47,17 +52,46 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void BuildTicks()
+    private void BuildMinorTicks()
     {
         for (var second = 0; second <= TimelineDurationSeconds; second++)
         {
-            var label = second % 5 == 0
-                ? $"{second / 60:D2}:{second % 60:D2}"
-                : string.Empty;
-
-            Ticks.Add(new TimelineTick(label));
+            MinorTicks.Add(new TimelineMinorTick());
         }
+    }
+
+    private void RebuildMajorTicks()
+    {
+        MajorTicks.Clear();
+        var labelIntervalSeconds = ResolveLabelIntervalSeconds();
+
+        for (var second = 0; second <= TimelineDurationSeconds; second += labelIntervalSeconds)
+        {
+            var label = $"{second / 60:D2}:{second % 60:D2}";
+            var remaining = TimelineDurationSeconds - second;
+            var segmentSeconds = Math.Min(labelIntervalSeconds, Math.Max(remaining, 1));
+            var width = segmentSeconds * TickWidth;
+
+            MajorTicks.Add(new TimelineMajorTick(label, width));
+        }
+    }
+
+    private int ResolveLabelIntervalSeconds()
+    {
+        var rawInterval = (int)Math.Ceiling(90 / TickWidth);
+
+        foreach (var candidate in LabelIntervalsInSeconds)
+        {
+            if (candidate >= rawInterval)
+            {
+                return candidate;
+            }
+        }
+
+        return LabelIntervalsInSeconds[^1];
     }
 }
 
-public sealed record TimelineTick(string Label);
+public sealed record TimelineMinorTick();
+
+public sealed record TimelineMajorTick(string Label, double Width);
