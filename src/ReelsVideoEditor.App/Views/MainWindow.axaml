@@ -1,0 +1,195 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ReelsVideoEditor.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1440" d:DesignHeight="900"
+        x:Class="ReelsVideoEditor.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Reels Video Editor">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*" Background="#10131A">
+        <Border Padding="28,18"
+                Background="#171B24"
+                BorderBrush="#2B3140"
+                BorderThickness="0,0,0,1">
+            <Grid>
+                <StackPanel Spacing="6">
+                    <TextBlock FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               Text="{Binding Title}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1"
+              ColumnDefinitions="360,*"
+              ColumnSpacing="24"
+              Margin="24">
+            <Border Padding="20"
+                    CornerRadius="20"
+                    Background="#171B24"
+                    BorderBrush="#2B3140"
+                    BorderThickness="1">
+                <StackPanel Spacing="18">
+                    <TextBlock FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               Text="Project settings" />
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="#A8B3C7" Text="Video source" />
+                        <Border Padding="14"
+                                CornerRadius="12"
+                                Background="#202636">
+                            <TextBlock Foreground="White" Text="{Binding SourceStatus}" />
+                        </Border>
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Foreground="#A8B3C7" Text="Input aspect ratio" />
+                            <Border Padding="14"
+                                    CornerRadius="12"
+                                    Background="#202636">
+                                <TextBlock Foreground="White" Text="{Binding InputAspectRatio}" />
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="8">
+                            <TextBlock Foreground="#A8B3C7" Text="Output aspect ratio" />
+                            <Border Padding="14"
+                                    CornerRadius="12"
+                                    Background="#202636">
+                                <TextBlock Foreground="White" Text="{Binding OutputAspectRatio}" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="#A8B3C7" Text="Background" />
+                        <Border Padding="14"
+                                CornerRadius="12"
+                                Background="#202636">
+                            <TextBlock Foreground="White" Text="{Binding BackgroundMode}" />
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Foreground="#A8B3C7" Text="Text overlay" />
+                        <Border Padding="14"
+                                CornerRadius="12"
+                                Background="#202636">
+                            <TextBlock Foreground="White" Text="{Binding OverlayText}" TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Column="1">
+                <Border CornerRadius="24"
+                        Background="#171B24"
+                        BorderBrush="#2B3140"
+                        BorderThickness="1"
+                        Padding="28">
+                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="White"
+                                       Text="9:16 frame preview" />
+                        </StackPanel>
+
+                        <Border Grid.Row="1"
+                                HorizontalAlignment="Center"
+                                Width="360"
+                                CornerRadius="32"
+                                Background="#0E1117"
+                                BorderBrush="#323A4A"
+                                BorderThickness="1"
+                                Padding="18">
+                            <Grid RowDefinitions="*,Auto">
+                                <Border CornerRadius="22"
+                                        Background="#243042"
+                                        ClipToBounds="True">
+                                    <Grid>
+                                        <Border Background="#384B66"
+                                                Opacity="0.5"
+                                                Margin="0"
+                                                CornerRadius="22" />
+                                        <Border Width="196"
+                                                Height="348"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Background="#0B0D12"
+                                                CornerRadius="20"
+                                                BorderBrush="#4A5568"
+                                                BorderThickness="1" />
+                                        <Border HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Bottom"
+                                                Margin="18"
+                                                Padding="14,10"
+                                                Background="#CC111827"
+                                                CornerRadius="14">
+                                            <TextBlock Text="{Binding OverlayText}"
+                                                       TextWrapping="Wrap"
+                                                       TextAlignment="Center"
+                                                       Foreground="White"
+                                                       FontWeight="SemiBold" />
+                                        </Border>
+                                    </Grid>
+                                </Border>
+
+                                <Grid Grid.Row="1"
+                                      Margin="0,16,0,0"
+                                      ColumnDefinitions="Auto,*,Auto"
+                                      ColumnSpacing="12"
+                                      VerticalAlignment="Center">
+                                    <TextBlock Foreground="#A8B3C7" Text="00:00" />
+                                    <Border Grid.Column="1"
+                                            Height="8"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="999"
+                                            Background="#202636">
+                                        <Border Width="110"
+                                                HorizontalAlignment="Left"
+                                                CornerRadius="999"
+                                                Background="#7C9DFF" />
+                                    </Border>
+                                    <TextBlock Grid.Column="2" Foreground="#A8B3C7" Text="00:45" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <WrapPanel Grid.Row="2" Orientation="Horizontal" ItemHeight="0" ItemWidth="0">
+                            <Border Margin="0,0,12,0"
+                                    Padding="14,10"
+                                    Background="#202636"
+                                    CornerRadius="12">
+                                <TextBlock Foreground="White" Text="Import footage" />
+                            </Border>
+                            <Border Margin="0,0,12,0"
+                                    Padding="14,10"
+                                    Background="#202636"
+                                    CornerRadius="12">
+                                <TextBlock Foreground="White" Text="Blur background" />
+                            </Border>
+                            <Border Padding="14,10"
+                                    Background="#4F46E5"
+                                    CornerRadius="12">
+                                <TextBlock Foreground="White" Text="Export to MP4" />
+                            </Border>
+                        </WrapPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+
+</Window>
