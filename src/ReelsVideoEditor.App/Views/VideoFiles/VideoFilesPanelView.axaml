@@ -19,42 +19,68 @@
                 DragDrop.AllowDrop="True"
                 DragDrop.DragOver="DropZone_OnDragOver"
                 DragDrop.Drop="DropZone_OnDrop">
-            <Grid RowDefinitions="Auto,Auto,*">
-                <TextBlock Text="{Binding DropHintTitle}"
-                           Foreground="{DynamicResource Accent}"
-                           FontSize="14"
-                           FontWeight="SemiBold" />
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel x:Name="DropHints"
+                            Spacing="2">
+                    <TextBlock Text="{Binding DropHintTitle}"
+                               Foreground="{DynamicResource Accent}"
+                               FontSize="14"
+                               FontWeight="SemiBold" />
 
-                <TextBlock Grid.Row="1"
-                           Margin="0,2,0,0"
-                           Text="{Binding DropHintSubtitle}"
-                           Foreground="{DynamicResource AccentMuted}"
-                           FontSize="11" />
+                    <TextBlock Text="{Binding DropHintSubtitle}"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontSize="11" />
+                </StackPanel>
 
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer Grid.Row="1"
                               Margin="0,10,0,0"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:VideoFileItem">
-                                <Border Margin="0,0,0,8"
-                                        Padding="10,8"
+                                <Border Margin="0,0,10,10"
+                                        Padding="8"
+                                        Width="140"
+                                        Height="140"
                                         CornerRadius="8"
                                         Background="#55222222"
                                         BorderBrush="{DynamicResource AccentSubtle}"
                                         BorderThickness="1">
-                                    <StackPanel Spacing="2">
+                                    <Grid RowDefinitions="*,Auto,Auto"
+                                          RowSpacing="8">
+                                        <Border CornerRadius="6"
+                                                Background="#99222222"
+                                                BorderBrush="{DynamicResource AccentSubtle}"
+                                                BorderThickness="1"
+                                                ClipToBounds="True">
+                                            <Grid>
+                                                <TextBlock Text="VIDEO"
+                                                           Foreground="{DynamicResource AccentMuted}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+
+                                                <Image Source="{Binding Thumbnail}"
+                                                          Stretch="UniformToFill" />
+                                            </Grid>
+                                        </Border>
+
                                         <TextBlock Text="{Binding Name}"
+                                                   Grid.Row="1"
                                                    Foreground="{DynamicResource Accent}"
-                                                   FontSize="12"
+                                                   FontSize="11"
                                                    FontWeight="SemiBold"
                                                    TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Path}"
-                                                   Foreground="{DynamicResource AccentMuted}"
-                                                   FontSize="10"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
+
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
@@ -9,9 +10,45 @@ namespace ReelsVideoEditor.App.Views.VideoFiles;
 
 public partial class VideoFilesPanelView : UserControl
 {
+    private VideoFilesViewModel? _boundViewModel;
+
     public VideoFilesPanelView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs eventArgs)
+    {
+        if (_boundViewModel is not null)
+        {
+            _boundViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        }
+
+        _boundViewModel = DataContext as VideoFilesViewModel;
+
+        if (_boundViewModel is not null)
+        {
+            _boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+
+        UpdateDropHintsVisibility();
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
+    {
+        if (eventArgs.PropertyName == nameof(VideoFilesViewModel.HasFiles))
+        {
+            UpdateDropHintsVisibility();
+        }
+    }
+
+    private void UpdateDropHintsVisibility()
+    {
+        if (this.FindControl<StackPanel>("DropHints") is { } dropHints)
+        {
+            dropHints.IsVisible = _boundViewModel?.HasFiles != true;
+        }
     }
 
     private void DropZone_OnDragOver(object? sender, DragEventArgs eventArgs)
@@ -22,14 +59,14 @@ public partial class VideoFilesPanelView : UserControl
         eventArgs.Handled = true;
     }
 
-    private void DropZone_OnDrop(object? sender, DragEventArgs eventArgs)
+    private async void DropZone_OnDrop(object? sender, DragEventArgs eventArgs)
     {
         if (DataContext is not VideoFilesViewModel viewModel)
         {
             return;
         }
 
-        viewModel.AddDroppedFiles(ResolveDroppedPaths(eventArgs));
+        await viewModel.AddDroppedFilesAsync(ResolveDroppedPaths(eventArgs));
         eventArgs.Handled = true;
     }
 
