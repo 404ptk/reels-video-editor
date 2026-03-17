@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace ReelsVideoEditor.App.ViewModels.VideoFiles;
 public sealed class VideoFilesViewModel : ViewModelBase
 {
     private const int FfmpegTimeoutMs = 12000;
+    private const int FfprobeTimeoutMs = 5000;
 
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -63,6 +65,9 @@ public sealed class VideoFilesViewModel : ViewModelBase
             var fileItem = new VideoFileItem(Path.GetFileName(filePath), filePath);
             Files.Add(fileItem);
 
+            var durationSeconds = await TryReadDurationSecondsAsync(filePath);
+            fileItem.DurationSeconds = durationSeconds > 0 ? durationSeconds : 5;
+
             var thumbnailResult = await TryCreateThumbnailAsync(filePath);
             var thumbnail = thumbnailResult.Bitmap;
 
@@ -77,6 +82,20 @@ public sealed class VideoFilesViewModel : ViewModelBase
                 : thumbnailResult.Error;
             fileItem.ThumbnailStatus = $"Thumbnail unavailable ({reason})";
         }
+    }
+
+    private static async Task<double> TryReadDurationSecondsAsync(string videoPath)
+    {
+        foreach (var ffprobeExecutable in GetFfprobeCandidates())
+        {
+            var (success, duration) = await RunFfprobeAsync(ffprobeExecutable, videoPath);
+            if (success && duration > 0)
+            {
+                return duration;
+            }
+        }
+
+        return 0;
     }
 
     private bool ContainsPath(string path)
@@ -196,6 +215,77 @@ public sealed class VideoFilesViewModel : ViewModelBase
 
         yield return "ffmpeg.exe";
         yield return "ffmpeg";
+    }
+
+    private static IEnumerable<string> GetFfprobeCandidates()
+    {
+        var envPath = Environment.GetEnvironmentVariable("FFPROBE_PATH");
+        if (!string.IsNullOrWhiteSpace(envPath))
+        {
+            yield return envPath;
+        }
+
+        foreach (var ffmpegCandidate in GetFfmpegCandidates())
+        {
+            if (ffmpegCandidate.EndsWith("ffmpeg.exe", StringComparison.OrdinalIgnoreCase))
+            {
+                var ffprobePath = ffmpegCandidate.Replace("ffmpeg.exe", "ffprobe.exe", StringComparison.OrdinalIgnoreCase);
+                if (File.Exists(ffprobePath))
+                {
+                    yield return ffprobePath;
+                }
+            }
+        }
+
+        yield return "ffprobe.exe";
+        yield return "ffprobe";
+    }
+
+    private static async Task<(bool Success, double Duration)> RunFfprobeAsync(string ffprobeExecutable, string videoPath)
+    {
+        try
+        {
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = ffprobeExecutable,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            processStartInfo.ArgumentList.Add("-v");
+            processStartInfo.ArgumentList.Add("error");
+            processStartInfo.ArgumentList.Add("-show_entries");
+            processStartInfo.ArgumentList.Add("format=duration");
+            processStartInfo.ArgumentList.Add("-of");
+            processStartInfo.ArgumentList.Add("default=nokey=1:noprint_wrappers=1");
+            processStartInfo.ArgumentList.Add(videoPath);
+
+            using var process = new Process { StartInfo = processStartInfo };
+            process.Start();
+
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var completed = await WaitForExitWithTimeoutAsync(process, FfprobeTimeoutMs);
+            var output = await outputTask;
+
+            if (!completed || process.ExitCode != 0)
+            {
+                return (false, 0);
+            }
+
+            var trimmed = output.Trim();
+            if (double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var duration) && duration > 0)
+            {
+                return (true, duration);
+            }
+
+            return (false, 0);
+        }
+        catch
+        {
+            return (false, 0);
+        }
     }
 
     private static IEnumerable<string> DiscoverFfmpegFromWhere()
@@ -350,8 +440,13 @@ public sealed class VideoFilesViewModel : ViewModelBase
 
     private static async Task<bool> WaitForExitWithTimeoutAsync(Process process)
     {
+        return await WaitForExitWithTimeoutAsync(process, FfmpegTimeoutMs);
+    }
+
+    private static async Task<bool> WaitForExitWithTimeoutAsync(Process process, int timeoutMs)
+    {
         var exitTask = process.WaitForExitAsync();
-        var timeoutTask = Task.Delay(FfmpegTimeoutMs);
+        var timeoutTask = Task.Delay(timeoutMs);
 
         var completedTask = await Task.WhenAny(exitTask, timeoutTask);
         if (completedTask == exitTask)
@@ -390,6 +485,9 @@ public sealed partial class VideoFileItem : ObservableObject
 
     [ObservableProperty]
     private string thumbnailStatus = "Generating thumbnail...";
+
+    [ObservableProperty]
+    private double durationSeconds = 5;
 
     public bool HasThumbnail => Thumbnail is not null;
 

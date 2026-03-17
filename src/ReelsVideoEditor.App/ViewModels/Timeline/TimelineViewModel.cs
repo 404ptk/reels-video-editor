@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
+using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
 
@@ -11,6 +12,7 @@ public partial class TimelineViewModel : ViewModelBase
     private static readonly int[] LabelIntervalsInSeconds = [1, 2, 5, 10, 15, 30, 60, 120, 300];
     private const int MinZoom = 25;
     private const int MaxZoom = 300;
+    private readonly TimelineClipArrangementService clipArrangementService = new();
 
     [ObservableProperty]
     private int zoomPercent = 100;
@@ -18,6 +20,8 @@ public partial class TimelineViewModel : ViewModelBase
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
+
+    public ObservableCollection<TimelineClipItem> Clips { get; } = [];
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
@@ -36,6 +40,13 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(TickWidth));
         OnPropertyChanged(nameof(TimelineCanvasWidth));
         RebuildMajorTicks();
+        clipArrangementService.RebuildLayouts(Clips, TickWidth);
+    }
+
+    public void AddClipFromExplorer(string name, double durationSeconds, double dropX)
+    {
+        var clip = clipArrangementService.BuildClip(name, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
+        Clips.Add(clip);
     }
 
     public void ChangeZoomFromWheel(double wheelDelta, double viewportWidth)
@@ -110,6 +121,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         return LabelIntervalsInSeconds[^1];
     }
+
 }
 
 public sealed record TimelineMinorTick(bool ShowLine);

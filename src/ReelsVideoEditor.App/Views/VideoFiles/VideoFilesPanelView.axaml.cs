@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.VideoFiles;
 
 namespace ReelsVideoEditor.App.Views.VideoFiles;
@@ -121,5 +123,29 @@ public partial class VideoFilesPanelView : UserControl
                || extension.Equals(".avi", StringComparison.OrdinalIgnoreCase)
                || extension.Equals(".webm", StringComparison.OrdinalIgnoreCase)
                || extension.Equals(".m4v", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async void FileTile_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (sender is not Control { DataContext: VideoFileItem fileItem })
+        {
+            return;
+        }
+
+        if (!eventArgs.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var payload = VideoClipDragPayload.Build(fileItem.Path, fileItem.Name, fileItem.DurationSeconds);
+#pragma warning disable CS0618
+        var dataObject = new DataObject();
+#pragma warning restore CS0618
+        dataObject.Set(VideoClipDragPayload.Format, payload);
+
+    #pragma warning disable CS0618
+        await Avalonia.Input.DragDrop.DoDragDrop(eventArgs, dataObject, DragDropEffects.Copy);
+    #pragma warning restore CS0618
+        eventArgs.Handled = true;
     }
 }

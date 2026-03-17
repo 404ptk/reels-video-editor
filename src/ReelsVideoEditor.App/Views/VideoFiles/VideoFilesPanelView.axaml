@@ -52,7 +52,8 @@
                                         CornerRadius="8"
                                         Background="#55222222"
                                         BorderBrush="{DynamicResource AccentSubtle}"
-                                        BorderThickness="1">
+                                    BorderThickness="1"
+                                    PointerPressed="FileTile_OnPointerPressed">
                                     <Grid RowDefinitions="*,Auto,Auto"
                                           RowSpacing="8">
                                         <Border CornerRadius="6"

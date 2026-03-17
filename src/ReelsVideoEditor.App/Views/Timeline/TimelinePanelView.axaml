@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Timeline"
+             xmlns:arrangementVm="using:ReelsVideoEditor.App.ViewModels.Timeline.Arrangement"
              x:Class="ReelsVideoEditor.App.Views.Timeline.TimelinePanelView"
              x:DataType="vm:TimelineViewModel">
 
@@ -65,7 +66,39 @@
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
-                    CornerRadius="8" />
+                    CornerRadius="8"
+                    DragDrop.AllowDrop="True"
+                    DragDrop.DragOver="TimelineTrack_OnDragOver"
+                    DragDrop.Drop="TimelineTrack_OnDrop">
+                <Grid>
+                    <ItemsControl ItemsSource="{Binding Clips}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
+                                <Border Canvas.Left="{Binding Left}"
+                                        Width="{Binding Width}"
+                                        Height="52"
+                                        Margin="10,10,0,10"
+                                        CornerRadius="6"
+                                        Background="#66C2D8C4"
+                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                        BorderThickness="1">
+                                    <TextBlock Margin="8,0"
+                                               VerticalAlignment="Center"
+                                               Foreground="#222222"
+                                               FontWeight="SemiBold"
+                                               Text="{Binding Name}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
