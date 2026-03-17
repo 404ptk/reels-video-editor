@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReelsVideoEditor.App.ViewModels.VideoFiles"
+             x:Class="ReelsVideoEditor.App.Views.VideoFiles.VideoFilesPanelView"
+             x:DataType="vm:VideoFilesViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+        <TextBlock Foreground="{DynamicResource AccentMuted}"
+                   FontSize="12"
+                   Text="{Binding Title}" />
+
+        <Border Grid.Row="1"
+                Margin="0,10,0,0"
+                Padding="12"
+                CornerRadius="10"
+                Background="#AA222222"
+                BorderBrush="{DynamicResource AccentSubtle}"
+                BorderThickness="1"
+                DragDrop.AllowDrop="True"
+                DragDrop.DragOver="DropZone_OnDragOver"
+                DragDrop.Drop="DropZone_OnDrop">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <TextBlock Text="{Binding DropHintTitle}"
+                           Foreground="{DynamicResource Accent}"
+                           FontSize="14"
+                           FontWeight="SemiBold" />
+
+                <TextBlock Grid.Row="1"
+                           Margin="0,2,0,0"
+                           Text="{Binding DropHintSubtitle}"
+                           Foreground="{DynamicResource AccentMuted}"
+                           FontSize="11" />
+
+                <ScrollViewer Grid.Row="2"
+                              Margin="0,10,0,0"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:VideoFileItem">
+                                <Border Margin="0,0,0,8"
+                                        Padding="10,8"
+                                        CornerRadius="8"
+                                        Background="#55222222"
+                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                        BorderThickness="1">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Name}"
+                                                   Foreground="{DynamicResource Accent}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Path}"
+                                                   Foreground="{DynamicResource AccentMuted}"
+                                                   FontSize="10"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
