@@ -2,8 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Timeline"
              xmlns:arrangementVm="using:ReelsVideoEditor.App.ViewModels.Timeline.Arrangement"
-             x:Class="ReelsVideoEditor.App.Views.Timeline.TimelinePanelView"
-             x:DataType="vm:TimelineViewModel">
+             x:Class="ReelsVideoEditor.App.Views.Timeline.TimelinePanelView"    
+             x:DataType="vm:TimelineViewModel"
+             Focusable="True">
 
     <Grid ColumnDefinitions="96,8,*">
       <Grid Grid.Column="0"
@@ -49,7 +50,8 @@
                 HorizontalScrollBarVisibility="Auto"
                 VerticalScrollBarVisibility="Disabled"
                 PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
-        <Grid Width="{Binding TimelineCanvasWidth}"
+                        <Grid x:Name="TimelineCanvas"
+                              Width="{Binding TimelineCanvasWidth}"
             Height="{Binding TimelineCanvasHeight}"
             RowDefinitions="52,10,Auto,8,Auto"
             HorizontalAlignment="Left">
@@ -134,7 +136,14 @@
                                         CornerRadius="6"
                                         Background="#66C2D8C4"
                                         BorderBrush="{DynamicResource AccentSubtle}"
-                                        BorderThickness="1">
+                                        BorderThickness="1"
+                                        Classes.selected="{Binding IsSelected}">
+                                    <Border.Styles>
+                                        <Style Selector="Border.selected">
+                                            <Setter Property="BorderBrush" Value="White" />
+                                            <Setter Property="BorderThickness" Value="2" />
+                                        </Style>
+                                    </Border.Styles>
                                     <TextBlock Margin="8,0"
                                                VerticalAlignment="Center"
                                                Foreground="#222222"
@@ -204,6 +213,16 @@
                     <TranslateTransform X="{Binding PlayheadVisualLeft}" />
                 </Border.RenderTransform>
             </Border>
+
+            <Border x:Name="SelectionBox"
+                    Grid.RowSpan="5"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="#330078D7"
+                    BorderBrush="#0078D7"
+                    BorderThickness="1"
+                    IsHitTestVisible="False"
+                    IsVisible="False" />
             </Grid>
         </ScrollViewer>
     </Grid>

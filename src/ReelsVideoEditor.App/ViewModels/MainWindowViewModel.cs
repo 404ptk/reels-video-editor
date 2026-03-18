@@ -53,6 +53,21 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var seekMilliseconds = (long)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero);
             Preview.SeekToPlaybackPosition(seekMilliseconds);
         };
+
+        Timeline.PreviewClipChanged = () =>
+        {
+            var resolvedPath = Timeline.ResolvePreviewClipPath();
+            if (string.IsNullOrWhiteSpace(resolvedPath))
+            {
+                Preview.Stop();
+                Preview.CurrentVideoPath = null;
+            }
+            else if (Preview.CurrentVideoPath != resolvedPath)
+            {
+                Preview.Stop();
+                Preview.CurrentVideoPath = resolvedPath;
+            }
+        };
     }
 
     [RelayCommand]

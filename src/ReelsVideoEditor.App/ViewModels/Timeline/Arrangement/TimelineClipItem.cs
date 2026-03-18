@@ -22,6 +22,9 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private Bitmap? waveformImage;
 
+    [ObservableProperty]
+    private bool isSelected;
+
     public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds)
     {
         Name = name;

@@ -44,6 +44,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action<double>? PlayheadSeekRequested { get; set; }
 
+    public Action? PreviewClipChanged { get; set; }
+
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
@@ -286,6 +288,7 @@ public partial class TimelineViewModel : ViewModelBase
     private void OnVideoClipsChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
     {
         OnPropertyChanged(nameof(HasClips));
+        PreviewClipChanged?.Invoke();
 
         if (VideoClips.Count == 0)
         {
@@ -336,6 +339,42 @@ public partial class TimelineViewModel : ViewModelBase
     private TimelineClipItem? ResolvePreviewClip()
     {
         return VideoClips.FirstOrDefault();
+    }
+
+    public void SelectClipsInBox(double startX, double endX)
+    {
+        double minX = Math.Min(startX, endX);
+        double maxX = Math.Max(startX, endX);
+
+        foreach (var clip in VideoClips)
+        {
+            clip.IsSelected = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+        }
+        foreach (var clip in AudioClips)
+        {
+            clip.IsSelected = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+        }
+    }
+
+    public void DeleteSelectedClips()
+    {
+        var videoToRemove = VideoClips.Where(c => c.IsSelected).ToList();
+        var audioToRemoveNames = AudioClips.Where(c => c.IsSelected).Select(c => c.Name).ToList();
+
+        var combinedToRemove = VideoClips
+            .Where(c => c.IsSelected || audioToRemoveNames.Contains(c.Name))
+            .ToList();
+
+        foreach (var clip in combinedToRemove)
+        {
+            VideoClips.Remove(clip);
+        }
+    }
+
+    public void ClearSelection()
+    {
+        foreach (var clip in VideoClips) clip.IsSelected = false;
+        foreach (var clip in AudioClips) clip.IsSelected = false;
     }
 
 }

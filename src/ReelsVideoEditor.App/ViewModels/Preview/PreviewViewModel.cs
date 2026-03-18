@@ -77,7 +77,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Stop()
+    public void Stop()
     {
         IsPlaying = false;
         StopRequestVersion++;
