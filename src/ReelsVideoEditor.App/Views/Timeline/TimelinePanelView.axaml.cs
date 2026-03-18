@@ -46,6 +46,24 @@ public partial class TimelinePanelView : UserControl
         eventArgs.Handled = true;
     }
 
+    private void TimelineSeekSurface_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (DataContext is not TimelineViewModel viewModel || sender is not Control seekSurface)
+        {
+            return;
+        }
+
+        var currentPoint = eventArgs.GetCurrentPoint(seekSurface);
+        if (!currentPoint.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var pointerPositionX = eventArgs.GetPosition(seekSurface).X;
+        viewModel.SeekToPosition(pointerPositionX);
+        eventArgs.Handled = true;
+    }
+
     private static bool TryGetClipPayload(DragEventArgs eventArgs, out string name, out double durationSeconds, out string path)
     {
         name = string.Empty;

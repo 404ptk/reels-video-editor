@@ -21,6 +21,7 @@ public partial class PreviewPanelView : UserControl
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
     private int handledStopRequestVersion;
+    private int handledSeekRequestVersion;
     private double smoothedPlaybackMilliseconds;
     private DateTime lastPlaybackSampleUtc;
     private bool hasPlaybackSample;
@@ -83,7 +84,8 @@ public partial class PreviewPanelView : UserControl
 
         if (eventArgs.PropertyName is nameof(PreviewViewModel.IsPlaying)
             or nameof(PreviewViewModel.CurrentVideoPath)
-            or nameof(PreviewViewModel.StopRequestVersion))
+            or nameof(PreviewViewModel.StopRequestVersion)
+            or nameof(PreviewViewModel.SeekRequestVersion))
         {
             ApplyPlaybackState(boundViewModel);
         }
@@ -96,6 +98,8 @@ public partial class PreviewPanelView : UserControl
         {
             LoadMedia(path);
         }
+
+        ApplySeekRequest(viewModel);
 
         if (viewModel.IsPlaying)
         {
@@ -124,6 +128,44 @@ public partial class PreviewPanelView : UserControl
         }
 
         mediaPlayer.SetPause(true);
+    }
+
+    private void ApplySeekRequest(PreviewViewModel viewModel)
+    {
+        if (viewModel.SeekRequestVersion <= handledSeekRequestVersion)
+        {
+            return;
+        }
+
+        if (mediaPlayer.Media is null)
+        {
+            return;
+        }
+
+        handledSeekRequestVersion = viewModel.SeekRequestVersion;
+
+        var targetMilliseconds = Math.Max(0, viewModel.RequestedSeekMilliseconds);
+        var totalLength = Math.Max(0, mediaPlayer.Length);
+        if (totalLength > 0)
+        {
+            targetMilliseconds = Math.Min(targetMilliseconds, totalLength);
+        }
+
+        if (!mediaPlayer.IsPlaying && mediaPlayer.State != VLCState.Paused)
+        {
+            mediaPlayer.Play();
+        }
+
+        mediaPlayer.Time = targetMilliseconds;
+        smoothedPlaybackMilliseconds = targetMilliseconds;
+        hasPlaybackSample = true;
+        lastPlaybackSampleUtc = DateTime.UtcNow;
+        viewModel.UpdatePlaybackTime(targetMilliseconds);
+
+        if (!viewModel.IsPlaying)
+        {
+            mediaPlayer.SetPause(true);
+        }
     }
 
     private void LoadMedia(string path)

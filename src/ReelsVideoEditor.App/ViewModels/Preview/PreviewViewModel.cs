@@ -33,6 +33,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
     [ObservableProperty]
     private string totalPlaybackTimeText = ZeroTime;
 
+    [ObservableProperty]
+    private long requestedSeekMilliseconds;
+
+    [ObservableProperty]
+    private int seekRequestVersion;
+
     public string Title { get; } = "Preview";
 
     public string PlaceholderTitle { get; } = "No video loaded";
@@ -109,6 +115,25 @@ public sealed partial class PreviewViewModel : ViewModelBase
         }
 
         TotalPlaybackTimeText = FormatPlaybackTime(totalPlaybackMilliseconds);
+    }
+
+    public void SeekToPlaybackPosition(long targetPlaybackMilliseconds)
+    {
+        if (!HasVideoLoaded)
+        {
+            var resolvedPath = ResolveVideoPath?.Invoke();
+            if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath))
+            {
+                return;
+            }
+
+            CurrentVideoPath = resolvedPath;
+        }
+
+        var safeMilliseconds = Math.Max(0, targetPlaybackMilliseconds);
+        RequestedSeekMilliseconds = safeMilliseconds;
+        SeekRequestVersion++;
+        UpdatePlaybackTime(safeMilliseconds);
     }
 
     private static string FormatPlaybackTime(long playbackMilliseconds)

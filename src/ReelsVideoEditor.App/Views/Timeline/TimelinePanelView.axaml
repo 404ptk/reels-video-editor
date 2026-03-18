@@ -15,7 +15,8 @@
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
-                    CornerRadius="8">
+                    CornerRadius="8"
+                    PointerPressed="TimelineSeekSurface_OnPointerPressed">
                 <Grid RowDefinitions="18,*">
                     <ItemsControl ItemsSource="{Binding MinorTicks}">
                         <ItemsControl.ItemsPanel>
@@ -67,6 +68,7 @@
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
                     CornerRadius="8"
+                    PointerPressed="TimelineSeekSurface_OnPointerPressed"
                     DragDrop.AllowDrop="True"
                     DragDrop.DragOver="TimelineTrack_OnDragOver"
                     DragDrop.Drop="TimelineTrack_OnDrop">

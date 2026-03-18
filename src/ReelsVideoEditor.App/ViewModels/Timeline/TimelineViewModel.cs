@@ -29,6 +29,8 @@ public partial class TimelineViewModel : ViewModelBase
     private double playbackMaxSeconds = TimelineDurationSeconds;
     private bool hasPlaybackSession;
 
+    public Action<double>? PlayheadSeekRequested { get; set; }
+
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
@@ -122,6 +124,16 @@ public partial class TimelineViewModel : ViewModelBase
         PlayheadSeconds = Math.Clamp(clampedSeconds, 0, TimelineDurationSeconds);
     }
 
+    public void SeekToPosition(double pointerX)
+    {
+        var playheadSeconds = Math.Max(0, (pointerX - 10) / TickWidth);
+        var clampedSeconds = Math.Clamp(playheadSeconds, 0, TimelineDurationSeconds);
+
+        PlayheadSeconds = clampedSeconds;
+        lastPlaybackMilliseconds = -1;
+        PlayheadSeekRequested?.Invoke(clampedSeconds);
+    }
+
     public void SetPlaybackActive(bool isPlaying)
     {
         IsPlaybackActive = isPlaying;
@@ -137,7 +149,6 @@ public partial class TimelineViewModel : ViewModelBase
         {
             playbackMaxSeconds = Math.Max(0.01, activeClip.DurationSeconds);
             hasPlaybackSession = true;
-            PlayheadSeconds = 0;
             return;
         }
 
