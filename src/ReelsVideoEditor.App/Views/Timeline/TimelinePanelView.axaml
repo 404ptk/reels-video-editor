@@ -8,10 +8,11 @@
     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Disabled"
                   PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
-        <StackPanel Spacing="10">
+        <Grid Width="{Binding TimelineCanvasWidth}"
+              Height="134"
+              HorizontalAlignment="Left">
             <Border Height="52"
-                    Width="{Binding TimelineCanvasWidth}"
-                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -62,8 +63,7 @@
             </Border>
 
             <Border Height="72"
-                    Width="{Binding TimelineCanvasWidth}"
-                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -102,19 +102,20 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
-                    <Border Width="2"
-                            Height="72"
-                            HorizontalAlignment="Left"
-                            Background="{DynamicResource Accent}"
-                            IsHitTestVisible="False"
-                            IsVisible="{Binding IsPlayheadVisible}">
-                        <Border.RenderTransform>
-                            <TranslateTransform X="{Binding PlayheadVisualLeft}" />
-                        </Border.RenderTransform>
-                    </Border>
                 </Grid>
             </Border>
-        </StackPanel>
+
+            <Border Width="2"
+                    Height="134"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top"
+                    Background="{DynamicResource Accent}"
+                    IsHitTestVisible="False"
+                    IsVisible="{Binding IsPlayheadVisible}">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding PlayheadVisualLeft}" />
+                </Border.RenderTransform>
+            </Border>
+        </Grid>
     </ScrollViewer>
 </UserControl>
