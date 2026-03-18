@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -43,10 +44,15 @@ public partial class TimelineViewModel : ViewModelBase
         clipArrangementService.RebuildLayouts(Clips, TickWidth);
     }
 
-    public void AddClipFromExplorer(string name, double durationSeconds, double dropX)
+    public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX)
     {
-        var clip = clipArrangementService.BuildClip(name, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
+        var clip = clipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
         Clips.Add(clip);
+    }
+
+    public string? ResolvePreviewClipPath()
+    {
+        return Clips.FirstOrDefault()?.Path;
     }
 
     public void ChangeZoomFromWheel(double wheelDelta, double viewportWidth)

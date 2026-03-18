@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Preview"
+             xmlns:vlc="clr-namespace:LibVLCSharp.Avalonia;assembly=LibVLCSharp.Avalonia"
              x:Class="ReelsVideoEditor.App.Views.Preview.PreviewPanelView"
              x:DataType="vm:PreviewViewModel">
 
@@ -37,19 +38,25 @@
                         Background="#AA222222"
                         BorderBrush="{DynamicResource AccentSubtle}"
                         BorderThickness="1">
-                    <StackPanel HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Spacing="6">
-                        <TextBlock Text="{Binding PlaceholderTitle}"
-                                   Foreground="{DynamicResource Accent}"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center" />
-                        <TextBlock Text="{Binding PlaceholderSubtitle}"
-                                   Foreground="{DynamicResource AccentMuted}"
-                                   FontSize="11"
-                                   HorizontalAlignment="Center" />
-                    </StackPanel>
+                    <Grid ClipToBounds="True">
+                        <vlc:VideoView x:Name="PreviewVideoView"
+                                       IsVisible="{Binding HasVideoLoaded}" />
+
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="6"
+                                    IsVisible="{Binding ShowPlaceholder}">
+                            <TextBlock Text="{Binding PlaceholderTitle}"
+                                       Foreground="{DynamicResource Accent}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding PlaceholderSubtitle}"
+                                       Foreground="{DynamicResource AccentMuted}"
+                                       FontSize="11"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
                 </Border>
             </Viewbox>
         </Border>

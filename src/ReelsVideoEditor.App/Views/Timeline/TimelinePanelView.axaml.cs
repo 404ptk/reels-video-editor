@@ -36,13 +36,13 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
-        if (!TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out _))
+        if (!TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out var path))
         {
             return;
         }
 
         var dropPositionX = eventArgs.GetPosition(trackControl).X;
-        viewModel.AddClipFromExplorer(name, durationSeconds, dropPositionX);
+        viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX);
         eventArgs.Handled = true;
     }
 

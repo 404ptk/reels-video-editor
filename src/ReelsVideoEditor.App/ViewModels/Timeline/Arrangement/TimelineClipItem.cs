@@ -6,6 +6,8 @@ public sealed partial class TimelineClipItem : ObservableObject
 {
     public string Name { get; }
 
+    public string Path { get; }
+
     public double StartSeconds { get; }
 
     public double DurationSeconds { get; }
@@ -16,9 +18,10 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private double width;
 
-    public TimelineClipItem(string name, double startSeconds, double durationSeconds)
+    public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds)
     {
         Name = name;
+        Path = path;
         StartSeconds = startSeconds;
         DurationSeconds = durationSeconds;
     }

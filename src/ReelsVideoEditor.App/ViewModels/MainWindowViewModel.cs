@@ -6,9 +6,17 @@ namespace ReelsVideoEditor.App.ViewModels;
 
 public sealed class MainWindowViewModel : ViewModelBase
 {
-    public PreviewViewModel Preview { get; } = new();
+    public PreviewViewModel Preview { get; }
 
     public VideoFilesViewModel VideoFiles { get; } = new();
 
     public TimelineViewModel Timeline { get; } = new();
+
+    public MainWindowViewModel()
+    {
+        Preview = new PreviewViewModel
+        {
+            ResolveVideoPath = () => Timeline.ResolvePreviewClipPath()
+        };
+    }
 }

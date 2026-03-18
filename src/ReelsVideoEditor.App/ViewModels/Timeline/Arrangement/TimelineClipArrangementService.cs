@@ -5,7 +5,7 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 public sealed class TimelineClipArrangementService
 {
-    public TimelineClipItem BuildClip(string name, double durationSeconds, double dropX, double tickWidth, double timelineDurationSeconds)
+    public TimelineClipItem BuildClip(string name, string path, double durationSeconds, double dropX, double tickWidth, double timelineDurationSeconds)
     {
         var safeDuration = double.IsFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds : 5;
         var startSeconds = Math.Max(0, dropX / tickWidth);
@@ -18,7 +18,7 @@ public sealed class TimelineClipArrangementService
         var maxDuration = Math.Max(0.25, timelineDurationSeconds - startSeconds);
         var effectiveDuration = Math.Min(safeDuration, maxDuration);
 
-        var clip = new TimelineClipItem(name, startSeconds, effectiveDuration);
+        var clip = new TimelineClipItem(name, path, startSeconds, effectiveDuration);
         ApplyLayout(clip, tickWidth);
         return clip;
     }
