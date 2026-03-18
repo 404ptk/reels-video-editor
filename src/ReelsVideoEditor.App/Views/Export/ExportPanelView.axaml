@@ -4,22 +4,8 @@
              x:Class="ReelsVideoEditor.App.Views.Export.ExportPanelView"
              x:DataType="vm:ExportViewModel">
 
-    <Grid RowDefinitions="Auto,*">
-        <Border Padding="16"
-                Background="{StaticResource BaseBg}">
-            <StackPanel Spacing="8">
-                <TextBlock Text="{Binding Title}"
-                           Foreground="{DynamicResource Accent}"
-                           FontSize="20"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Description}"
-                           Foreground="{DynamicResource AccentMuted}"
-                           FontSize="13" />
-            </StackPanel>
-        </Border>
-
-        <StackPanel Grid.Row="1"
-                    VerticalAlignment="Center"
+    <Grid>
+        <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Spacing="12">
             <TextBlock Text="Export options will be available here"
