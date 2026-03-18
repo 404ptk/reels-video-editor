@@ -32,6 +32,7 @@ public partial class PreviewPanelView : UserControl
         Core.Initialize();
         libVlc = new LibVLC();
         mediaPlayer = new MediaPlayer(libVlc);
+        mediaPlayer.EndReached += OnMediaPlayerEndReached;
 
         playbackTimeTimer = new DispatcherTimer
         {
@@ -100,6 +101,13 @@ public partial class PreviewPanelView : UserControl
         {
             if (mediaPlayer.Media is not null)
             {
+                if (mediaPlayer.State == VLCState.Ended)
+                {
+                    mediaPlayer.Time = 0;
+                    ResetPlaybackClock();
+                    viewModel.UpdatePlaybackTime(0);
+                }
+
                 mediaPlayer.Play();
             }
 
@@ -136,6 +144,7 @@ public partial class PreviewPanelView : UserControl
 
         playbackTimeTimer.Stop();
         playbackTimeTimer.Tick -= OnPlaybackTimeTimerTick;
+        mediaPlayer.EndReached -= OnMediaPlayerEndReached;
         mediaPlayer.Dispose();
         libVlc.Dispose();
     }
@@ -154,6 +163,7 @@ public partial class PreviewPanelView : UserControl
 
         var nowUtc = DateTime.UtcNow;
         var rawTime = Math.Max(0, mediaPlayer.Time);
+        var totalTime = Math.Max(0, mediaPlayer.Length);
 
         if (!hasPlaybackSample)
         {
@@ -183,8 +193,46 @@ public partial class PreviewPanelView : UserControl
             lastPlaybackSampleUtc = nowUtc;
         }
 
+        if (totalTime > 0)
+        {
+            smoothedPlaybackMilliseconds = Math.Min(smoothedPlaybackMilliseconds, totalTime);
+        }
+
         boundViewModel.UpdatePlaybackTime((long)smoothedPlaybackMilliseconds);
-        boundViewModel.UpdateTotalPlaybackTime(mediaPlayer.Length);
+        boundViewModel.UpdateTotalPlaybackTime(totalTime);
+
+        if (mediaPlayer.State == VLCState.Ended)
+        {
+            CompletePlaybackAtEnd();
+        }
+    }
+
+    private void OnMediaPlayerEndReached(object? sender, EventArgs eventArgs)
+    {
+        Dispatcher.UIThread.Post(CompletePlaybackAtEnd);
+    }
+
+    private void CompletePlaybackAtEnd()
+    {
+        if (boundViewModel is null)
+        {
+            return;
+        }
+
+        var totalTime = Math.Max(0, mediaPlayer.Length);
+        if (totalTime > 0)
+        {
+            smoothedPlaybackMilliseconds = totalTime;
+            hasPlaybackSample = true;
+            lastPlaybackSampleUtc = DateTime.UtcNow;
+            boundViewModel.UpdateTotalPlaybackTime(totalTime);
+            boundViewModel.UpdatePlaybackTime(totalTime);
+        }
+
+        if (boundViewModel.IsPlaying)
+        {
+            boundViewModel.IsPlaying = false;
+        }
     }
 
     private void ResetPlaybackClock()
