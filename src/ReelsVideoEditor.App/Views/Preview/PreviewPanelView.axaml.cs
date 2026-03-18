@@ -128,6 +128,7 @@ public partial class PreviewPanelView : UserControl
         }
 
         mediaPlayer.SetPause(true);
+        FreezePlaybackClockAtCurrentFrame(viewModel);
     }
 
     private void ApplySeekRequest(PreviewViewModel viewModel)
@@ -165,6 +166,7 @@ public partial class PreviewPanelView : UserControl
         if (!viewModel.IsPlaying)
         {
             mediaPlayer.SetPause(true);
+            FreezePlaybackClockAtCurrentFrame(viewModel);
         }
     }
 
@@ -213,7 +215,7 @@ public partial class PreviewPanelView : UserControl
             lastPlaybackSampleUtc = nowUtc;
             hasPlaybackSample = true;
         }
-        else if (mediaPlayer.IsPlaying)
+        else if (boundViewModel.IsPlaying && mediaPlayer.IsPlaying)
         {
             var elapsedMilliseconds = Math.Max(0, (nowUtc - lastPlaybackSampleUtc).TotalMilliseconds);
             var predicted = smoothedPlaybackMilliseconds + elapsedMilliseconds;
@@ -282,6 +284,20 @@ public partial class PreviewPanelView : UserControl
         smoothedPlaybackMilliseconds = 0;
         hasPlaybackSample = false;
         lastPlaybackSampleUtc = DateTime.UtcNow;
+    }
+
+    private void FreezePlaybackClockAtCurrentFrame(PreviewViewModel viewModel)
+    {
+        if (mediaPlayer.Media is null)
+        {
+            return;
+        }
+
+        var rawTime = Math.Max(0, mediaPlayer.Time);
+        smoothedPlaybackMilliseconds = rawTime;
+        hasPlaybackSample = true;
+        lastPlaybackSampleUtc = DateTime.UtcNow;
+        viewModel.UpdatePlaybackTime(rawTime);
     }
 
     private void UpdatePreviewFrameSize()
