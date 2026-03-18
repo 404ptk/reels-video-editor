@@ -16,7 +16,15 @@ public partial class TimelinePanelView : UserControl
     {
         if (DataContext is TimelineViewModel viewModel && sender is ScrollViewer scrollViewer)
         {
-            viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y, scrollViewer.Bounds.Width);
+            if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                viewModel.ChangeLaneHeightFromWheel(eventArgs.Delta.Y);
+            }
+            else
+            {
+                viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y, scrollViewer.Bounds.Width);
+            }
+
             eventArgs.Handled = true;
         }
     }

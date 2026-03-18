@@ -5,14 +5,56 @@
              x:Class="ReelsVideoEditor.App.Views.Timeline.TimelinePanelView"
              x:DataType="vm:TimelineViewModel">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                  VerticalScrollBarVisibility="Disabled"
-                  PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
+    <Grid ColumnDefinitions="96,8,*">
+      <Grid Grid.Column="0"
+            Height="{Binding TimelineCanvasHeight}"
+            RowDefinitions="52,10,Auto,8,Auto"
+            HorizontalAlignment="Stretch">
+          <Border Grid.Row="2"
+                  Height="{Binding LaneContainerHeight}"
+                  Background="{DynamicResource AccentSubtle}"
+                  BorderBrush="{DynamicResource AccentSubtle}"
+                  BorderThickness="1"
+                  CornerRadius="8">
+              <Grid RowDefinitions="18,*">
+                  <TextBlock Grid.Row="0"
+                             Text="VIDEO"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Top"
+                             Foreground="{DynamicResource AccentMuted}"
+                             FontSize="10"
+                             FontWeight="SemiBold" />
+              </Grid>
+          </Border>
+
+          <Border Grid.Row="4"
+                  Height="{Binding LaneContainerHeight}"
+                  Background="{DynamicResource AccentSubtle}"
+                  BorderBrush="{DynamicResource AccentSubtle}"
+                  BorderThickness="1"
+                  CornerRadius="8">
+              <Grid RowDefinitions="18,*">
+                  <TextBlock Grid.Row="0"
+                             Text="AUDIO"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Top"
+                             Foreground="{DynamicResource AccentMuted}"
+                             FontSize="10"
+                             FontWeight="SemiBold" />
+              </Grid>
+          </Border>
+      </Grid>
+
+      <ScrollViewer Grid.Column="2"
+                HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Disabled"
+                PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
         <Grid Width="{Binding TimelineCanvasWidth}"
-                            Height="198"
-              HorizontalAlignment="Left">
-            <Border Height="52"
-                    VerticalAlignment="Top"
+            Height="{Binding TimelineCanvasHeight}"
+            RowDefinitions="52,10,Auto,8,Auto"
+            HorizontalAlignment="Left">
+                        <Border Grid.Row="0"
+                                        Height="52"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -62,9 +104,8 @@
                 </Grid>
             </Border>
 
-            <Border Height="64"
-                    VerticalAlignment="Top"
-                    Margin="0,62,0,0"
+            <Border Grid.Row="2"
+                    Height="{Binding LaneContainerHeight}"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -73,18 +114,11 @@
                     DragDrop.AllowDrop="True"
                     DragDrop.DragOver="TimelineTrack_OnDragOver"
                     DragDrop.Drop="TimelineTrack_OnDrop">
-                <Grid ClipToBounds="True"
-                      RowDefinitions="18,*">
-                    <TextBlock Margin="8,2,0,0"
-                               Text="Video"
-                               FontSize="10"
-                               Foreground="{DynamicResource AccentMuted}"
-                               FontWeight="SemiBold" />
-
-                    <ItemsControl Grid.Row="1"
+                                <Grid ClipToBounds="True">
+                                        <ItemsControl
                                   ItemsSource="{Binding VideoClips}"
                                   Width="{Binding TimelineCanvasWidth}"
-                                  Height="46"
+                                                                    Height="{Binding LaneContainerHeight}"
                                   HorizontalAlignment="Left">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -95,8 +129,8 @@
                             <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
                                 <Border Canvas.Left="{Binding Left}"
                                         Width="{Binding Width}"
-                                        Height="34"
-                                        Margin="10,6,0,6"
+                                        Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
+                                    Margin="10,6,0,6"
                                         CornerRadius="6"
                                         Background="#66C2D8C4"
                                         BorderBrush="{DynamicResource AccentSubtle}"
@@ -114,9 +148,8 @@
                 </Grid>
             </Border>
 
-            <Border Height="64"
-                    VerticalAlignment="Top"
-                    Margin="0,134,0,0"
+            <Border Grid.Row="4"
+                    Height="{Binding LaneContainerHeight}"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -125,18 +158,11 @@
                     DragDrop.AllowDrop="True"
                     DragDrop.DragOver="TimelineTrack_OnDragOver"
                     DragDrop.Drop="TimelineTrack_OnDrop">
-                <Grid ClipToBounds="True"
-                      RowDefinitions="18,*">
-                    <TextBlock Margin="8,2,0,0"
-                               Text="Audio"
-                               FontSize="10"
-                               Foreground="{DynamicResource AccentMuted}"
-                               FontWeight="SemiBold" />
-
-                    <ItemsControl Grid.Row="1"
+                                <Grid ClipToBounds="True">
+                                        <ItemsControl
                                   ItemsSource="{Binding AudioClips}"
                                   Width="{Binding TimelineCanvasWidth}"
-                                  Height="46"
+                                                                    Height="{Binding LaneContainerHeight}"
                                   HorizontalAlignment="Left">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -147,8 +173,8 @@
                             <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
                                 <Border Canvas.Left="{Binding Left}"
                                         Width="{Binding Width}"
-                                        Height="34"
-                                        Margin="10,6,0,6"
+                                        Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
+                                    Margin="10,6,0,6"
                                         CornerRadius="6"
                                         Background="#4D94A6FF"
                                         BorderBrush="{DynamicResource AccentSubtle}"
@@ -176,7 +202,8 @@
             </Border>
 
             <Border Width="2"
-                    Height="198"
+                    Height="{Binding PlayheadHeight}"
+                    Grid.RowSpan="5"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Background="{DynamicResource Accent}"
@@ -186,6 +213,7 @@
                     <TranslateTransform X="{Binding PlayheadVisualLeft}" />
                 </Border.RenderTransform>
             </Border>
-        </Grid>
-    </ScrollViewer>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

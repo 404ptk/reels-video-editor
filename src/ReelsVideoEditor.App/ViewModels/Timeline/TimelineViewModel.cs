@@ -14,6 +14,13 @@ public partial class TimelineViewModel : ViewModelBase
     private static readonly int[] LabelIntervalsInSeconds = [1, 2, 5, 10, 15, 30, 60, 120, 300];
     private const int MinZoom = 25;
     private const int MaxZoom = 300;
+    private const double TickSectionHeight = 52;
+    private const double TrackTopSpacing = 10;
+    private const double TrackGap = 8;
+    private const double LaneHeaderHeight = 18;
+    private const double LaneClipVerticalPadding = 12;
+    private const int MinLaneContentHeight = 30;
+    private const int MaxLaneContentHeight = 140;
     private readonly TimelineClipArrangementService clipArrangementService = new();
 
     [ObservableProperty]
@@ -24,6 +31,9 @@ public partial class TimelineViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isPlaybackActive;
+
+    [ObservableProperty]
+    private int laneContentHeight = 46;
 
     private long lastPlaybackMilliseconds = -1;
     private double playbackMaxSeconds = TimelineDurationSeconds;
@@ -44,6 +54,14 @@ public partial class TimelineViewModel : ViewModelBase
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
     public double TimelineCanvasWidth => TickWidth * TimelineDurationSeconds;
+
+    public double LaneContainerHeight => LaneHeaderHeight + LaneContentHeight;
+
+    public double ClipVisualHeight => Math.Max(18, LaneContainerHeight - LaneClipVerticalPadding);
+
+    public double TimelineCanvasHeight => TickSectionHeight + TrackTopSpacing + LaneContainerHeight + TrackGap + LaneContainerHeight;
+
+    public double PlayheadHeight => TimelineCanvasHeight;
 
     public double PlayheadLeft => Math.Clamp(PlayheadSeconds, 0, TimelineDurationSeconds) * TickWidth;
 
@@ -77,6 +95,14 @@ public partial class TimelineViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(PlayheadLeft));
         OnPropertyChanged(nameof(PlayheadVisualLeft));
+    }
+
+    partial void OnLaneContentHeightChanged(int value)
+    {
+        OnPropertyChanged(nameof(LaneContainerHeight));
+        OnPropertyChanged(nameof(ClipVisualHeight));
+        OnPropertyChanged(nameof(TimelineCanvasHeight));
+        OnPropertyChanged(nameof(PlayheadHeight));
     }
 
     partial void OnIsPlaybackActiveChanged(bool value)
@@ -178,6 +204,22 @@ public partial class TimelineViewModel : ViewModelBase
         if (nextZoom != ZoomPercent)
         {
             ZoomPercent = nextZoom;
+        }
+    }
+
+    public void ChangeLaneHeightFromWheel(double wheelDelta)
+    {
+        if (wheelDelta == 0)
+        {
+            return;
+        }
+
+        var step = wheelDelta > 0 ? 6 : -6;
+        var nextHeight = Math.Clamp(LaneContentHeight + step, MinLaneContentHeight, MaxLaneContentHeight);
+
+        if (nextHeight != LaneContentHeight)
+        {
+            LaneContentHeight = nextHeight;
         }
     }
 
