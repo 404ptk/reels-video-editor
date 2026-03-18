@@ -68,22 +68,29 @@
                 Margin="0,12,0,0"
                 HorizontalAlignment="Center"
                 Spacing="6">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Center"
-                        Spacing="4">
+            <Grid HorizontalAlignment="Center"
+                ColumnDefinitions="74,Auto,74">
                 <TextBlock Text="{Binding CurrentPlaybackTimeText}"
+                       Grid.Column="0"
                            Foreground="{DynamicResource AccentMuted}"
+                       FontFamily="Consolas"
                            FontSize="13"
-                           FontWeight="SemiBold" />
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Right" />
                 <TextBlock Text="/"
+                       Grid.Column="1"
+                       Margin="4,0"
                            Foreground="{DynamicResource AccentSubtle}"
                            FontSize="13"
                            FontWeight="SemiBold" />
                 <TextBlock Text="{Binding TotalPlaybackTimeText}"
+                       Grid.Column="2"
                            Foreground="{DynamicResource AccentMuted}"
+                       FontFamily="Consolas"
                            FontSize="13"
-                           FontWeight="SemiBold" />
-            </StackPanel>
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Left" />
+            </Grid>
 
             <StackPanel Orientation="Horizontal"
                 HorizontalAlignment="Center"
