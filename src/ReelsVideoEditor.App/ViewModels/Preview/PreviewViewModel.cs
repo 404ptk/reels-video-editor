@@ -11,6 +11,10 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<string?>? ResolveVideoPath { get; set; }
 
+    public Action<long>? PlaybackTimeChanged { get; set; }
+
+    public Action<bool>? PlaybackStateChanged { get; set; }
+
     [ObservableProperty]
     private bool isPlaying;
 
@@ -19,6 +23,9 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private int stopRequestVersion;
+
+    [ObservableProperty]
+    private long currentPlaybackMilliseconds;
 
     [ObservableProperty]
     private string currentPlaybackTimeText = ZeroTime;
@@ -68,25 +75,30 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         IsPlaying = false;
         StopRequestVersion++;
+        CurrentPlaybackMilliseconds = 0;
         CurrentPlaybackTimeText = ZeroTime;
     }
 
     partial void OnIsPlayingChanged(bool value)
     {
         OnPropertyChanged(nameof(PlayPauseIconPath));
+        PlaybackStateChanged?.Invoke(value);
     }
 
     partial void OnCurrentVideoPathChanged(string? value)
     {
         OnPropertyChanged(nameof(HasVideoLoaded));
         OnPropertyChanged(nameof(ShowPlaceholder));
+        CurrentPlaybackMilliseconds = 0;
         CurrentPlaybackTimeText = ZeroTime;
         TotalPlaybackTimeText = ZeroTime;
     }
 
     public void UpdatePlaybackTime(long playbackMilliseconds)
     {
-        CurrentPlaybackTimeText = FormatPlaybackTime(playbackMilliseconds);
+        var safeMilliseconds = Math.Max(0, playbackMilliseconds);
+        CurrentPlaybackMilliseconds = safeMilliseconds;
+        CurrentPlaybackTimeText = FormatPlaybackTime(safeMilliseconds);
     }
 
     public void UpdateTotalPlaybackTime(long totalPlaybackMilliseconds)
@@ -108,5 +120,10 @@ public sealed partial class PreviewViewModel : ViewModelBase
         var centiseconds = totalCentiseconds % 100;
 
         return $"{minutes:D2}:{seconds:D2}:{centiseconds:D2}";
+    }
+
+    partial void OnCurrentPlaybackMillisecondsChanged(long value)
+    {
+        PlaybackTimeChanged?.Invoke(value);
     }
 }

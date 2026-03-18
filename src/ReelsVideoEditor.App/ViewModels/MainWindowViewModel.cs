@@ -16,7 +16,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         Preview = new PreviewViewModel
         {
-            ResolveVideoPath = () => Timeline.ResolvePreviewClipPath()
+            ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),
+            PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
+            PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
         };
     }
 }

@@ -70,8 +70,11 @@
                     DragDrop.AllowDrop="True"
                     DragDrop.DragOver="TimelineTrack_OnDragOver"
                     DragDrop.Drop="TimelineTrack_OnDrop">
-                <Grid>
-                    <ItemsControl ItemsSource="{Binding Clips}">
+                <Grid ClipToBounds="True">
+                    <ItemsControl ItemsSource="{Binding Clips}"
+                                  Width="{Binding TimelineCanvasWidth}"
+                                  Height="72"
+                                  HorizontalAlignment="Left">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <Canvas />
@@ -97,6 +100,17 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <Border Width="2"
+                            Height="72"
+                            HorizontalAlignment="Left"
+                            Background="{DynamicResource Accent}"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding IsPlayheadVisible}">
+                        <Border.RenderTransform>
+                            <TranslateTransform X="{Binding PlayheadVisualLeft}" />
+                        </Border.RenderTransform>
+                    </Border>
                 </Grid>
             </Border>
         </StackPanel>
