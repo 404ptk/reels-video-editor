@@ -20,6 +20,12 @@ public partial class MainWindow : Window
             return;
         }
 
+        var focusedElement = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+        if (focusedElement is Button)
+        {
+            return;
+        }
+
         if (DataContext is not MainWindowViewModel viewModel)
         {
             return;
