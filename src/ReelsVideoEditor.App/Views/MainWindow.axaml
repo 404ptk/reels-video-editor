@@ -42,7 +42,7 @@
                 BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="1"
                 Padding="12">
-            <Grid ColumnDefinitions="*,12,360">
+            <Grid ColumnDefinitions="*,12,1.15*">
                 <Border Grid.Column="0"
                         CornerRadius="10"
                         Background="{StaticResource BaseBg}"
@@ -53,7 +53,7 @@
                 </Border>
 
                 <Border Grid.Column="2"
-                        CornerRadius="10"
+                    MinWidth="300"
                         Background="{StaticResource BaseBg}"
                         BorderBrush="{StaticResource AccentSubtle}"
                         BorderThickness="1"
