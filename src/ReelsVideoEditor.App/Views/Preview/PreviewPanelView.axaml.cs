@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Threading;
 using LibVLCSharp.Shared;
 using ReelsVideoEditor.App.ViewModels.Preview;
 
@@ -14,11 +15,15 @@ public partial class PreviewPanelView : UserControl
 
     private readonly LibVLC libVlc;
     private readonly MediaPlayer mediaPlayer;
+    private readonly DispatcherTimer playbackTimeTimer;
     private readonly Border? previewFrame;
     private readonly Control? previewViewport;
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
     private int handledStopRequestVersion;
+    private double smoothedPlaybackMilliseconds;
+    private DateTime lastPlaybackSampleUtc;
+    private bool hasPlaybackSample;
 
     public PreviewPanelView()
     {
@@ -27,6 +32,13 @@ public partial class PreviewPanelView : UserControl
         Core.Initialize();
         libVlc = new LibVLC();
         mediaPlayer = new MediaPlayer(libVlc);
+
+        playbackTimeTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(30)
+        };
+        playbackTimeTimer.Tick += OnPlaybackTimeTimerTick;
+        playbackTimeTimer.Start();
 
         previewFrame = this.FindControl<Border>("PreviewFrame");
         previewViewport = this.FindControl<Control>("PreviewViewport");
@@ -98,6 +110,8 @@ public partial class PreviewPanelView : UserControl
         {
             handledStopRequestVersion = viewModel.StopRequestVersion;
             mediaPlayer.Stop();
+            ResetPlaybackClock();
+            viewModel.UpdatePlaybackTime(0);
             return;
         }
 
@@ -109,6 +123,8 @@ public partial class PreviewPanelView : UserControl
         mediaPlayer.Stop();
         mediaPlayer.Media = new Media(libVlc, path, FromType.FromPath);
         loadedPath = path;
+        ResetPlaybackClock();
+        boundViewModel?.UpdatePlaybackTime(0);
     }
 
     private void DisposePlayer()
@@ -118,8 +134,64 @@ public partial class PreviewPanelView : UserControl
             boundViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         }
 
+        playbackTimeTimer.Stop();
+        playbackTimeTimer.Tick -= OnPlaybackTimeTimerTick;
         mediaPlayer.Dispose();
         libVlc.Dispose();
+    }
+
+    private void OnPlaybackTimeTimerTick(object? sender, EventArgs eventArgs)
+    {
+        if (boundViewModel is null)
+        {
+            return;
+        }
+
+        if (mediaPlayer.Media is null)
+        {
+            return;
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var rawTime = Math.Max(0, mediaPlayer.Time);
+
+        if (!hasPlaybackSample)
+        {
+            smoothedPlaybackMilliseconds = rawTime;
+            lastPlaybackSampleUtc = nowUtc;
+            hasPlaybackSample = true;
+        }
+        else if (mediaPlayer.IsPlaying)
+        {
+            var elapsedMilliseconds = Math.Max(0, (nowUtc - lastPlaybackSampleUtc).TotalMilliseconds);
+            var predicted = smoothedPlaybackMilliseconds + elapsedMilliseconds;
+
+            if (rawTime > predicted + 180 || rawTime < predicted - 260)
+            {
+                smoothedPlaybackMilliseconds = rawTime;
+            }
+            else
+            {
+                smoothedPlaybackMilliseconds = Math.Max(predicted, rawTime);
+            }
+
+            lastPlaybackSampleUtc = nowUtc;
+        }
+        else
+        {
+            smoothedPlaybackMilliseconds = rawTime;
+            lastPlaybackSampleUtc = nowUtc;
+        }
+
+        boundViewModel.UpdatePlaybackTime((long)smoothedPlaybackMilliseconds);
+        boundViewModel.UpdateTotalPlaybackTime(mediaPlayer.Length);
+    }
+
+    private void ResetPlaybackClock()
+    {
+        smoothedPlaybackMilliseconds = 0;
+        hasPlaybackSample = false;
+        lastPlaybackSampleUtc = DateTime.UtcNow;
     }
 
     private void UpdatePreviewFrameSize()

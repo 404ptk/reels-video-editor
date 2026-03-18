@@ -7,6 +7,8 @@ namespace ReelsVideoEditor.App.ViewModels.Preview;
 
 public sealed partial class PreviewViewModel : ViewModelBase
 {
+    private const string ZeroTime = "00:00:00";
+
     public Func<string?>? ResolveVideoPath { get; set; }
 
     [ObservableProperty]
@@ -17,6 +19,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private int stopRequestVersion;
+
+    [ObservableProperty]
+    private string currentPlaybackTimeText = ZeroTime;
+
+    [ObservableProperty]
+    private string totalPlaybackTimeText = ZeroTime;
 
     public string Title { get; } = "Preview";
 
@@ -60,6 +68,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         IsPlaying = false;
         StopRequestVersion++;
+        CurrentPlaybackTimeText = ZeroTime;
     }
 
     partial void OnIsPlayingChanged(bool value)
@@ -71,5 +80,33 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasVideoLoaded));
         OnPropertyChanged(nameof(ShowPlaceholder));
+        CurrentPlaybackTimeText = ZeroTime;
+        TotalPlaybackTimeText = ZeroTime;
+    }
+
+    public void UpdatePlaybackTime(long playbackMilliseconds)
+    {
+        CurrentPlaybackTimeText = FormatPlaybackTime(playbackMilliseconds);
+    }
+
+    public void UpdateTotalPlaybackTime(long totalPlaybackMilliseconds)
+    {
+        if (totalPlaybackMilliseconds <= 0)
+        {
+            return;
+        }
+
+        TotalPlaybackTimeText = FormatPlaybackTime(totalPlaybackMilliseconds);
+    }
+
+    private static string FormatPlaybackTime(long playbackMilliseconds)
+    {
+        var safeMilliseconds = Math.Max(0, playbackMilliseconds);
+        var totalCentiseconds = safeMilliseconds / 10;
+        var minutes = totalCentiseconds / 6000;
+        var seconds = (totalCentiseconds / 100) % 60;
+        var centiseconds = totalCentiseconds % 100;
+
+        return $"{minutes:D2}:{seconds:D2}:{centiseconds:D2}";
     }
 }
