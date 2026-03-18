@@ -6,6 +6,7 @@
         xmlns:videoFilesViews="using:ReelsVideoEditor.App.Views.VideoFiles"
         xmlns:effectsViews="using:ReelsVideoEditor.App.Views.Effects"
         xmlns:watermarksViews="using:ReelsVideoEditor.App.Views.Watermarks"
+    xmlns:exportViews="using:ReelsVideoEditor.App.Views.Export"
         xmlns:timelineViews="using:ReelsVideoEditor.App.Views.Timeline"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -30,131 +31,189 @@
     </Design.DataContext>
 
     <Grid Background="{StaticResource BaseBg}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="3*" MinHeight="140" />
-            <RowDefinition Height="8" />
-            <RowDefinition Height="2*" MinHeight="140" />
-        </Grid.RowDefinitions>
+        <Grid IsVisible="{Binding IsEditorLayoutVisible}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="3*" MinHeight="140" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="2*" MinHeight="140" />
+            </Grid.RowDefinitions>
 
-        <Border Grid.Row="0"
-                Margin="16,16,16,8"
+            <Border Grid.Row="0"
+                    Margin="16,16,16,8"
+                    CornerRadius="16"
+                    Background="{StaticResource BaseBgSoft}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Padding="12">
+                <Grid ColumnDefinitions="92,12,*,12,1.15*">
+                    <Border Grid.Column="0"
+                            CornerRadius="10"
+                            Background="{StaticResource BaseBg}"
+                            BorderBrush="{StaticResource AccentSubtle}"
+                            BorderThickness="1"
+                            Padding="8">
+                        <StackPanel Spacing="8"
+                                    VerticalAlignment="Stretch">
+                            <Button Height="56"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                                    BorderBrush="{StaticResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Command="{Binding ShowExplorerCommand}">
+                                <Path Data="M2,3 L14,3 L14,13 L2,13 Z M3,4 L13,4 L13,12 L3,12 Z M5,6 L7,6 L7,10 L5,10 Z M9,6 L11,6 L11,10 L9,10 Z"
+                                      Width="20"
+                                      Height="20"
+                                      Stretch="Uniform"
+                                      Fill="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Button>
+
+                            <Button Height="56"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                                    BorderBrush="{StaticResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Command="{Binding ShowEffectsCommand}">
+                                <Path Data="M8,2 L10,2 L10,6 L14,6 L14,8 L10,8 L10,12 L8,12 L8,8 L4,8 L4,6 L8,6 Z"
+                                      Width="20"
+                                      Height="20"
+                                      Stretch="Uniform"
+                                      Fill="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Button>
+
+                            <Button Height="56"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                                    BorderBrush="{StaticResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Command="{Binding ShowWatermarksCommand}">
+                                <Path Data="M3,4 L13,4 L13,6 L3,6 Z M4,8 L6,8 L6,11 L4,11 Z M7,8 L9,8 L9,11 L7,11 Z M10,8 L12,8 L12,11 L10,11 Z"
+                                      Width="20"
+                                      Height="20"
+                                      Stretch="Uniform"
+                                      Fill="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Button>
+
+                            <Button Height="56"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{Binding IsExportSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                                    BorderBrush="{StaticResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Command="{Binding ShowExportCommand}">
+                                <Path Data="M8,2 L12,6 L12,4 L14,4 L14,10 L12,10 L12,8 L8,12 L3,7 L8,2 Z"
+                                      Width="20"
+                                      Height="20"
+                                      Stretch="Uniform"
+                                      Fill="{Binding IsExportSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2"
+                            CornerRadius="10"
+                            Background="{StaticResource BaseBg}"
+                            BorderBrush="{StaticResource AccentSubtle}"
+                            BorderThickness="1"
+                            Padding="12">
+                        <Grid>
+                            <Border IsVisible="{Binding IsExplorerSection}"
+                                    CornerRadius="8"
+                                    Background="{StaticResource BaseBg}">
+                                <videoFilesViews:VideoFilesPanelView DataContext="{Binding VideoFiles}" />
+                            </Border>
+
+                            <Border IsVisible="{Binding IsEffectsSection}"
+                                    CornerRadius="8"
+                                    Background="{StaticResource BaseBg}">
+                                <effectsViews:EffectsPanelView DataContext="{Binding Effects}" />
+                            </Border>
+
+                            <Border IsVisible="{Binding IsWatermarksSection}"
+                                    CornerRadius="8"
+                                    Background="{StaticResource BaseBg}">
+                                <watermarksViews:WatermarksPanelView DataContext="{Binding Watermarks}" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="4"
+                            MinWidth="300"
+                            Background="{StaticResource BaseBg}"
+                            BorderBrush="{StaticResource AccentSubtle}"
+                            BorderThickness="1"
+                            Padding="12">
+                        <previewViews:PreviewPanelView DataContext="{Binding Preview}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <GridSplitter Grid.Row="1"
+                          Margin="16,0"
+                          Height="8"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Center"
+                          ResizeDirection="Rows"
+                          ResizeBehavior="PreviousAndNext"
+                          ShowsPreview="True"
+                          Background="{StaticResource AccentSubtle}" />
+
+            <Border Grid.Row="2"
+                    Margin="16,8,16,16"
+                    Padding="14"
+                    CornerRadius="16"
+                    Background="{StaticResource BaseBgSoft}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1">
+                <timelineViews:TimelinePanelView DataContext="{Binding Timeline}" />
+            </Border>
+        </Grid>
+
+        <Border IsVisible="{Binding IsExportSection}"
+                Margin="16"
+                Padding="16"
                 CornerRadius="16"
                 Background="{StaticResource BaseBgSoft}"
                 BorderBrush="{StaticResource AccentSubtle}"
-                BorderThickness="1"
-                Padding="12">
-            <Grid ColumnDefinitions="92,12,*,12,1.15*">
-            <Border Grid.Column="0"
-                CornerRadius="10"
-                Background="{StaticResource BaseBg}"
-                BorderBrush="{StaticResource AccentSubtle}"
-                BorderThickness="1"
-                Padding="8">
-                <StackPanel Spacing="8"
-                    VerticalAlignment="Stretch">
-                <Button Height="56"
-                    HorizontalAlignment="Stretch"
-                    Background="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionBgConverter}}"
-                    BorderBrush="{StaticResource AccentSubtle}"
-                    BorderThickness="1"
-                    Command="{Binding ShowExplorerCommand}">
-                    <Path Data="M2,3 L14,3 L14,13 L2,13 Z M3,4 L13,4 L13,12 L3,12 Z M5,6 L7,6 L7,10 L5,10 Z M9,6 L11,6 L11,10 L9,10 Z"
-                          Width="20"
-                          Height="20"
-                          Stretch="Uniform"
-                          Fill="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionFgConverter}}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
-                </Button>
+                BorderThickness="1">
+            <Grid RowDefinitions="Auto,*">
+                <DockPanel LastChildFill="False"
+                           Margin="0,0,0,12">
+                    <TextBlock Text="Export"
+                               Foreground="{StaticResource Accent}"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               DockPanel.Dock="Left" />
 
-                <Button Height="56"
-                    HorizontalAlignment="Stretch"
-                    Background="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionBgConverter}}"
-                    BorderBrush="{StaticResource AccentSubtle}"
-                    BorderThickness="1"
-                    Command="{Binding ShowEffectsCommand}">
-                    <Path Data="M8,2 L10,2 L10,6 L14,6 L14,8 L10,8 L10,12 L8,12 L8,8 L4,8 L4,6 L8,6 Z"
-                          Width="20"
-                          Height="20"
-                          Stretch="Uniform"
-                          Fill="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionFgConverter}}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
-                </Button>
+                    <Button Content="Back"
+                            Width="120"
+                            Height="36"
+                            HorizontalAlignment="Right"
+                            Command="{Binding ShowExplorerCommand}"
+                            Background="{StaticResource AccentSubtle}"
+                            BorderBrush="{StaticResource AccentSubtle}"
+                            BorderThickness="1"
+                            Foreground="{StaticResource Accent}"
+                            FontWeight="SemiBold"
+                            DockPanel.Dock="Right" />
+                </DockPanel>
 
-                <Button Height="56"
-                    HorizontalAlignment="Stretch"
-                    Background="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionBgConverter}}"
-                    BorderBrush="{StaticResource AccentSubtle}"
-                    BorderThickness="1"
-                    Command="{Binding ShowWatermarksCommand}">
-                    <Path Data="M3,4 L13,4 L13,6 L3,6 Z M4,8 L6,8 L6,11 L4,11 Z M7,8 L9,8 L9,11 L7,11 Z M10,8 L12,8 L12,11 L10,11 Z"
-                          Width="20"
-                          Height="20"
-                          Stretch="Uniform"
-                          Fill="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionFgConverter}}"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center" />
-                </Button>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="2"
+                <Border Grid.Row="1"
                         CornerRadius="10"
                         Background="{StaticResource BaseBg}"
                         BorderBrush="{StaticResource AccentSubtle}"
                         BorderThickness="1"
                         Padding="12">
-                    <Grid>
-                        <Border IsVisible="{Binding IsExplorerSection}"
-                                CornerRadius="8"
-                                Background="{StaticResource BaseBg}">
-                            <videoFilesViews:VideoFilesPanelView DataContext="{Binding VideoFiles}" />
-                        </Border>
-
-                        <Border IsVisible="{Binding IsEffectsSection}"
-                                CornerRadius="8"
-                                Background="{StaticResource BaseBg}">
-                            <effectsViews:EffectsPanelView DataContext="{Binding Effects}" />
-                        </Border>
-
-                        <Border IsVisible="{Binding IsWatermarksSection}"
-                                CornerRadius="8"
-                                Background="{StaticResource BaseBg}">
-                            <watermarksViews:WatermarksPanelView DataContext="{Binding Watermarks}" />
-                        </Border>
-                    </Grid>
-                </Border>
-
-            <Border Grid.Column="4"
-                    MinWidth="300"
-                        Background="{StaticResource BaseBg}"
-                        BorderBrush="{StaticResource AccentSubtle}"
-                        BorderThickness="1"
-                        Padding="12">
-                    <previewViews:PreviewPanelView DataContext="{Binding Preview}" />
+                    <exportViews:ExportPanelView DataContext="{Binding Export}" />
                 </Border>
             </Grid>
-        </Border>
-
-        <GridSplitter Grid.Row="1"
-                      Margin="16,0"
-                      Height="8"
-                      HorizontalAlignment="Stretch"
-                      VerticalAlignment="Center"
-                      ResizeDirection="Rows"
-                      ResizeBehavior="PreviousAndNext"
-                      ShowsPreview="True"
-                      Background="{StaticResource AccentSubtle}" />
-
-        <Border Grid.Row="2"
-                Margin="16,8,16,16"
-                Padding="14"
-                CornerRadius="16"
-                Background="{StaticResource BaseBgSoft}"
-                BorderBrush="{StaticResource AccentSubtle}"
-                BorderThickness="1">
-            <timelineViews:TimelinePanelView DataContext="{Binding Timeline}" />
         </Border>
     </Grid>
 

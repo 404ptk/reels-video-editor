@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Export"
+        xmlns:exportViews="using:ReelsVideoEditor.App.Views.Export"
+        x:Class="ReelsVideoEditor.App.Views.Export.ExportWindow"
+        x:DataType="vm:ExportViewModel"
+        Title="Export Video"
+        Width="900"
+        Height="600"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="BaseBg" Color="#222222" />
+        <SolidColorBrush x:Key="BaseBgSoft" Color="#DD222222" />
+        <SolidColorBrush x:Key="Accent" Color="#C2D8C4" />
+        <SolidColorBrush x:Key="AccentMuted" Color="#99C2D8C4" />
+        <SolidColorBrush x:Key="AccentSubtle" Color="#33C2D8C4" />
+    </Window.Resources>
+
+    <Grid Background="{StaticResource BaseBg}"
+          RowDefinitions="*,Auto">
+        <Border Grid.Row="0"
+                Margin="16"
+                Padding="16"
+                CornerRadius="12"
+                Background="{StaticResource BaseBgSoft}"
+                BorderBrush="{StaticResource AccentSubtle}"
+                BorderThickness="1">
+            <exportViews:ExportPanelView DataContext="{Binding .}" />
+        </Border>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="12"
+                    Margin="16">
+            <Button Width="120"
+                    Height="40"
+                    Background="{StaticResource AccentSubtle}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Foreground="{StaticResource Accent}"
+                    FontWeight="SemiBold"
+                    Content="Back"
+                    Click="OnBackButtonClicked" />
+        </StackPanel>
+    </Grid>
+
+</Window>

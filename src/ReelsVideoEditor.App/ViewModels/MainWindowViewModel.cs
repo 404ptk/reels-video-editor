@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ReelsVideoEditor.App.ViewModels.Effects;
+using ReelsVideoEditor.App.ViewModels.Export;
 using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.VideoFiles;
@@ -24,11 +25,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public WatermarksViewModel Watermarks { get; } = new();
 
+    public ExportViewModel Export { get; } = new();
+
+
     public bool IsExplorerSection => SelectedSection == SidebarSection.Explorer;
 
     public bool IsEffectsSection => SelectedSection == SidebarSection.Effects;
 
     public bool IsWatermarksSection => SelectedSection == SidebarSection.Watermarks;
+
+    public bool IsExportSection => SelectedSection == SidebarSection.Export;
+
+    public bool IsEditorLayoutVisible => !IsExportSection;
+
 
     public MainWindowViewModel()
     {
@@ -64,11 +73,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedSection = SidebarSection.Watermarks;
     }
 
+    [RelayCommand]
+    private void ShowExport()
+    {
+        SelectedSection = SidebarSection.Export;
+    }
+
     partial void OnSelectedSectionChanged(SidebarSection value)
     {
         OnPropertyChanged(nameof(IsExplorerSection));
         OnPropertyChanged(nameof(IsEffectsSection));
         OnPropertyChanged(nameof(IsWatermarksSection));
+        OnPropertyChanged(nameof(IsExportSection));
+        OnPropertyChanged(nameof(IsEditorLayoutVisible));
     }
 }
 
@@ -76,5 +93,6 @@ public enum SidebarSection
 {
     Explorer,
     Effects,
-    Watermarks
+    Watermarks,
+    Export,
 }
