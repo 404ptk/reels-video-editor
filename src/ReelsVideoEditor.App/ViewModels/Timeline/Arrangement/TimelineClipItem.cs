@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Media.Imaging;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
@@ -17,6 +18,9 @@ public sealed partial class TimelineClipItem : ObservableObject
 
     [ObservableProperty]
     private double width;
+
+    [ObservableProperty]
+    private Bitmap? waveformImage;
 
     public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds)
     {

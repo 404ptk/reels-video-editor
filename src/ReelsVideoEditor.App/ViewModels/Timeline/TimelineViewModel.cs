@@ -3,6 +3,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -22,6 +24,7 @@ public partial class TimelineViewModel : ViewModelBase
     private const int MinLaneContentHeight = 30;
     private const int MaxLaneContentHeight = 140;
     private readonly TimelineClipArrangementService clipArrangementService = new();
+    private readonly TimelineWaveformRenderService waveformRenderService = new();
 
     [ObservableProperty]
     private int zoomPercent = 100;
@@ -120,6 +123,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         var linkedAudio = clipArrangementService.BuildLinkedAudioClip(clip);
         AudioClips.Add(linkedAudio);
+        _ = LoadAudioWaveformAsync(linkedAudio);
 
         if (VideoClips.Count == 1)
         {
@@ -307,8 +311,21 @@ public partial class TimelineViewModel : ViewModelBase
 
         foreach (var videoClip in VideoClips)
         {
-            AudioClips.Add(clipArrangementService.BuildLinkedAudioClip(videoClip));
+            var audioClip = clipArrangementService.BuildLinkedAudioClip(videoClip);
+            AudioClips.Add(audioClip);
+            _ = LoadAudioWaveformAsync(audioClip);
         }
+    }
+
+    private async Task LoadAudioWaveformAsync(TimelineClipItem audioClip)
+    {
+        var waveform = await waveformRenderService.TryRenderWaveformAsync(audioClip.Path);
+        if (waveform is null)
+        {
+            return;
+        }
+
+        await Dispatcher.UIThread.InvokeAsync(() => audioClip.WaveformImage = waveform);
     }
 
     private double ResolvePreviewClipStartSeconds()
