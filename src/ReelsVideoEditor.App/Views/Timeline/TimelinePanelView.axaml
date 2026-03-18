@@ -9,7 +9,7 @@
                   VerticalScrollBarVisibility="Disabled"
                   PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
         <Grid Width="{Binding TimelineCanvasWidth}"
-              Height="134"
+                            Height="198"
               HorizontalAlignment="Left">
             <Border Height="52"
                     VerticalAlignment="Top"
@@ -62,8 +62,9 @@
                 </Grid>
             </Border>
 
-            <Border Height="72"
-                    VerticalAlignment="Bottom"
+            <Border Height="64"
+                    VerticalAlignment="Top"
+                    Margin="0,62,0,0"
                     Background="{DynamicResource BaseBg}"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -72,10 +73,18 @@
                     DragDrop.AllowDrop="True"
                     DragDrop.DragOver="TimelineTrack_OnDragOver"
                     DragDrop.Drop="TimelineTrack_OnDrop">
-                <Grid ClipToBounds="True">
-                    <ItemsControl ItemsSource="{Binding Clips}"
+                <Grid ClipToBounds="True"
+                      RowDefinitions="18,*">
+                    <TextBlock Margin="8,2,0,0"
+                               Text="Video"
+                               FontSize="10"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontWeight="SemiBold" />
+
+                    <ItemsControl Grid.Row="1"
+                                  ItemsSource="{Binding VideoClips}"
                                   Width="{Binding TimelineCanvasWidth}"
-                                  Height="72"
+                                  Height="46"
                                   HorizontalAlignment="Left">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -86,8 +95,8 @@
                             <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
                                 <Border Canvas.Left="{Binding Left}"
                                         Width="{Binding Width}"
-                                        Height="52"
-                                        Margin="10,10,0,10"
+                                        Height="34"
+                                        Margin="10,6,0,6"
                                         CornerRadius="6"
                                         Background="#66C2D8C4"
                                         BorderBrush="{DynamicResource AccentSubtle}"
@@ -105,8 +114,69 @@
                 </Grid>
             </Border>
 
+            <Border Height="64"
+                    VerticalAlignment="Top"
+                    Margin="0,134,0,0"
+                    Background="{DynamicResource BaseBg}"
+                    BorderBrush="{DynamicResource AccentSubtle}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    PointerPressed="TimelineSeekSurface_OnPointerPressed"
+                    DragDrop.AllowDrop="True"
+                    DragDrop.DragOver="TimelineTrack_OnDragOver"
+                    DragDrop.Drop="TimelineTrack_OnDrop">
+                <Grid ClipToBounds="True"
+                      RowDefinitions="18,*">
+                    <TextBlock Margin="8,2,0,0"
+                               Text="Audio"
+                               FontSize="10"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontWeight="SemiBold" />
+
+                    <ItemsControl Grid.Row="1"
+                                  ItemsSource="{Binding AudioClips}"
+                                  Width="{Binding TimelineCanvasWidth}"
+                                  Height="46"
+                                  HorizontalAlignment="Left">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Canvas />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
+                                <Border Canvas.Left="{Binding Left}"
+                                        Width="{Binding Width}"
+                                        Height="34"
+                                        Margin="10,6,0,6"
+                                        CornerRadius="6"
+                                        Background="#4D94A6FF"
+                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                        BorderThickness="1">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <TextBlock Margin="8,0,6,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="#222222"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Text="♪" />
+                                        <TextBlock Grid.Column="1"
+                                                   Margin="0,0,8,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="#222222"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
             <Border Width="2"
-                    Height="134"
+                    Height="198"
                     HorizontalAlignment="Left"
                     VerticalAlignment="Top"
                     Background="{DynamicResource Accent}"

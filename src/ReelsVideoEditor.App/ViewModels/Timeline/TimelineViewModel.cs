@@ -35,7 +35,11 @@ public partial class TimelineViewModel : ViewModelBase
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
 
-    public ObservableCollection<TimelineClipItem> Clips { get; } = [];
+    public ObservableCollection<TimelineClipItem> VideoClips { get; } = [];
+
+    public ObservableCollection<TimelineClipItem> AudioClips { get; } = [];
+
+    public ObservableCollection<TimelineClipItem> Clips => VideoClips;
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
 
@@ -45,7 +49,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public double PlayheadVisualLeft => 10 + PlayheadLeft;
 
-    public bool HasClips => Clips.Count > 0;
+    public bool HasClips => VideoClips.Count > 0;
 
     public bool IsPlayheadVisible => true;
 
@@ -53,7 +57,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public TimelineViewModel()
     {
-        Clips.CollectionChanged += OnClipsChanged;
+        VideoClips.CollectionChanged += OnVideoClipsChanged;
         BuildMinorTicks();
         RebuildMajorTicks();
     }
@@ -65,7 +69,8 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(PlayheadLeft));
         OnPropertyChanged(nameof(PlayheadVisualLeft));
         RebuildMajorTicks();
-        clipArrangementService.RebuildLayouts(Clips, TickWidth);
+        clipArrangementService.RebuildLayouts(VideoClips, TickWidth);
+        clipArrangementService.RebuildLayouts(AudioClips, TickWidth);
     }
 
     partial void OnPlayheadSecondsChanged(double value)
@@ -85,9 +90,12 @@ public partial class TimelineViewModel : ViewModelBase
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX)
     {
         var clip = clipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
-        Clips.Add(clip);
+        VideoClips.Add(clip);
 
-        if (Clips.Count == 1)
+        var linkedAudio = clipArrangementService.BuildLinkedAudioClip(clip);
+        AudioClips.Add(linkedAudio);
+
+        if (VideoClips.Count == 1)
         {
             PlayheadSeconds = clip.StartSeconds;
         }
@@ -95,7 +103,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public string? ResolvePreviewClipPath()
     {
-        return Clips.FirstOrDefault()?.Path;
+        return VideoClips.FirstOrDefault()?.Path;
     }
 
     public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
@@ -229,12 +237,13 @@ public partial class TimelineViewModel : ViewModelBase
         return LabelIntervalsInSeconds[^1];
     }
 
-    private void OnClipsChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
+    private void OnVideoClipsChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
     {
         OnPropertyChanged(nameof(HasClips));
 
-        if (Clips.Count == 0)
+        if (VideoClips.Count == 0)
         {
+            AudioClips.Clear();
             PlayheadSeconds = 0;
             hasPlaybackSession = false;
             return;
@@ -245,17 +254,29 @@ public partial class TimelineViewModel : ViewModelBase
             return;
         }
 
+        RebuildAudioFromVideo();
+
         PlayheadSeconds = ResolvePreviewClipStartSeconds();
+    }
+
+    private void RebuildAudioFromVideo()
+    {
+        AudioClips.Clear();
+
+        foreach (var videoClip in VideoClips)
+        {
+            AudioClips.Add(clipArrangementService.BuildLinkedAudioClip(videoClip));
+        }
     }
 
     private double ResolvePreviewClipStartSeconds()
     {
-        return Clips.FirstOrDefault()?.StartSeconds ?? 0;
+        return VideoClips.FirstOrDefault()?.StartSeconds ?? 0;
     }
 
     private TimelineClipItem? ResolvePreviewClip()
     {
-        return Clips.FirstOrDefault();
+        return VideoClips.FirstOrDefault();
     }
 
 }

@@ -31,6 +31,19 @@ public sealed class TimelineClipArrangementService
         }
     }
 
+    public TimelineClipItem BuildLinkedAudioClip(TimelineClipItem sourceVideoClip)
+    {
+        var audioClip = new TimelineClipItem(
+            sourceVideoClip.Name,
+            sourceVideoClip.Path,
+            sourceVideoClip.StartSeconds,
+            sourceVideoClip.DurationSeconds);
+
+        audioClip.Left = sourceVideoClip.Left;
+        audioClip.Width = sourceVideoClip.Width;
+        return audioClip;
+    }
+
     private static void ApplyLayout(TimelineClipItem clip, double tickWidth)
     {
         clip.Left = clip.StartSeconds * tickWidth;
