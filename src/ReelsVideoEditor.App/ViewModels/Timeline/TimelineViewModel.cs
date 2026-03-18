@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
@@ -25,6 +26,8 @@ public partial class TimelineViewModel : ViewModelBase
     private const int MaxLaneContentHeight = 140;
     private readonly TimelineClipArrangementService clipArrangementService = new();
     private readonly TimelineWaveformRenderService waveformRenderService = new();
+    
+    private readonly Stack<Action> undoStack = new();
 
     [ObservableProperty]
     private int zoomPercent = 100;
@@ -131,6 +134,11 @@ public partial class TimelineViewModel : ViewModelBase
         {
             PlayheadSeconds = clip.StartSeconds;
         }
+
+        undoStack.Push(() =>
+        {
+            VideoClips.Remove(clip);
+        });
     }
 
     public string? ResolvePreviewClipPath()
@@ -365,9 +373,35 @@ public partial class TimelineViewModel : ViewModelBase
             .Where(c => c.IsSelected || audioToRemoveNames.Contains(c.Name))
             .ToList();
 
+        if (combinedToRemove.Count == 0) return;
+
+        var removedClips = combinedToRemove.ToList();
+
+        undoStack.Push(() =>
+        {
+            foreach (var clip in removedClips)
+            {
+                clip.IsSelected = false;
+                VideoClips.Add(clip);
+                
+                var linkedAudio = clipArrangementService.BuildLinkedAudioClip(clip);
+                AudioClips.Add(linkedAudio);
+                _ = LoadAudioWaveformAsync(linkedAudio);
+            }
+        });
+
         foreach (var clip in combinedToRemove)
         {
             VideoClips.Remove(clip);
+        }
+    }
+
+    public void Undo()
+    {
+        if (undoStack.Count > 0)
+        {
+            var action = undoStack.Pop();
+            action();
         }
     }
 

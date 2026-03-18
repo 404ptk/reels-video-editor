@@ -22,9 +22,16 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelinePanelView_OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Delete && DataContext is TimelineViewModel viewModel)
+        if (DataContext is not TimelineViewModel viewModel) return;
+
+        if (e.Key == Key.Delete)
         {
             viewModel.DeleteSelectedClips();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            viewModel.Undo();
             e.Handled = true;
         }
     }
