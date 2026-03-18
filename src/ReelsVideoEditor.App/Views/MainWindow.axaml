@@ -24,10 +24,6 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Window.KeyBindings>
-        <KeyBinding Gesture="Space" Command="{Binding Preview.TogglePlayPauseCommand}" />
-    </Window.KeyBindings>
-
     <Grid Background="{StaticResource BaseBg}">
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" MinHeight="140" />
