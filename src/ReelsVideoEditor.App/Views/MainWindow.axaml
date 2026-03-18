@@ -1,8 +1,11 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ReelsVideoEditor.App.ViewModels"
+        xmlns:local="using:ReelsVideoEditor.App.Views"
         xmlns:previewViews="using:ReelsVideoEditor.App.Views.Preview"
         xmlns:videoFilesViews="using:ReelsVideoEditor.App.Views.VideoFiles"
+        xmlns:effectsViews="using:ReelsVideoEditor.App.Views.Effects"
+        xmlns:watermarksViews="using:ReelsVideoEditor.App.Views.Watermarks"
         xmlns:timelineViews="using:ReelsVideoEditor.App.Views.Timeline"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -18,6 +21,8 @@
         <SolidColorBrush x:Key="Accent" Color="#C2D8C4" />
         <SolidColorBrush x:Key="AccentMuted" Color="#99C2D8C4" />
         <SolidColorBrush x:Key="AccentSubtle" Color="#33C2D8C4" />
+        <local:BoolToBackgroundConverter x:Key="ActiveSectionBgConverter" />
+        <local:BoolToForegroundConverter x:Key="ActiveSectionFgConverter" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -38,17 +43,90 @@
                 BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="1"
                 Padding="12">
-            <Grid ColumnDefinitions="*,12,1.15*">
-                <Border Grid.Column="0"
+            <Grid ColumnDefinitions="92,12,*,12,1.15*">
+            <Border Grid.Column="0"
+                CornerRadius="10"
+                Background="{StaticResource BaseBg}"
+                BorderBrush="{StaticResource AccentSubtle}"
+                BorderThickness="1"
+                Padding="8">
+                <StackPanel Spacing="8"
+                    VerticalAlignment="Stretch">
+                <Button Height="56"
+                    HorizontalAlignment="Stretch"
+                    Background="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Command="{Binding ShowExplorerCommand}">
+                    <Path Data="M2,3 L14,3 L14,13 L2,13 Z M3,4 L13,4 L13,12 L3,12 Z M5,6 L7,6 L7,10 L5,10 Z M9,6 L11,6 L11,10 L9,10 Z"
+                          Width="20"
+                          Height="20"
+                          Stretch="Uniform"
+                          Fill="{Binding IsExplorerSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+                </Button>
+
+                <Button Height="56"
+                    HorizontalAlignment="Stretch"
+                    Background="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Command="{Binding ShowEffectsCommand}">
+                    <Path Data="M8,2 L10,2 L10,6 L14,6 L14,8 L10,8 L10,12 L8,12 L8,8 L4,8 L4,6 L8,6 Z"
+                          Width="20"
+                          Height="20"
+                          Stretch="Uniform"
+                          Fill="{Binding IsEffectsSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+                </Button>
+
+                <Button Height="56"
+                    HorizontalAlignment="Stretch"
+                    Background="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Command="{Binding ShowWatermarksCommand}">
+                    <Path Data="M3,4 L13,4 L13,6 L3,6 Z M4,8 L6,8 L6,11 L4,11 Z M7,8 L9,8 L9,11 L7,11 Z M10,8 L12,8 L12,11 L10,11 Z"
+                          Width="20"
+                          Height="20"
+                          Stretch="Uniform"
+                          Fill="{Binding IsWatermarksSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+                </Button>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
                         CornerRadius="10"
                         Background="{StaticResource BaseBg}"
                         BorderBrush="{StaticResource AccentSubtle}"
                         BorderThickness="1"
                         Padding="12">
-                    <videoFilesViews:VideoFilesPanelView DataContext="{Binding VideoFiles}" />
+                    <Grid>
+                        <Border IsVisible="{Binding IsExplorerSection}"
+                                CornerRadius="8"
+                                Background="{StaticResource BaseBg}">
+                            <videoFilesViews:VideoFilesPanelView DataContext="{Binding VideoFiles}" />
+                        </Border>
+
+                        <Border IsVisible="{Binding IsEffectsSection}"
+                                CornerRadius="8"
+                                Background="{StaticResource BaseBg}">
+                            <effectsViews:EffectsPanelView DataContext="{Binding Effects}" />
+                        </Border>
+
+                        <Border IsVisible="{Binding IsWatermarksSection}"
+                                CornerRadius="8"
+                                Background="{StaticResource BaseBg}">
+                            <watermarksViews:WatermarksPanelView DataContext="{Binding Watermarks}" />
+                        </Border>
+                    </Grid>
                 </Border>
 
-                <Border Grid.Column="2"
+            <Border Grid.Column="4"
                     MinWidth="300"
                         Background="{StaticResource BaseBg}"
                         BorderBrush="{StaticResource AccentSubtle}"
