@@ -32,6 +32,8 @@ public sealed class VideoFilesViewModel : ViewModelBase
 
     public bool HasFiles => Files.Count > 0;
 
+    public bool NoFiles => !HasFiles;
+
     public VideoFilesViewModel()
     {
         Files.CollectionChanged += OnFilesChanged;
@@ -114,6 +116,7 @@ public sealed class VideoFilesViewModel : ViewModelBase
     private void OnFilesChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
     {
         OnPropertyChanged(nameof(HasFiles));
+        OnPropertyChanged(nameof(NoFiles));
     }
 
     private static async Task<ThumbnailResult> TryCreateThumbnailAsync(string videoPath)
