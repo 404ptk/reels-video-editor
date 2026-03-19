@@ -1,68 +1,221 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Export"
-             x:Class="ReelsVideoEditor.App.Views.Export.ExportPanelView"        
-             x:DataType="vm:ExportViewModel">
+             x:Class="ReelsVideoEditor.App.Views.Export.ExportPanelView"
+             x:DataType="vm:ExportViewModel"
+             Background="{DynamicResource BaseBg}">
 
-    <ScrollViewer>
-        <StackPanel Margin="20" Spacing="20" HorizontalAlignment="Stretch" MaxWidth="600">
-            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
-            <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource AccentMuted}" TextWrapping="Wrap" />
+    <UserControl.Styles>
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="#333333" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="FontWeight" Value="Medium" />
+        </Style>
 
-            <!-- File Name -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="File Name" FontWeight="SemiBold" />
-                <TextBox Text="{Binding OutputName}" Watermark="e.g. MyAmazingReel" />
-            </StackPanel>
+        <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#444444" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentMuted}" />
+        </Style>
 
-            <!-- Output Path -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Export Directory" FontWeight="SemiBold" />
-                <Grid ColumnDefinitions="*,8,Auto">
-                    <TextBox Grid.Column="0" Text="{Binding OutputPath}" IsReadOnly="True" />
-                    <Button Grid.Column="2" Content="Browse..." Command="{Binding BrowseDirectoryCommand}" />
-                </Grid>
-            </StackPanel>
+        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#333333" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderThickness" Value="1.5" />
+        </Style>
 
-            <!-- Format & Resolution -->
-            <Grid ColumnDefinitions="*,20,*" Margin="0,10,0,0">
-                <StackPanel Grid.Column="0" Spacing="8">
-                    <TextBlock Text="Aspect Ratio" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding AvailableFormats}"
-                              SelectedItem="{Binding SelectedFormat}"
-                              HorizontalAlignment="Stretch" />
-                </StackPanel>
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="#333333" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+
+        <Style Selector="ComboBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#444444" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentMuted}" />
+        </Style>
+
+        <Style Selector="ComboBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="#333333" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+        
+        <Style Selector="ComboBoxItem">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        
+        <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+        </Style>
+        
+        <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentMuted}" />
+        </Style>
+
+        <Style Selector="Button.actionBtn">
+            <Setter Property="Background" Value="{DynamicResource BaseBgSoft}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="Padding" Value="16,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.actionBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentMuted}" />
+        </Style>
+
+        <Style Selector="Button.actionBtn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="Button.primaryBtn">
+            <Setter Property="Background" Value="{DynamicResource AccentMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Foreground" Value="#111111" />
+            <Setter Property="Padding" Value="24,14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15" />
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.primaryBtn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+        
+        <Style Selector="Button.primaryBtn:pressed /template/ ContentPresenter">
+            <Setter Property="RenderTransform" Value="scale(0.98)" />
+        </Style>
+
+        <Style Selector="TextBlock.header">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Width="600" Spacing="24" HorizontalAlignment="Center" Margin="0,32,0,32">
                 
-                <StackPanel Grid.Column="2" Spacing="8">
-                    <TextBlock Text="Resolution" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding AvailableResolutions}"
-                              SelectedItem="{Binding SelectedResolution}"
-                              HorizontalAlignment="Stretch" />
-                </StackPanel>
-            </Grid>
+                <TextBlock Text="Export Timeline" 
+                           FontSize="28" 
+                           FontWeight="Bold" 
+                           Foreground="{DynamicResource Accent}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,16" />
 
-            <!-- Progress & Export Button -->
-            <StackPanel Spacing="12" Margin="0,20,0,0">
-                <Button Content="Render Video"
-                        Command="{Binding ExportProjectCommand}"
-                        Classes="accent"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        Height="40"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        IsEnabled="{Binding !IsExporting}" />
+                <!-- Export Path -->
+                <Border Background="{DynamicResource BaseBgSoft}" 
+                        BorderBrush="{DynamicResource AccentSubtle}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="24">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Export Destination" Classes="header" />
+                        <Grid ColumnDefinitions="*,16,Auto">
+                            <TextBox Grid.Column="0" 
+                                     Text="{Binding OutputPath}" 
+                                     IsReadOnly="True" 
+                                     Watermark="Select an export directory..." />
+                            <Button Grid.Column="2" 
+                                    Classes="actionBtn"
+                                    Command="{Binding BrowseDirectoryCommand}" 
+                                    Content="Browse Folder"
+                                    IsEnabled="{Binding !IsExporting}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Output Specs -->
+                <Border Background="{DynamicResource BaseBgSoft}" 
+                        BorderBrush="{DynamicResource AccentSubtle}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="24">
+                        <StackPanel Spacing="0">
+                            <TextBlock Text="Filename" Classes="header" />
+                            <TextBox Text="{Binding OutputName}" 
+                                     Watermark="output"
+                                     IsEnabled="{Binding !IsExporting}" />
+                        </StackPanel>
+                </Border>
                 
-                <ProgressBar Minimum="0" Maximum="100" 
-                             Value="{Binding ExportProgress}" 
-                             Height="10" 
-                             IsVisible="{Binding IsExporting}" />
-                <TextBlock Text="{Binding ExportProgress, StringFormat='Rendering: {0:F1}%'}" 
-                           HorizontalAlignment="Center" 
-                           Foreground="{DynamicResource AccentMuted}"
-                           IsVisible="{Binding IsExporting}" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+                <!-- Resolution Specs -->
+                <Border Background="{DynamicResource BaseBgSoft}" 
+                        BorderBrush="{DynamicResource AccentSubtle}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="24">
+                    <Grid ColumnDefinitions="*,24,*">
+                        <StackPanel Grid.Column="0" Spacing="0">
+                            <TextBlock Text="Resolution" Classes="header" />
+                            <ComboBox ItemsSource="{Binding AvailableResolutions}"
+                                      SelectedItem="{Binding SelectedResolution}"
+                                      IsEnabled="{Binding !IsExporting}">
+                            </ComboBox>
+                        </StackPanel>
 
+                        <StackPanel Grid.Column="2" Spacing="0">
+                            <TextBlock Text="Aspect Ratio" Classes="header" />
+                            <ComboBox ItemsSource="{Binding AvailableFormats}"
+                                      SelectedItem="{Binding SelectedFormat}"
+                                      IsEnabled="{Binding !IsExporting}">
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Progress and Submit -->
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+                    <ProgressBar Minimum="0" Maximum="100" 
+                                 Value="{Binding ExportProgress}"
+                                 Height="8"
+                                 CornerRadius="4"
+                                 IsVisible="{Binding IsExporting}"
+                                 Foreground="{DynamicResource Accent}"
+                                 Background="{DynamicResource AccentSubtle}" />
+
+                    <Button Classes="primaryBtn"
+                            Command="{Binding ExportProjectCommand}"
+                            IsEnabled="{Binding !IsExporting}">
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                            <Path Data="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                                  Fill="#111111"
+                                  Width="20" Height="20" Stretch="Uniform" />
+                            <TextBlock Text="Export Video" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
