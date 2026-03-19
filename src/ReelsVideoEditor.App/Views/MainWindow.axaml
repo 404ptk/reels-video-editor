@@ -5,6 +5,7 @@
         xmlns:previewViews="using:ReelsVideoEditor.App.Views.Preview"
         xmlns:videoFilesViews="using:ReelsVideoEditor.App.Views.VideoFiles"
         xmlns:effectsViews="using:ReelsVideoEditor.App.Views.Effects"
+        xmlns:textViews="using:ReelsVideoEditor.App.Views.Text"
         xmlns:watermarksViews="using:ReelsVideoEditor.App.Views.Watermarks"
     xmlns:exportViews="using:ReelsVideoEditor.App.Views.Export"
         xmlns:timelineViews="using:ReelsVideoEditor.App.Views.Timeline"
@@ -128,6 +129,25 @@
                                       VerticalAlignment="Center" />
                             </Button>
 
+                                    <Button Height="56"
+                                        HorizontalAlignment="Stretch"
+                                        Background="{Binding IsTextSection, Converter={StaticResource ActiveSectionBgConverter}}"
+                                        BorderBrush="{StaticResource AccentSubtle}"
+                                        BorderThickness="1"
+                                        Command="{Binding ShowTextCommand}">
+                                      <Path Data="M3 7v-2h13v2 M10 5v14 M12 19h-4 M15 13v-1h6v1 M18 12v7 M17 19h2"
+                                          Width="20"
+                                          Height="20"
+                                          Stretch="Uniform"
+                                          Fill="Transparent"
+                                          Stroke="{Binding IsTextSection, Converter={StaticResource ActiveSectionFgConverter}}"
+                                          StrokeThickness="2"
+                                          StrokeLineCap="Round"
+                                          StrokeJoin="Round"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                    </Button>
+
                             <Button Height="56"
                                     HorizontalAlignment="Stretch"
                                     Background="{Binding IsExportSection, Converter={StaticResource ActiveSectionBgConverter}}"
@@ -172,6 +192,12 @@
                                     CornerRadius="8"
                                     Background="{StaticResource BaseBg}">
                                 <watermarksViews:WatermarksPanelView DataContext="{Binding Watermarks}" />
+                            </Border>
+
+                            <Border IsVisible="{Binding IsTextSection}"
+                                    CornerRadius="8"
+                                    Background="{StaticResource BaseBg}">
+                                <textViews:TextPanelView DataContext="{Binding Text}" />
                             </Border>
                         </Grid>
                     </Border>
