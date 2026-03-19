@@ -30,10 +30,27 @@ public class TimelineExportService
         }
 
         double totalDuration = 0;
-        foreach (var v in videos) totalDuration = Math.Max(totalDuration, v.StartSeconds + v.DurationSeconds);
-        foreach (var a in audios) totalDuration = Math.Max(totalDuration, a.StartSeconds + a.DurationSeconds);
+        double minStartSeconds = double.MaxValue;
+
+        foreach (var v in videos) 
+        {
+            totalDuration = Math.Max(totalDuration, v.StartSeconds + v.DurationSeconds);
+            minStartSeconds = Math.Min(minStartSeconds, v.StartSeconds);
+        }
+        foreach (var a in audios) 
+        {
+            totalDuration = Math.Max(totalDuration, a.StartSeconds + a.DurationSeconds);
+            minStartSeconds = Math.Min(minStartSeconds, a.StartSeconds);
+        }
 
         if (totalDuration == 0) totalDuration = 5;
+        
+        double timeOffset = 0;
+        if (minStartSeconds > 0 && minStartSeconds != double.MaxValue)
+        {
+            timeOffset = minStartSeconds;
+            totalDuration -= timeOffset;
+        }
 
         // Parse resolution
         var parts = resolution.Split('x');
@@ -67,8 +84,9 @@ public class TimelineExportService
         for (int i = 0; i < videos.Count; i++)
         {
             var v = videos[i];
-            var ptsStart = v.StartSeconds.ToString(CultureInfo.InvariantCulture);
-            
+            var adjustedStart = v.StartSeconds - timeOffset;
+            var ptsStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
+
             // Format video: scale to fit, pad if necessary, delay using setpts
             ffmpegCommand.Append($"[{currentInputIndex}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}];");
             videoOutputs.Add($"[v{i}]");
@@ -80,15 +98,14 @@ public class TimelineExportService
         for (int i = 0; i < videos.Count; i++)
         {
             var v = videos[i];
-            var enableStart = v.StartSeconds.ToString(CultureInfo.InvariantCulture);
-            var enableEnd = (v.StartSeconds + v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
-            
+            var adjustedStart = v.StartSeconds - timeOffset;
+            var enableStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
+            var enableEnd = (adjustedStart + v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
+
             string nextBg = i == videos.Count - 1 ? "[outv]" : $"[bg{i+1}]";
             ffmpegCommand.Append($"{lastBackground}[v{i}]overlay=enable='between(t,{enableStart},{enableEnd})':eof_action=pass{nextBg};");
             lastBackground = nextBg;
-        }
-
-        if (videos.Count == 0)
+        }        if (videos.Count == 0)
         {
             ffmpegCommand.Append("[base]copy[outv];");
         }
@@ -98,14 +115,13 @@ public class TimelineExportService
         for (int i = 0; i < audios.Count; i++)
         {
             var a = audios[i];
-            var delayMs = (int)(a.StartSeconds * 1000);
-            
+            var adjustedStart = a.StartSeconds - timeOffset;
+            var delayMs = (int)(adjustedStart * 1000);
+
             ffmpegCommand.Append($"[{currentInputIndex}:a]adelay={delayMs}|{delayMs}[a{i}];");
             audioOutputs.Add($"[a{i}]");
             currentInputIndex++;
-        }
-
-        if (audios.Count > 0)
+        }        if (audios.Count > 0)
         {
             foreach (var aOut in audioOutputs)
             {
