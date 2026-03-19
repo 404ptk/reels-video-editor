@@ -41,6 +41,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
+        Export.TimelineContext = Timeline;
+        
         Preview = new PreviewViewModel
         {
             ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),

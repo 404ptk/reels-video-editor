@@ -1,18 +1,68 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Export"
-             x:Class="ReelsVideoEditor.App.Views.Export.ExportPanelView"
+             x:Class="ReelsVideoEditor.App.Views.Export.ExportPanelView"        
              x:DataType="vm:ExportViewModel">
 
-    <Grid>
-        <StackPanel VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="12">
-            <TextBlock Text="Export options will be available here"
-                       Foreground="{DynamicResource AccentMuted}"
-                       FontSize="13"
-                       HorizontalAlignment="Center" />
+    <ScrollViewer>
+        <StackPanel Margin="20" Spacing="20" HorizontalAlignment="Stretch" MaxWidth="600">
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Accent}" />
+            <TextBlock Text="{Binding Description}" FontSize="14" Foreground="{DynamicResource AccentMuted}" TextWrapping="Wrap" />
+
+            <!-- File Name -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="File Name" FontWeight="SemiBold" />
+                <TextBox Text="{Binding OutputName}" Watermark="e.g. MyAmazingReel" />
+            </StackPanel>
+
+            <!-- Output Path -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Export Directory" FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="*,8,Auto">
+                    <TextBox Grid.Column="0" Text="{Binding OutputPath}" IsReadOnly="True" />
+                    <Button Grid.Column="2" Content="Browse..." Command="{Binding BrowseDirectoryCommand}" />
+                </Grid>
+            </StackPanel>
+
+            <!-- Format & Resolution -->
+            <Grid ColumnDefinitions="*,20,*" Margin="0,10,0,0">
+                <StackPanel Grid.Column="0" Spacing="8">
+                    <TextBlock Text="Aspect Ratio" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding AvailableFormats}"
+                              SelectedItem="{Binding SelectedFormat}"
+                              HorizontalAlignment="Stretch" />
+                </StackPanel>
+                
+                <StackPanel Grid.Column="2" Spacing="8">
+                    <TextBlock Text="Resolution" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding AvailableResolutions}"
+                              SelectedItem="{Binding SelectedResolution}"
+                              HorizontalAlignment="Stretch" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Progress & Export Button -->
+            <StackPanel Spacing="12" Margin="0,20,0,0">
+                <Button Content="Render Video"
+                        Command="{Binding ExportProjectCommand}"
+                        Classes="accent"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Height="40"
+                        FontSize="16"
+                        FontWeight="Bold"
+                        IsEnabled="{Binding !IsExporting}" />
+                
+                <ProgressBar Minimum="0" Maximum="100" 
+                             Value="{Binding ExportProgress}" 
+                             Height="10" 
+                             IsVisible="{Binding IsExporting}" />
+                <TextBlock Text="{Binding ExportProgress, StringFormat='Rendering: {0:F1}%'}" 
+                           HorizontalAlignment="Center" 
+                           Foreground="{DynamicResource AccentMuted}"
+                           IsVisible="{Binding IsExporting}" />
+            </StackPanel>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 
 </UserControl>
