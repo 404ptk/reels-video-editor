@@ -28,7 +28,7 @@
                   <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
                       <ToggleButton IsChecked="{Binding IsVideoSolo}"
                                     Focusable="False"
-                                    Width="24" Height="22"
+                                    Width="28" Height="24"
                                     CornerRadius="4"
                                     Padding="0">
                           <ToggleButton.Styles>
@@ -44,11 +44,11 @@
                                   <Setter Property="Background" Value="{DynamicResource Accent}" />
                               </Style>
                           </ToggleButton.Styles>
-                          <TextBlock Text="S" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
+                          <TextBlock Text="S" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
                       </ToggleButton>
                       <ToggleButton IsChecked="{Binding IsVideoHidden}"
                                     Focusable="False"
-                                    Width="24" Height="22"
+                                    Width="28" Height="24"
                                     CornerRadius="4"
                                     Padding="0">
                           <ToggleButton.Styles>
@@ -62,10 +62,22 @@
                                   <Setter Property="Background" Value="#A04040" />
                               </Style>
                           </ToggleButton.Styles>
-                          <Viewbox Width="13" Height="13" HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <Viewbox Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center">
                               <Canvas Width="24" Height="24">
-                                  <Path Data="M17,10.5L21,6.5V17.5L17,13.5V17A1,1 0 0,1 16,18H4A1,1 0 0,1 3,17V7A1,1 0 0,1 4,6H16A1,1 0 0,1 17,7Z" Fill="{Binding $parent[ToggleButton].Foreground}" />
-                                  <Path Data="M2,2 L22,22" Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" IsVisible="{Binding IsVideoHidden}" />
+                                  <Path Data="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4 M3 8a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2l0 -8"
+                                        Fill="Transparent"
+                                        Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                        StrokeThickness="2"
+                                        StrokeLineCap="Round"
+                                        StrokeJoin="Round"
+                                        IsVisible="{Binding !IsVideoHidden}" />
+                                  <Path Data="M3 3l18 18 M15 11v-1l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -.675 .946 M10 6h3a2 2 0 0 1 2 2v3m0 4v1a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2v-8a2 2 0 0 1 2 -2h1"
+                                        Fill="Transparent"
+                                        Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                        StrokeThickness="2"
+                                        StrokeLineCap="Round"
+                                        StrokeJoin="Round"
+                                        IsVisible="{Binding IsVideoHidden}" />
                               </Canvas>
                           </Viewbox>
                       </ToggleButton>
@@ -90,7 +102,7 @@
                   <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
                       <ToggleButton IsChecked="{Binding IsAudioMuted}"
                                     Focusable="False"
-                                    Width="24" Height="22"
+                                    Width="28" Height="24"
                                     CornerRadius="4"
                                     Padding="0">
                           <ToggleButton.Styles>
@@ -106,7 +118,24 @@
                                   <Setter Property="Background" Value="#A04040" />
                               </Style>
                           </ToggleButton.Styles>
-                          <TextBlock Text="M" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0" />
+                          <Viewbox Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <Canvas Width="24" Height="24">
+                                  <Path Data="M15 8a5 5 0 0 1 0 8 M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5"
+                                        Fill="Transparent"
+                                        Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                        StrokeThickness="2"
+                                        StrokeLineCap="Round"
+                                        StrokeJoin="Round"
+                                        IsVisible="{Binding !IsAudioMuted}" />
+                                  <Path Data="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5 M16 10l4 4m0 -4l-4 4"
+                                        Fill="Transparent"
+                                        Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                        StrokeThickness="2"
+                                        StrokeLineCap="Round"
+                                        StrokeJoin="Round"
+                                        IsVisible="{Binding IsAudioMuted}" />
+                              </Canvas>
+                          </Viewbox>
                       </ToggleButton>
                   </StackPanel>
               </Grid>
