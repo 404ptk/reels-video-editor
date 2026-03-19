@@ -33,6 +33,15 @@ public partial class TimelineViewModel : ViewModelBase
     private int zoomPercent = 100;
 
     [ObservableProperty]
+    private bool isVideoSolo;
+
+    [ObservableProperty]
+    private bool isVideoHidden;
+
+    [ObservableProperty]
+    private bool isAudioMuted;
+
+    [ObservableProperty]
     private double playheadSeconds;
 
     [ObservableProperty]

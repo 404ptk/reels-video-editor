@@ -25,6 +25,51 @@
                              Foreground="{DynamicResource AccentMuted}"
                              FontSize="10"
                              FontWeight="SemiBold" />
+                  <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                      <ToggleButton IsChecked="{Binding IsVideoSolo}"
+                                    Focusable="False"
+                                    Width="24" Height="22"
+                                    CornerRadius="4"
+                                    Padding="0">
+                          <ToggleButton.Styles>
+                              <Style Selector="ToggleButton">
+                                  <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                  <Setter Property="VerticalContentAlignment" Value="Center" />
+                                  <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                                  <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+                                  <Setter Property="BorderThickness" Value="0" />
+                              </Style>
+                              <Style Selector="ToggleButton:checked">
+                                  <Setter Property="Foreground" Value="{DynamicResource BaseBg}" />
+                                  <Setter Property="Background" Value="{DynamicResource Accent}" />
+                              </Style>
+                          </ToggleButton.Styles>
+                          <TextBlock Text="S" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,0" />
+                      </ToggleButton>
+                      <ToggleButton IsChecked="{Binding IsVideoHidden}"
+                                    Focusable="False"
+                                    Width="24" Height="22"
+                                    CornerRadius="4"
+                                    Padding="0">
+                          <ToggleButton.Styles>
+                              <Style Selector="ToggleButton">
+                                  <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                                  <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+                                  <Setter Property="BorderThickness" Value="0" />
+                              </Style>
+                              <Style Selector="ToggleButton:checked">
+                                  <Setter Property="Foreground" Value="#FFF" />
+                                  <Setter Property="Background" Value="#A04040" />
+                              </Style>
+                          </ToggleButton.Styles>
+                          <Viewbox Width="13" Height="13" HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <Canvas Width="24" Height="24">
+                                  <Path Data="M17,10.5L21,6.5V17.5L17,13.5V17A1,1 0 0,1 16,18H4A1,1 0 0,1 3,17V7A1,1 0 0,1 4,6H16A1,1 0 0,1 17,7Z" Fill="{Binding $parent[ToggleButton].Foreground}" />
+                                  <Path Data="M2,2 L22,22" Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" IsVisible="{Binding IsVideoHidden}" />
+                              </Canvas>
+                          </Viewbox>
+                      </ToggleButton>
+                  </StackPanel>
               </Grid>
           </Border>
 
@@ -42,6 +87,28 @@
                              Foreground="{DynamicResource AccentMuted}"
                              FontSize="10"
                              FontWeight="SemiBold" />
+                  <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                      <ToggleButton IsChecked="{Binding IsAudioMuted}"
+                                    Focusable="False"
+                                    Width="24" Height="22"
+                                    CornerRadius="4"
+                                    Padding="0">
+                          <ToggleButton.Styles>
+                              <Style Selector="ToggleButton">
+                                  <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                  <Setter Property="VerticalContentAlignment" Value="Center" />
+                                  <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                                  <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+                                  <Setter Property="BorderThickness" Value="0" />
+                              </Style>
+                              <Style Selector="ToggleButton:checked">
+                                  <Setter Property="Foreground" Value="#FFF" />
+                                  <Setter Property="Background" Value="#A04040" />
+                              </Style>
+                          </ToggleButton.Styles>
+                          <TextBlock Text="M" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="1,0,0,0" />
+                      </ToggleButton>
+                  </StackPanel>
               </Grid>
           </Border>
       </Grid>
@@ -121,7 +188,13 @@
                                   ItemsSource="{Binding VideoClips}"
                                   Width="{Binding TimelineCanvasWidth}"
                                                                     Height="{Binding LaneContainerHeight}"
-                                  HorizontalAlignment="Left">
+                                  HorizontalAlignment="Left"
+                                  Classes.hidden="{Binding IsVideoHidden}">
+                        <ItemsControl.Styles>
+                            <Style Selector="ItemsControl.hidden">
+                                <Setter Property="Opacity" Value="0.3" />
+                            </Style>
+                        </ItemsControl.Styles>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <Canvas />
@@ -172,7 +245,13 @@
                                   ItemsSource="{Binding AudioClips}"
                                   Width="{Binding TimelineCanvasWidth}"
                                                                     Height="{Binding LaneContainerHeight}"
-                                  HorizontalAlignment="Left">
+                                  HorizontalAlignment="Left"
+                                  Classes.muted="{Binding IsAudioMuted}">
+                        <ItemsControl.Styles>
+                            <Style Selector="ItemsControl.muted">
+                                <Setter Property="Opacity" Value="0.3" />
+                            </Style>
+                        </ItemsControl.Styles>
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <Canvas />

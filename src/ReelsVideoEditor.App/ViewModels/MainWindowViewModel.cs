@@ -48,6 +48,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
         };
 
+        Timeline.PropertyChanged += (sender, args) =>
+        {
+            if (args.PropertyName == nameof(TimelineViewModel.IsAudioMuted))
+            {
+                Preview.IsAudioMuted = Timeline.IsAudioMuted;
+            }
+            if (args.PropertyName == nameof(TimelineViewModel.IsVideoHidden))
+            {
+                Preview.IsVideoHidden = Timeline.IsVideoHidden;
+            }
+        };
+
         Timeline.PlayheadSeekRequested = seconds =>
         {
             var seekMilliseconds = (long)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero);

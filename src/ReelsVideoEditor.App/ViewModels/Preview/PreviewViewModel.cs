@@ -22,6 +22,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private string? currentVideoPath;
 
     [ObservableProperty]
+    private bool isAudioMuted;
+
+    [ObservableProperty]
+    private bool isVideoHidden;
+
+    [ObservableProperty]
     private int stopRequestVersion;
 
     [ObservableProperty]
@@ -52,6 +58,8 @@ public sealed partial class PreviewViewModel : ViewModelBase
     public bool HasVideoLoaded => !string.IsNullOrWhiteSpace(CurrentVideoPath) && File.Exists(CurrentVideoPath);
 
     public bool ShowPlaceholder => !HasVideoLoaded;
+
+    public bool IsVideoVisible => HasVideoLoaded && !IsVideoHidden;
 
     [RelayCommand]
     private void TogglePlayPause()
@@ -95,9 +103,15 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasVideoLoaded));
         OnPropertyChanged(nameof(ShowPlaceholder));
+        OnPropertyChanged(nameof(IsVideoVisible));
         CurrentPlaybackMilliseconds = 0;
         CurrentPlaybackTimeText = ZeroTime;
         TotalPlaybackTimeText = ZeroTime;
+    }
+
+    partial void OnIsVideoHiddenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsVideoVisible));
     }
 
     public void UpdatePlaybackTime(long playbackMilliseconds)

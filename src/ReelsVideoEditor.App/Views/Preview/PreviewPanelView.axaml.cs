@@ -72,6 +72,7 @@ public partial class PreviewPanelView : UserControl
         {
             boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
             ApplyPlaybackState(boundViewModel);
+            mediaPlayer.Mute = boundViewModel.IsAudioMuted;
         }
     }
 
@@ -88,6 +89,10 @@ public partial class PreviewPanelView : UserControl
             or nameof(PreviewViewModel.SeekRequestVersion))
         {
             ApplyPlaybackState(boundViewModel);
+        }
+        else if (eventArgs.PropertyName == nameof(PreviewViewModel.IsAudioMuted))
+        {
+            mediaPlayer.Mute = boundViewModel.IsAudioMuted;
         }
     }
 

@@ -43,7 +43,7 @@
                         <vlc:VideoView x:Name="PreviewVideoView"
                                        HorizontalAlignment="Stretch"
                                        VerticalAlignment="Stretch"
-                                       IsVisible="{Binding HasVideoLoaded}" />
+                                       IsVisible="{Binding IsVideoVisible}" />
 
                         <StackPanel HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
