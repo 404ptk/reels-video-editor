@@ -18,6 +18,7 @@ public partial class PreviewPanelView : UserControl
     private readonly DispatcherTimer playbackTimeTimer;
     private readonly Border? previewFrame;
     private readonly Control? previewViewport;
+    private readonly LibVLCSharp.Avalonia.VideoView? previewVideoView;
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
     private int handledStopRequestVersion;
@@ -50,7 +51,8 @@ public partial class PreviewPanelView : UserControl
             previewViewport.SizeChanged += (_, _) => UpdatePreviewFrameSize();
         }
 
-        if (this.FindControl<LibVLCSharp.Avalonia.VideoView>("PreviewVideoView") is { } videoView)
+        previewVideoView = this.FindControl<LibVLCSharp.Avalonia.VideoView>("PreviewVideoView");
+        if (previewVideoView is { } videoView)
         {
             videoView.MediaPlayer = mediaPlayer;
         }
@@ -72,7 +74,8 @@ public partial class PreviewPanelView : UserControl
         {
             boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
             ApplyPlaybackState(boundViewModel);
-            mediaPlayer.Mute = boundViewModel.IsAudioMuted;
+            ApplyAudioState(boundViewModel);
+            ApplyVideoState(boundViewModel);
         }
     }
 
@@ -92,8 +95,53 @@ public partial class PreviewPanelView : UserControl
         }
         else if (eventArgs.PropertyName == nameof(PreviewViewModel.IsAudioMuted))
         {
-            mediaPlayer.Mute = boundViewModel.IsAudioMuted;
+            ApplyAudioState(boundViewModel);
         }
+        else if (eventArgs.PropertyName == nameof(PreviewViewModel.CurrentAudioVolume))
+        {
+            ApplyAudioState(boundViewModel);
+        }
+        else if (eventArgs.PropertyName is nameof(PreviewViewModel.IsVideoHidden) or nameof(PreviewViewModel.CurrentVideoOpacity))
+        {
+            ApplyVideoState(boundViewModel);
+        }
+    }
+
+    private void ApplyAudioState(PreviewViewModel viewModel)
+    {
+        var clampedVolume = Math.Clamp(viewModel.CurrentAudioVolume, 0.0, 1.0);
+        var targetVolume = viewModel.IsAudioMuted ? 0 : (int)Math.Round(clampedVolume * 100, MidpointRounding.AwayFromZero);
+        mediaPlayer.Mute = targetVolume <= 0;
+        if (targetVolume > 0)
+        {
+            mediaPlayer.Volume = targetVolume;
+        }
+    }
+
+    private void ApplyVideoState(PreviewViewModel viewModel)
+    {
+        if (previewVideoView is null)
+        {
+            return;
+        }
+
+        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
+
+        if (viewModel.IsVideoHidden)
+        {
+            previewVideoView.Opacity = 0.0;
+            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
+            return;
+        }
+
+        previewVideoView.Opacity = 1.0;
+
+        var clampedOpacity = Math.Clamp(viewModel.CurrentVideoOpacity, 0.0, 1.0);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, (float)clampedOpacity);
     }
 
     private void ApplyPlaybackState(PreviewViewModel viewModel)
@@ -179,6 +227,12 @@ public partial class PreviewPanelView : UserControl
     {
         mediaPlayer.Stop();
         mediaPlayer.Media = new Media(libVlc, path, FromType.FromPath);
+        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
         loadedPath = path;
         ResetPlaybackClock();
         boundViewModel?.UpdatePlaybackTime(0);

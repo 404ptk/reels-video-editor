@@ -58,6 +58,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action? PreviewClipChanged { get; set; }
 
+    public Action<double, double>? PreviewLevelsChanged { get; set; }
+
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
@@ -112,6 +114,7 @@ public partial class TimelineViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(PlayheadLeft));
         OnPropertyChanged(nameof(PlayheadVisualLeft));
+        UpdatePreviewLevels();
     }
 
     partial void OnLaneContentHeightChanged(int value)
@@ -120,6 +123,7 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(ClipVisualHeight));
         OnPropertyChanged(nameof(TimelineCanvasHeight));
         OnPropertyChanged(nameof(PlayheadHeight));
+        RefreshClipLevelLines();
     }
 
     partial void OnIsPlaybackActiveChanged(bool value)
@@ -143,6 +147,8 @@ public partial class TimelineViewModel : ViewModelBase
         {
             PlayheadSeconds = clip.StartSeconds;
         }
+
+        RefreshClipLevelLines();
 
         undoStack.Push(() =>
         {
@@ -211,6 +217,25 @@ public partial class TimelineViewModel : ViewModelBase
 
         playbackMaxSeconds = TimelineDurationSeconds;
         hasPlaybackSession = false;
+    }
+
+    public void RefreshPreviewLevels()
+    {
+        UpdatePreviewLevels();
+    }
+
+    public void SetVideoClipOpacity(TimelineClipItem clip, double opacityLevel)
+    {
+        clip.OpacityLevel = Math.Clamp(opacityLevel, 0.0, 1.0);
+        UpdateVideoClipLevelLine(clip);
+        UpdatePreviewLevels();
+    }
+
+    public void SetAudioClipVolume(TimelineClipItem clip, double volumeLevel)
+    {
+        clip.VolumeLevel = Math.Clamp(volumeLevel, 0.0, 1.0);
+        UpdateAudioClipLevelLine(clip);
+        UpdatePreviewLevels();
     }
 
     public void ChangeZoomFromWheel(double wheelDelta, double viewportWidth)
@@ -312,29 +337,48 @@ public partial class TimelineViewModel : ViewModelBase
             AudioClips.Clear();
             PlayheadSeconds = 0;
             hasPlaybackSession = false;
+            RefreshClipLevelLines();
+            UpdatePreviewLevels();
             return;
         }
 
         if (eventArgs.Action == NotifyCollectionChangedAction.Add && eventArgs.NewItems is { Count: > 0 })
         {
+            RefreshClipLevelLines();
+            UpdatePreviewLevels();
             return;
         }
 
         RebuildAudioFromVideo();
 
         PlayheadSeconds = ResolvePreviewClipStartSeconds();
+        RefreshClipLevelLines();
+        UpdatePreviewLevels();
     }
 
     private void RebuildAudioFromVideo()
     {
+        var volumeByKey = AudioClips.ToDictionary(
+            clip => $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.Name}",
+            clip => clip.VolumeLevel);
+
         AudioClips.Clear();
 
         foreach (var videoClip in VideoClips)
         {
             var audioClip = clipArrangementService.BuildLinkedAudioClip(videoClip);
+
+            var key = $"{audioClip.Path}|{audioClip.StartSeconds:F3}|{audioClip.DurationSeconds:F3}|{audioClip.Name}";
+            if (volumeByKey.TryGetValue(key, out var volumeLevel))
+            {
+                audioClip.VolumeLevel = volumeLevel;
+            }
+
             AudioClips.Add(audioClip);
             _ = LoadAudioWaveformAsync(audioClip);
         }
+
+        RefreshClipLevelLines();
     }
 
     private async Task LoadAudioWaveformAsync(TimelineClipItem audioClip)
@@ -418,6 +462,73 @@ public partial class TimelineViewModel : ViewModelBase
     {
         foreach (var clip in VideoClips) clip.IsSelected = false;
         foreach (var clip in AudioClips) clip.IsSelected = false;
+    }
+
+    private void UpdatePreviewLevels()
+    {
+        var videoOpacity = ResolveVideoOpacityAt(PlayheadSeconds);
+        var audioVolume = ResolveAudioVolumeAt(PlayheadSeconds);
+        PreviewLevelsChanged?.Invoke(videoOpacity, audioVolume);
+    }
+
+    private void RefreshClipLevelLines()
+    {
+        foreach (var videoClip in VideoClips)
+        {
+            UpdateVideoClipLevelLine(videoClip);
+        }
+
+        foreach (var audioClip in AudioClips)
+        {
+            UpdateAudioClipLevelLine(audioClip);
+        }
+    }
+
+    private void UpdateVideoClipLevelLine(TimelineClipItem clip)
+    {
+        var drawableHeight = Math.Max(0, ClipVisualHeight - 2);
+        clip.VideoLevelLineTop = (1.0 - Math.Clamp(clip.OpacityLevel, 0.0, 1.0)) * drawableHeight;
+        clip.IsVideoLevelLineVisible = clip.OpacityLevel < 0.999;
+    }
+
+    private void UpdateAudioClipLevelLine(TimelineClipItem clip)
+    {
+        var drawableHeight = Math.Max(0, ClipVisualHeight - 2);
+        clip.AudioLevelLineTop = (1.0 - Math.Clamp(clip.VolumeLevel, 0.0, 1.0)) * drawableHeight;
+        clip.IsAudioLevelLineVisible = clip.VolumeLevel < 0.999;
+    }
+
+    private double ResolveVideoOpacityAt(double seconds)
+    {
+        var activeClip = VideoClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
+        if (activeClip is not null)
+        {
+            return activeClip.OpacityLevel;
+        }
+
+        var previewClip = ResolvePreviewClip();
+        return previewClip?.OpacityLevel ?? 1.0;
+    }
+
+    private double ResolveAudioVolumeAt(double seconds)
+    {
+        var activeClip = AudioClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
+        if (activeClip is not null)
+        {
+            return activeClip.VolumeLevel;
+        }
+
+        var previewClip = ResolvePreviewClip();
+        if (previewClip is null)
+        {
+            return 1.0;
+        }
+
+        var linkedAudio = AudioClips.FirstOrDefault(clip =>
+            string.Equals(clip.Path, previewClip.Path, StringComparison.OrdinalIgnoreCase) &&
+            Math.Abs(clip.StartSeconds - previewClip.StartSeconds) < 0.001);
+
+        return linkedAudio?.VolumeLevel ?? 1.0;
     }
 
 }

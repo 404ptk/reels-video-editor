@@ -25,6 +25,24 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private bool isSelected;
 
+    [ObservableProperty]
+    private double opacityLevel = 1.0;
+
+    [ObservableProperty]
+    private double volumeLevel = 1.0;
+
+    [ObservableProperty]
+    private double videoLevelLineTop;
+
+    [ObservableProperty]
+    private bool isVideoLevelLineVisible;
+
+    [ObservableProperty]
+    private double audioLevelLineTop;
+
+    [ObservableProperty]
+    private bool isAudioLevelLineVisible;
+
     public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds)
     {
         Name = name;

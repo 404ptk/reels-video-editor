@@ -28,6 +28,14 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private bool isVideoHidden;
 
     [ObservableProperty]
+    private double currentVideoOpacity = 1.0;
+
+    [ObservableProperty]
+    private double currentAudioVolume = 1.0;
+
+    public double CurrentVideoDimOpacity => Math.Clamp(1.0 - CurrentVideoOpacity, 0.0, 0.9);
+
+    [ObservableProperty]
     private int stopRequestVersion;
 
     [ObservableProperty]
@@ -112,6 +120,11 @@ public sealed partial class PreviewViewModel : ViewModelBase
     partial void OnIsVideoHiddenChanged(bool value)
     {
         OnPropertyChanged(nameof(IsVideoVisible));
+    }
+
+    partial void OnCurrentVideoOpacityChanged(double value)
+    {
+        OnPropertyChanged(nameof(CurrentVideoDimOpacity));
     }
 
     public void UpdatePlaybackTime(long playbackMilliseconds)

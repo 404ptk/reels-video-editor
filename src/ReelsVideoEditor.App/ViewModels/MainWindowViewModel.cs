@@ -73,6 +73,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.SeekToPlaybackPosition(seekMilliseconds);
         };
 
+        Timeline.PreviewLevelsChanged = (videoOpacity, audioVolume) =>
+        {
+            Preview.CurrentVideoOpacity = videoOpacity;
+            Preview.CurrentAudioVolume = audioVolume;
+        };
+
         Timeline.PreviewClipChanged = () =>
         {
             var resolvedPath = Timeline.ResolvePreviewClipPath();
@@ -87,6 +93,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Preview.CurrentVideoPath = resolvedPath;
             }
         };
+
+        Timeline.RefreshPreviewLevels();
     }
 
     [RelayCommand]
