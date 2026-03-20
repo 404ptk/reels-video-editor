@@ -101,7 +101,7 @@ public partial class PreviewPanelView : UserControl
         {
             ApplyAudioState(boundViewModel);
         }
-        else if (eventArgs.PropertyName is nameof(PreviewViewModel.IsVideoHidden) or nameof(PreviewViewModel.CurrentVideoOpacity))
+        else if (eventArgs.PropertyName == nameof(PreviewViewModel.IsVideoHidden))
         {
             ApplyVideoState(boundViewModel);
         }
@@ -125,23 +125,24 @@ public partial class PreviewPanelView : UserControl
             return;
         }
 
-        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
-
         if (viewModel.IsVideoHidden)
         {
             previewVideoView.Opacity = 0.0;
-            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
+            mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
+            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
+            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 0f);
             return;
         }
 
         previewVideoView.Opacity = 1.0;
 
-        var clampedOpacity = Math.Clamp(viewModel.CurrentVideoOpacity, 0.0, 1.0);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, (float)clampedOpacity);
+        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
+
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
     }
 
     private void ApplyPlaybackState(PreviewViewModel viewModel)
@@ -228,8 +229,8 @@ public partial class PreviewPanelView : UserControl
         mediaPlayer.Stop();
         mediaPlayer.Media = new Media(libVlc, path, FromType.FromPath);
         mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
         mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
+        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
         mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
         mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
         mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);

@@ -58,7 +58,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action? PreviewClipChanged { get; set; }
 
-    public Action<double, double>? PreviewLevelsChanged { get; set; }
+    public Action<double>? PreviewLevelsChanged { get; set; }
 
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
@@ -221,13 +221,6 @@ public partial class TimelineViewModel : ViewModelBase
 
     public void RefreshPreviewLevels()
     {
-        UpdatePreviewLevels();
-    }
-
-    public void SetVideoClipOpacity(TimelineClipItem clip, double opacityLevel)
-    {
-        clip.OpacityLevel = Math.Clamp(opacityLevel, 0.0, 1.0);
-        UpdateVideoClipLevelLine(clip);
         UpdatePreviewLevels();
     }
 
@@ -466,29 +459,16 @@ public partial class TimelineViewModel : ViewModelBase
 
     private void UpdatePreviewLevels()
     {
-        var videoOpacity = ResolveVideoOpacityAt(PlayheadSeconds);
         var audioVolume = ResolveAudioVolumeAt(PlayheadSeconds);
-        PreviewLevelsChanged?.Invoke(videoOpacity, audioVolume);
+        PreviewLevelsChanged?.Invoke(audioVolume);
     }
 
     private void RefreshClipLevelLines()
     {
-        foreach (var videoClip in VideoClips)
-        {
-            UpdateVideoClipLevelLine(videoClip);
-        }
-
         foreach (var audioClip in AudioClips)
         {
             UpdateAudioClipLevelLine(audioClip);
         }
-    }
-
-    private void UpdateVideoClipLevelLine(TimelineClipItem clip)
-    {
-        var drawableHeight = Math.Max(0, ClipVisualHeight - 2);
-        clip.VideoLevelLineTop = (1.0 - Math.Clamp(clip.OpacityLevel, 0.0, 1.0)) * drawableHeight;
-        clip.IsVideoLevelLineVisible = clip.OpacityLevel < 0.999;
     }
 
     private void UpdateAudioClipLevelLine(TimelineClipItem clip)
@@ -502,18 +482,6 @@ public partial class TimelineViewModel : ViewModelBase
         var waveformHeight = Math.Max(1.0, drawableHeight * volumeLevel);
         clip.AudioWaveformVisualHeight = waveformHeight;
         clip.AudioWaveformVisualTop = (drawableHeight - waveformHeight) / 2.0;
-    }
-
-    private double ResolveVideoOpacityAt(double seconds)
-    {
-        var activeClip = VideoClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
-        if (activeClip is not null)
-        {
-            return activeClip.OpacityLevel;
-        }
-
-        var previewClip = ResolvePreviewClip();
-        return previewClip?.OpacityLevel ?? 1.0;
     }
 
     private double ResolveAudioVolumeAt(double seconds)

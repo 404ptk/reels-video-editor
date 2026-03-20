@@ -73,9 +73,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.SeekToPlaybackPosition(seekMilliseconds);
         };
 
-        Timeline.PreviewLevelsChanged = (videoOpacity, audioVolume) =>
+        Timeline.PreviewLevelsChanged = audioVolume =>
         {
-            Preview.CurrentVideoOpacity = videoOpacity;
             Preview.CurrentAudioVolume = audioVolume;
         };
 

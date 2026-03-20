@@ -239,9 +239,6 @@
                                         Background="#66C2D8C4"
                                         BorderBrush="{DynamicResource AccentSubtle}"
                                         BorderThickness="1"
-                                        PointerPressed="VideoClipLevel_OnPointerPressed"
-                                        PointerMoved="VideoClipLevel_OnPointerMoved"
-                                        PointerReleased="ClipLevel_OnPointerReleased"
                                         Classes.selected="{Binding IsSelected}">
                                     <Border.Styles>
                                         <Style Selector="Border.selected">
@@ -256,15 +253,6 @@
                                                    FontWeight="SemiBold"
                                                    Text="{Binding Name}"
                                                    TextTrimming="CharacterEllipsis" />
-                                        <Border Height="2"
-                                                HorizontalAlignment="Stretch"
-                                                VerticalAlignment="Top"
-                                                Background="#D6E6D8"
-                                                IsVisible="{Binding IsVideoLevelLineVisible}">
-                                            <Border.RenderTransform>
-                                                <TranslateTransform Y="{Binding VideoLevelLineTop}" />
-                                            </Border.RenderTransform>
-                                        </Border>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

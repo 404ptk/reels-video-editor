@@ -34,7 +34,7 @@
                 <Border x:Name="PreviewFrame"
                         Width="216"
                         Height="384"
-                        Background="#AA222222"
+                    Background="#000000"
                         BorderBrush="{DynamicResource AccentSubtle}"
                         BorderThickness="1"
                         HorizontalAlignment="Center"
@@ -44,11 +44,6 @@
                                        HorizontalAlignment="Stretch"
                                        VerticalAlignment="Stretch"
                                        IsVisible="{Binding IsVideoVisible}" />
-
-                        <Border Background="#000000"
-                            Opacity="{Binding CurrentVideoDimOpacity}"
-                            IsHitTestVisible="False"
-                            IsVisible="{Binding IsVideoVisible}" />
 
                         <StackPanel HorizontalAlignment="Center"
                                     VerticalAlignment="Center"

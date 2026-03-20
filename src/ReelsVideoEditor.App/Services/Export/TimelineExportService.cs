@@ -86,10 +86,9 @@ public class TimelineExportService
             var v = videos[i];
             var adjustedStart = v.StartSeconds - timeOffset;
             var ptsStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
-            var opacity = Math.Clamp(v.OpacityLevel, 0.0, 1.0).ToString(CultureInfo.InvariantCulture);
 
             // Format video: scale to fit, pad if necessary, delay using setpts
-            ffmpegCommand.Append($"[{currentInputIndex}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,format=rgba,colorchannelmixer=aa={opacity},setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}];");
+            ffmpegCommand.Append($"[{currentInputIndex}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}];");
             videoOutputs.Add($"[v{i}]");
             currentInputIndex++;
         }
