@@ -18,7 +18,7 @@ public class TimelineExportService
         bool isVideoHidden,
         bool isAudioMuted,
         string outputPath,
-        string resolution, // e.g. "1080x1920"
+        string resolution,
         IProgress<double> progress)
     {
         var videos = isVideoHidden ? new List<TimelineClipItem>() : videoClips.OrderBy(c => c.StartSeconds).ToList();
@@ -52,15 +52,13 @@ public class TimelineExportService
             totalDuration -= timeOffset;
         }
 
-        // Parse resolution
         var parts = resolution.Split('x');
         int width = int.Parse(parts[0]);
         int height = int.Parse(parts[1]);
 
         var ffmpegCommand = new StringBuilder();
-        ffmpegCommand.Append("-y "); // Overwrite output
+        ffmpegCommand.Append("-y ");
 
-        // Inputs
         foreach (var v in videos)
         {
             ffmpegCommand.Append($"-i \"{v.Path}\" ");
@@ -71,15 +69,12 @@ public class TimelineExportService
             ffmpegCommand.Append($"-i \"{a.Path}\" ");
         }
 
-        // Filter complex
         ffmpegCommand.Append("-filter_complex \"");
 
-        // 1. Black background base
         ffmpegCommand.Append($"color=c=black:s={width}x{height}:d={totalDuration.ToString(CultureInfo.InvariantCulture)}[base];");
 
         int currentInputIndex = 0;
 
-        // 2. Video streams scaling and positioning
         var videoOutputs = new List<string>();
         for (int i = 0; i < videos.Count; i++)
         {
@@ -87,13 +82,23 @@ public class TimelineExportService
             var adjustedStart = v.StartSeconds - timeOffset;
             var ptsStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
 
-            // Format video: scale to fit, pad if necessary, delay using setpts
-            ffmpegCommand.Append($"[{currentInputIndex}:v]scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}];");
+            int extWidth = (int)(width * 1.3);
+            extWidth = extWidth % 2 == 0 ? extWidth : extWidth + 1;
+            int extHeight = (int)(height * 1.3);
+            extHeight = extHeight % 2 == 0 ? extHeight : extHeight + 1;
+
+            ffmpegCommand.Append($"[{currentInputIndex}:v]split[v{i}_input_bg][v{i}_input_fg];");
+
+            ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
+
+            ffmpegCommand.Append($"[v{i}_input_fg]scale={width}:{height}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+
+            ffmpegCommand.Append($"[v{i}_bg][v{i}_fg]overlay=(W-w)/2:(H-h)/2[v{i}];");
+
             videoOutputs.Add($"[v{i}]");
             currentInputIndex++;
         }
 
-        // Overlay videos on base
         string lastBackground = "[base]";
         for (int i = 0; i < videos.Count; i++)
         {
@@ -110,7 +115,6 @@ public class TimelineExportService
             ffmpegCommand.Append("[base]copy[outv];");
         }
 
-        // 3. Audio streams delaying
         var audioOutputs = new List<string>();
         for (int i = 0; i < audios.Count; i++)
         {
@@ -132,13 +136,11 @@ public class TimelineExportService
         }
         else
         {
-            // If no audio, just add an empty audio track or remove complex map for audio
             ffmpegCommand.Append("anullsrc=r=48000:cl=stereo[outa]\"");
         }
 
         ffmpegCommand.Append(" -map \"[outv]\" -map \"[outa]\" ");
         
-        // Codecs
         ffmpegCommand.Append($"-c:v libx264 -preset fast -crf 22 -c:a aac -b:a 192k -t {totalDuration.ToString(CultureInfo.InvariantCulture)} ");
         
         ffmpegCommand.Append($"\"{outputPath}\"");
@@ -160,7 +162,7 @@ public class TimelineExportService
             {
                 FileName = ffmpegPath,
                 Arguments = arguments,
-                RedirectStandardError = true, // FFmpeg outputs progress to stderr
+                RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -174,10 +176,9 @@ public class TimelineExportService
             var line = await process.StandardError.ReadLineAsync();
             if (line == null) continue;
 
-            // Example line: "frame=  222 fps= 34 q=28.0 size=     512kB time=00:00:07.41 bitrate= 565.4kbits/s speed=1.15x    "
             if (line.Contains("time="))
             {
-                var timeStr = line.Split("time=")[1].Split(" ")[0]; // "00:00:07.41"
+                var timeStr = line.Split("time=")[1].Split(" ")[0];
                 if (TimeSpan.TryParse(timeStr, out var time))
                 {
                     double percent = (time.TotalSeconds / totalDurationSeconds) * 100;
@@ -200,11 +201,9 @@ public class TimelineExportService
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
         if (File.Exists(localPath)) return localPath;
         
-        // Search in current directory
         var currentDir = Path.Combine(Directory.GetCurrentDirectory(), "ffmpeg.exe");
         if (File.Exists(currentDir)) return currentDir;
         
-        // Fallback to systemic ffmpeg
         return "ffmpeg";
     }
 }
