@@ -10,6 +10,7 @@ public sealed class FrameCompositor : IDisposable
 
     private SKBitmap? composedBitmap;
     private SKBitmap? sourceBitmap;
+    private SKBitmap? tinyBitmap;
     private int lastTargetWidth;
     private int lastTargetHeight;
     private bool disposed;
@@ -57,7 +58,7 @@ public sealed class FrameCompositor : IDisposable
         return composedBitmap;
     }
 
-    private static void DrawBlurredBackground(SKCanvas canvas, SKBitmap source, int targetWidth, int targetHeight)
+    private void DrawBlurredBackground(SKCanvas canvas, SKBitmap source, int targetWidth, int targetHeight)
     {
         var scaleX = (float)targetWidth / source.Width * BackgroundScale;
         var scaleY = (float)targetHeight / source.Height * BackgroundScale;
@@ -70,27 +71,24 @@ public sealed class FrameCompositor : IDisposable
 
         var bgRect = new SKRect(bgX, bgY, bgX + bgWidth, bgY + bgHeight);
 
-        // PERFORMANCE OPTIMIZATION: 
-        // CPU Gaussian Blur on a 1080p image takes 30-50ms+ per frame, bottlenecking at ~15-20 fps.
-        // We downscale the source image by 10x, apply a 10x smaller blur (processing 99% fewer pixels),
-        // and let Skia's bilinear stretching handle the rest. This takes <1ms and looks identical!
-        int tinyWidth = Math.Max(1, source.Width / 10);
-        int tinyHeight = Math.Max(1, source.Height / 10);
+        int tinyWidth = Math.Max(1, source.Width / 40);
+        int tinyHeight = Math.Max(1, source.Height / 40);
 
-        using var tinyBitmap = new SKBitmap(tinyWidth, tinyHeight, source.ColorType, source.AlphaType);
-        using var tinyCanvas = new SKCanvas(tinyBitmap);
-        using var downscalePaint = new SKPaint { FilterQuality = SKFilterQuality.Low };
-        tinyCanvas.DrawBitmap(source, new SKRect(0, 0, tinyWidth, tinyHeight), downscalePaint);
+        if (tinyBitmap is null || tinyBitmap.Width != tinyWidth || tinyBitmap.Height != tinyHeight)
+        {
+            tinyBitmap?.Dispose();
+            tinyBitmap = new SKBitmap(tinyWidth, tinyHeight, source.ColorType, source.AlphaType);
+        }
 
-        using var blurFilter = SKImageFilter.CreateBlur(BlurSigma / 10f, BlurSigma / 10f);
+        source.ScalePixels(tinyBitmap, SKFilterQuality.None);
+
         using var darkenFilter = SKColorFilter.CreateBlendMode(new SKColor(0, 0, 0, 100), SKBlendMode.SrcOver);
 
         using var paint = new SKPaint
         {
-            ImageFilter = blurFilter,
             ColorFilter = darkenFilter,
-            IsAntialias = true,
-            FilterQuality = SKFilterQuality.Medium
+            IsAntialias = false,
+            FilterQuality = SKFilterQuality.Low
         };
 
         canvas.DrawBitmap(tinyBitmap, bgRect, paint);
@@ -111,8 +109,8 @@ public sealed class FrameCompositor : IDisposable
 
         using var paint = new SKPaint
         {
-            IsAntialias = true,
-            FilterQuality = SKFilterQuality.Medium
+            IsAntialias = false,
+            FilterQuality = SKFilterQuality.Low
         };
 
         canvas.DrawBitmap(source, fgRect, paint);
@@ -130,5 +128,7 @@ public sealed class FrameCompositor : IDisposable
         composedBitmap = null;
         sourceBitmap?.Dispose();
         sourceBitmap = null;
+        tinyBitmap?.Dispose();
+        tinyBitmap = null;
     }
 }

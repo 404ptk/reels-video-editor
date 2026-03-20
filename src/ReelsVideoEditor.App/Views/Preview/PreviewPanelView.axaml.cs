@@ -22,8 +22,8 @@ public partial class PreviewPanelView : UserControl
 {
     private const double PreviewAspectRatio = 9.0 / 16.0;
     private const double PreviewPadding = 8;
-    private const int CompositorTargetWidth = 1080;
-    private const int CompositorTargetHeight = 1920;
+    private const int CompositorTargetWidth = 540;
+    private const int CompositorTargetHeight = 960;
 
     private readonly VideoFrameDecoder decoder = new();
     private readonly AudioPlaybackService audioService = new();
