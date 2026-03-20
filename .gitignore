@@ -481,3 +481,10 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# FFmpeg native DLLs (bundled at runtime, too large for git)
+**/runtimes/win-x64/native/*.dll
+
+# Build output
+build_output.txt
+decoder_log.txt

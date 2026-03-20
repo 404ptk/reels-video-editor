@@ -1,10 +1,20 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
-using LibVLCSharp.Shared;
+using ReelsVideoEditor.App.Services.AudioPlayback;
+using ReelsVideoEditor.App.Services.Compositor;
+using ReelsVideoEditor.App.Services.VideoDecoder;
 using ReelsVideoEditor.App.ViewModels.Preview;
+using SkiaSharp;
 
 namespace ReelsVideoEditor.App.Views.Preview;
 
@@ -12,36 +22,34 @@ public partial class PreviewPanelView : UserControl
 {
     private const double PreviewAspectRatio = 9.0 / 16.0;
     private const double PreviewPadding = 8;
+    private const int CompositorTargetWidth = 1080;
+    private const int CompositorTargetHeight = 1920;
 
-    private readonly LibVLC libVlc;
-    private readonly MediaPlayer mediaPlayer;
-    private readonly DispatcherTimer playbackTimeTimer;
+    private readonly VideoFrameDecoder decoder = new();
+    private readonly AudioPlaybackService audioService = new();
+    private readonly FrameCompositor compositor = new();
     private readonly Border? previewFrame;
     private readonly Control? previewViewport;
-    private readonly LibVLCSharp.Avalonia.VideoView? previewVideoView;
+
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
     private int handledStopRequestVersion;
     private int handledSeekRequestVersion;
-    private double smoothedPlaybackMilliseconds;
-    private DateTime lastPlaybackSampleUtc;
-    private bool hasPlaybackSample;
+    private readonly Stopwatch playbackStopwatch = new();
+    private long playbackStartMilliseconds;
+    private WriteableBitmap? renderTarget;
+    private bool isSeeking;
+    private TimeSpan? pendingSeekPosition;
+    private int fpsFrameCount;
+    private long lastFpsTick;
+    private byte[]? tempFrameCopyBuffer;
+    private CancellationTokenSource? playbackCts;
 
     public PreviewPanelView()
     {
         InitializeComponent();
 
-        Core.Initialize();
-        libVlc = new LibVLC();
-        mediaPlayer = new MediaPlayer(libVlc);
-        mediaPlayer.EndReached += OnMediaPlayerEndReached;
-
-        playbackTimeTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromMilliseconds(30)
-        };
-        playbackTimeTimer.Tick += OnPlaybackTimeTimerTick;
-        playbackTimeTimer.Start();
+        VideoFrameDecoder.InitializeFFmpeg();
 
         previewFrame = this.FindControl<Border>("PreviewFrame");
         previewViewport = this.FindControl<Control>("PreviewViewport");
@@ -51,15 +59,9 @@ public partial class PreviewPanelView : UserControl
             previewViewport.SizeChanged += (_, _) => UpdatePreviewFrameSize();
         }
 
-        previewVideoView = this.FindControl<LibVLCSharp.Avalonia.VideoView>("PreviewVideoView");
-        if (previewVideoView is { } videoView)
-        {
-            videoView.MediaPlayer = mediaPlayer;
-        }
-
         Loaded += (_, _) => UpdatePreviewFrameSize();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => DisposePlayer();
+        DetachedFromVisualTree += (_, _) => DisposeResources();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs eventArgs)
@@ -73,9 +75,8 @@ public partial class PreviewPanelView : UserControl
         if (boundViewModel is not null)
         {
             boundViewModel.PropertyChanged += OnViewModelPropertyChanged;
-            ApplyPlaybackState(boundViewModel);
+            ApplyVideoSource(boundViewModel);
             ApplyAudioState(boundViewModel);
-            ApplyVideoState(boundViewModel);
         }
     }
 
@@ -86,113 +87,72 @@ public partial class PreviewPanelView : UserControl
             return;
         }
 
-        if (eventArgs.PropertyName is nameof(PreviewViewModel.IsPlaying)
-            or nameof(PreviewViewModel.CurrentVideoPath)
-            or nameof(PreviewViewModel.StopRequestVersion)
-            or nameof(PreviewViewModel.SeekRequestVersion))
+        switch (eventArgs.PropertyName)
         {
-            ApplyPlaybackState(boundViewModel);
-        }
-        else if (eventArgs.PropertyName == nameof(PreviewViewModel.IsAudioMuted))
-        {
-            ApplyAudioState(boundViewModel);
-        }
-        else if (eventArgs.PropertyName == nameof(PreviewViewModel.CurrentAudioVolume))
-        {
-            ApplyAudioState(boundViewModel);
-        }
-        else if (eventArgs.PropertyName == nameof(PreviewViewModel.IsVideoHidden))
-        {
-            ApplyVideoState(boundViewModel);
+            case nameof(PreviewViewModel.IsPlaying):
+            case nameof(PreviewViewModel.SourceVideoPath):
+            case nameof(PreviewViewModel.StopRequestVersion):
+            case nameof(PreviewViewModel.SeekRequestVersion):
+                ApplyPlaybackState(boundViewModel);
+                break;
+            case nameof(PreviewViewModel.IsAudioMuted):
+            case nameof(PreviewViewModel.CurrentAudioVolume):
+                ApplyAudioState(boundViewModel);
+                break;
         }
     }
 
-    private void ApplyAudioState(PreviewViewModel viewModel)
+    private void ApplyVideoSource(PreviewViewModel viewModel)
     {
-        var clampedVolume = Math.Clamp(viewModel.CurrentAudioVolume, 0.0, 1.0);
-        var targetVolume = viewModel.IsAudioMuted ? 0 : (int)Math.Round(clampedVolume * 100, MidpointRounding.AwayFromZero);
-        mediaPlayer.Mute = targetVolume <= 0;
-        if (targetVolume > 0)
-        {
-            mediaPlayer.Volume = targetVolume;
-        }
-    }
-
-    private void ApplyVideoState(PreviewViewModel viewModel)
-    {
-        if (previewVideoView is null)
-        {
-            return;
-        }
-
-        if (viewModel.IsVideoHidden)
-        {
-            previewVideoView.Opacity = 0.0;
-            mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
-            mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 0f);
-            return;
-        }
-
-        previewVideoView.Opacity = 1.0;
-
-        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
-
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
-    }
-
-    private void ApplyPlaybackState(PreviewViewModel viewModel)
-    {
-        var path = viewModel.CurrentVideoPath;
+        var path = viewModel.SourceVideoPath;
         if (!string.IsNullOrWhiteSpace(path) && !string.Equals(path, loadedPath, StringComparison.OrdinalIgnoreCase))
         {
             LoadMedia(path);
         }
+    }
 
+    private void ApplyPlaybackState(PreviewViewModel viewModel)
+    {
+        ApplyVideoSource(viewModel);
         ApplySeekRequest(viewModel);
 
         if (viewModel.IsPlaying)
         {
-            if (mediaPlayer.Media is not null)
+            if (decoder.IsOpen)
             {
-                if (mediaPlayer.State == VLCState.Ended)
-                {
-                    mediaPlayer.Time = 0;
-                    ResetPlaybackClock();
-                    viewModel.UpdatePlaybackTime(0);
-                }
-
-                mediaPlayer.Play();
+                playbackStartMilliseconds = viewModel.CurrentPlaybackMilliseconds;
+                playbackStopwatch.Restart();
+                audioService.Seek(TimeSpan.FromMilliseconds(playbackStartMilliseconds));
+                audioService.Play();
+                StartPlaybackLoop(viewModel);
             }
 
             return;
         }
 
-        if (viewModel.StopRequestVersion > handledStopRequestVersion && mediaPlayer.Media is not null)
+        playbackCts?.Cancel();
+        if (viewModel.StopRequestVersion > handledStopRequestVersion && decoder.IsOpen)
         {
             handledStopRequestVersion = viewModel.StopRequestVersion;
-            mediaPlayer.Stop();
-            ResetPlaybackClock();
+            audioService.Stop();
+            playbackStopwatch.Stop();
             viewModel.UpdatePlaybackTime(0);
+            _ = RenderSeekFrameAsync(TimeSpan.Zero, viewModel);
             return;
         }
 
-        mediaPlayer.SetPause(true);
-        FreezePlaybackClockAtCurrentFrame(viewModel);
+        audioService.Pause();
+        playbackStopwatch.Stop();
     }
 
-    private void ApplySeekRequest(PreviewViewModel viewModel)
+    private async void ApplySeekRequest(PreviewViewModel viewModel)
     {
         if (viewModel.SeekRequestVersion <= handledSeekRequestVersion)
         {
             return;
         }
 
-        if (mediaPlayer.Media is null)
+        if (!decoder.IsOpen)
         {
             return;
         }
@@ -200,164 +160,241 @@ public partial class PreviewPanelView : UserControl
         handledSeekRequestVersion = viewModel.SeekRequestVersion;
 
         var targetMilliseconds = Math.Max(0, viewModel.RequestedSeekMilliseconds);
-        var totalLength = Math.Max(0, mediaPlayer.Length);
+        var totalLength = (long)decoder.Duration.TotalMilliseconds;
         if (totalLength > 0)
         {
             targetMilliseconds = Math.Min(targetMilliseconds, totalLength);
         }
 
-        if (!mediaPlayer.IsPlaying && mediaPlayer.State != VLCState.Paused)
-        {
-            mediaPlayer.Play();
-        }
-
-        mediaPlayer.Time = targetMilliseconds;
-        smoothedPlaybackMilliseconds = targetMilliseconds;
-        hasPlaybackSample = true;
-        lastPlaybackSampleUtc = DateTime.UtcNow;
+        var targetTime = TimeSpan.FromMilliseconds(targetMilliseconds);
+        audioService.Seek(targetTime);
         viewModel.UpdatePlaybackTime(targetMilliseconds);
 
-        if (!viewModel.IsPlaying)
+        playbackStartMilliseconds = targetMilliseconds;
+        if (viewModel.IsPlaying)
         {
-            mediaPlayer.SetPause(true);
-            FreezePlaybackClockAtCurrentFrame(viewModel);
+            playbackStopwatch.Restart();
         }
+        else
+        {
+            playbackStopwatch.Reset();
+            audioService.Pause();
+        }
+
+        pendingSeekPosition = targetTime;
+        if (isSeeking) return;
+
+        isSeeking = true;
+        try
+        {
+            while (pendingSeekPosition.HasValue)
+            {
+                var timeToSeek = pendingSeekPosition.Value;
+                pendingSeekPosition = null;
+                await RenderSeekFrameAsync(timeToSeek, viewModel);
+            }
+        }
+        finally
+        {
+            isSeeking = false;
+        }
+    }
+
+    private void ApplyAudioState(PreviewViewModel viewModel)
+    {
+        audioService.Volume = (float)Math.Clamp(viewModel.CurrentAudioVolume, 0.0, 1.0);
+        audioService.IsMuted = viewModel.IsAudioMuted;
     }
 
     private void LoadMedia(string path)
     {
-        mediaPlayer.Stop();
-        mediaPlayer.Media = new Media(libVlc, path, FromType.FromPath);
-        mediaPlayer.SetAdjustInt(VideoAdjustOption.Enable, 1);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Contrast, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Brightness, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Gamma, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Saturation, 1f);
-        mediaPlayer.SetAdjustFloat(VideoAdjustOption.Hue, 0f);
+        audioService.Stop();
+
+        try
+        {
+            decoder.Open(path);
+            audioService.Open(path);
+        }
+        catch
+        {
+            decoder.Close();
+            audioService.Close();
+            loadedPath = null;
+            return;
+        }
+
         loadedPath = path;
-        ResetPlaybackClock();
-        boundViewModel?.UpdatePlaybackTime(0);
+        playbackStartMilliseconds = 0;
+        playbackStopwatch.Reset();
+
+        if (boundViewModel is not null)
+        {
+            var totalMs = (long)decoder.Duration.TotalMilliseconds;
+            boundViewModel.UpdatePlaybackTime(0);
+            boundViewModel.UpdateTotalPlaybackTime(totalMs);
+            _ = RenderSeekFrameAsync(TimeSpan.Zero, boundViewModel);
+        }
     }
 
-    private void DisposePlayer()
+    private void StartPlaybackLoop(PreviewViewModel viewModel)
+    {
+        playbackCts?.Cancel();
+        playbackCts = new CancellationTokenSource();
+        var token = playbackCts.Token;
+
+        Task.Run(async () =>
+        {
+            // 16.666 ms interval for 60 FPS targeting without UI thread quantization!
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(16.666));
+
+            while (!token.IsCancellationRequested && await timer.WaitForNextTickAsync(token))
+            {
+                var elapsedMs = playbackStopwatch.ElapsedMilliseconds;
+                var currentMs = playbackStartMilliseconds + elapsedMs;
+                var totalMs = (long)decoder.Duration.TotalMilliseconds;
+
+                if (totalMs > 0 && currentMs >= totalMs)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        if (token.IsCancellationRequested) return;
+                        viewModel.UpdatePlaybackTime((long)totalMs);
+                        viewModel.IsPlaying = false;
+                        audioService.Stop();
+                    });
+                    break;
+                }
+
+                var currentTime = TimeSpan.FromMilliseconds(currentMs);
+
+                SKBitmap? composed = null;
+                lock (decoder)
+                {
+                    if (!decoder.IsOpen) break;
+
+                    var pixels = decoder.ReadNextFrame(currentTime);
+                    if (pixels != null)
+                    {
+                        // Background buffer reuse applies here! 0 unmanaged allocations.
+                        composed = compositor.ComposeFrame(
+                            pixels,
+                            decoder.FrameWidth,
+                            decoder.FrameHeight,
+                            CompositorTargetWidth,
+                            CompositorTargetHeight);
+                    }
+                }
+
+                if (composed != null && !token.IsCancellationRequested)
+                {
+                    // Await the push to the UI thread to prevent mutating 'composed' 
+                    // in the background before the UI copies it.
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (!token.IsCancellationRequested)
+                        {
+                            CopyToWriteableBitmap(composed, viewModel);
+                            viewModel.UpdatePlaybackTime((long)currentMs);
+                            viewModel.UpdateTotalPlaybackTime(totalMs);
+                        }
+                    }, DispatcherPriority.Render);
+                }
+            }
+        }, token);
+    }
+
+    private async Task RenderSeekFrameAsync(TimeSpan position, PreviewViewModel viewModel)
+    {
+        if (!decoder.IsOpen || viewModel.IsVideoHidden)
+            return;
+
+        var composed = await Task.Run(() =>
+        {
+            lock (decoder)
+            {
+                var pixels = decoder.SeekAndRead(position);
+                if (pixels is null) return null;
+
+                return compositor.ComposeFrame(
+                    pixels,
+                    decoder.FrameWidth,
+                    decoder.FrameHeight,
+                    CompositorTargetWidth,
+                    CompositorTargetHeight);
+            }
+        });
+
+        if (composed is not null)
+        {
+            CopyToWriteableBitmap(composed, viewModel);
+        }
+    }
+
+    private void CopyToWriteableBitmap(SKBitmap composed, PreviewViewModel viewModel)
+    {
+        var width = composed.Width;
+        var height = composed.Height;
+
+        if (renderTarget is null || renderTarget.PixelSize.Width != width || renderTarget.PixelSize.Height != height)
+        {
+            renderTarget = new WriteableBitmap(
+                new PixelSize(width, height),
+                new Vector(96, 96),
+                Avalonia.Platform.PixelFormat.Bgra8888,
+                AlphaFormat.Premul);
+        }
+
+        using (var lockedBitmap = renderTarget.Lock())
+        {
+            var sourcePtr = composed.GetPixels();
+            var destPtr = lockedBitmap.Address;
+            var byteCount = width * height * 4;
+
+            if (tempFrameCopyBuffer is null || tempFrameCopyBuffer.Length != byteCount)
+            {
+                tempFrameCopyBuffer = new byte[byteCount];
+            }
+
+            System.Runtime.InteropServices.Marshal.Copy(sourcePtr, tempFrameCopyBuffer, 0, byteCount);
+            System.Runtime.InteropServices.Marshal.Copy(tempFrameCopyBuffer, 0, destPtr, byteCount);
+        }
+
+        if (viewModel.CurrentFrame == renderTarget)
+        {
+            viewModel.CurrentFrame = null;
+        }
+        
+        viewModel.CurrentFrame = renderTarget;
+
+        var previewImage = this.FindControl<Image>("PreviewImage");
+        previewImage?.InvalidateVisual();
+
+        fpsFrameCount++;
+        var currentTick = Environment.TickCount64;
+        if (lastFpsTick == 0)
+        {
+            lastFpsTick = currentTick;
+        }
+        else if (currentTick - lastFpsTick >= 1000)
+        {
+            viewModel.FpsText = $"{fpsFrameCount} FPS";
+            fpsFrameCount = 0;
+            lastFpsTick = currentTick;
+        }
+    }
+
+    private void DisposeResources()
     {
         if (boundViewModel is not null)
         {
             boundViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         }
 
-        playbackTimeTimer.Stop();
-        playbackTimeTimer.Tick -= OnPlaybackTimeTimerTick;
-        mediaPlayer.EndReached -= OnMediaPlayerEndReached;
-        mediaPlayer.Dispose();
-        libVlc.Dispose();
-    }
-
-    private void OnPlaybackTimeTimerTick(object? sender, EventArgs eventArgs)
-    {
-        if (boundViewModel is null)
-        {
-            return;
-        }
-
-        if (mediaPlayer.Media is null)
-        {
-            return;
-        }
-
-        var nowUtc = DateTime.UtcNow;
-        var rawTime = Math.Max(0, mediaPlayer.Time);
-        var totalTime = Math.Max(0, mediaPlayer.Length);
-
-        if (!hasPlaybackSample)
-        {
-            smoothedPlaybackMilliseconds = rawTime;
-            lastPlaybackSampleUtc = nowUtc;
-            hasPlaybackSample = true;
-        }
-        else if (boundViewModel.IsPlaying && mediaPlayer.IsPlaying)
-        {
-            var elapsedMilliseconds = Math.Max(0, (nowUtc - lastPlaybackSampleUtc).TotalMilliseconds);
-            var predicted = smoothedPlaybackMilliseconds + elapsedMilliseconds;
-
-            if (rawTime > predicted + 180 || rawTime < predicted - 260)
-            {
-                smoothedPlaybackMilliseconds = rawTime;
-            }
-            else
-            {
-                smoothedPlaybackMilliseconds = Math.Max(predicted, rawTime);
-            }
-
-            lastPlaybackSampleUtc = nowUtc;
-        }
-        else
-        {
-            smoothedPlaybackMilliseconds = rawTime;
-            lastPlaybackSampleUtc = nowUtc;
-        }
-
-        if (totalTime > 0)
-        {
-            smoothedPlaybackMilliseconds = Math.Min(smoothedPlaybackMilliseconds, totalTime);
-        }
-
-        boundViewModel.UpdatePlaybackTime((long)smoothedPlaybackMilliseconds);
-        boundViewModel.UpdateTotalPlaybackTime(totalTime);
-
-        if (mediaPlayer.State == VLCState.Ended)
-        {
-            CompletePlaybackAtEnd();
-        }
-    }
-
-    private void OnMediaPlayerEndReached(object? sender, EventArgs eventArgs)
-    {
-        Dispatcher.UIThread.Post(CompletePlaybackAtEnd);
-    }
-
-    private void CompletePlaybackAtEnd()
-    {
-        if (boundViewModel is null)
-        {
-            return;
-        }
-
-        var totalTime = Math.Max(0, mediaPlayer.Length);
-        if (totalTime > 0)
-        {
-            smoothedPlaybackMilliseconds = totalTime;
-            hasPlaybackSample = true;
-            lastPlaybackSampleUtc = DateTime.UtcNow;
-            boundViewModel.UpdateTotalPlaybackTime(totalTime);
-            boundViewModel.UpdatePlaybackTime(totalTime);
-        }
-
-        if (boundViewModel.IsPlaying)
-        {
-            boundViewModel.IsPlaying = false;
-        }
-    }
-
-    private void ResetPlaybackClock()
-    {
-        smoothedPlaybackMilliseconds = 0;
-        hasPlaybackSample = false;
-        lastPlaybackSampleUtc = DateTime.UtcNow;
-    }
-
-    private void FreezePlaybackClockAtCurrentFrame(PreviewViewModel viewModel)
-    {
-        if (mediaPlayer.Media is null)
-        {
-            return;
-        }
-
-        var rawTime = Math.Max(0, mediaPlayer.Time);
-        smoothedPlaybackMilliseconds = rawTime;
-        hasPlaybackSample = true;
-        lastPlaybackSampleUtc = DateTime.UtcNow;
-        viewModel.UpdatePlaybackTime(rawTime);
+        playbackCts?.Cancel();
+        decoder.Dispose();
+        audioService.Dispose();
+        compositor.Dispose();
+        renderTarget = null;
     }
 
     private void UpdatePreviewFrameSize()

@@ -84,12 +84,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
                 Preview.Stop();
-                Preview.CurrentVideoPath = null;
+                Preview.SourceVideoPath = null;
             }
-            else if (Preview.CurrentVideoPath != resolvedPath)
+            else if (Preview.SourceVideoPath != resolvedPath)
             {
                 Preview.Stop();
-                Preview.CurrentVideoPath = resolvedPath;
+                Preview.SourceVideoPath = resolvedPath;
             }
         };
 

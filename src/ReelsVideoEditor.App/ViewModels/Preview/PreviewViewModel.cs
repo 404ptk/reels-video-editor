@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Media.Imaging;
 using System;
 using System.IO;
 
@@ -19,7 +20,13 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private bool isPlaying;
 
     [ObservableProperty]
-    private string? currentVideoPath;
+    private string? sourceVideoPath;
+
+    [ObservableProperty]
+    private WriteableBitmap? currentFrame;
+
+    [ObservableProperty]
+    private string fpsText = "0 FPS";
 
     [ObservableProperty]
     private bool isAudioMuted;
@@ -58,7 +65,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
         ? "M4,3 H7 V13 H4 Z M9,3 H12 V13 H9 Z"
         : "M4,3 L13,8 L4,13 Z";
 
-    public bool HasVideoLoaded => !string.IsNullOrWhiteSpace(CurrentVideoPath) && File.Exists(CurrentVideoPath);
+    public bool HasVideoLoaded => !string.IsNullOrWhiteSpace(SourceVideoPath) && File.Exists(SourceVideoPath);
 
     public bool ShowPlaceholder => !HasVideoLoaded;
 
@@ -77,7 +84,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
                     return;
                 }
 
-                CurrentVideoPath = resolvedPath;
+                SourceVideoPath = resolvedPath;
             }
 
             IsPlaying = true;
@@ -102,7 +109,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
         PlaybackStateChanged?.Invoke(value);
     }
 
-    partial void OnCurrentVideoPathChanged(string? value)
+    partial void OnSourceVideoPathChanged(string? value)
     {
         OnPropertyChanged(nameof(HasVideoLoaded));
         OnPropertyChanged(nameof(ShowPlaceholder));
@@ -144,7 +151,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
                 return;
             }
 
-            CurrentVideoPath = resolvedPath;
+            SourceVideoPath = resolvedPath;
         }
 
         var safeMilliseconds = Math.Max(0, targetPlaybackMilliseconds);
@@ -167,5 +174,10 @@ public sealed partial class PreviewViewModel : ViewModelBase
     partial void OnCurrentPlaybackMillisecondsChanged(long value)
     {
         PlaybackTimeChanged?.Invoke(value);
+    }
+
+    public void TriggerFrameUpdate()
+    {
+        OnPropertyChanged(nameof(CurrentFrame));
     }
 }
