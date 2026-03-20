@@ -314,10 +314,18 @@
                                         PointerMoved="AudioClipLevel_OnPointerMoved"
                                         PointerReleased="ClipLevel_OnPointerReleased">
                                     <Grid ClipToBounds="True">
-                                        <Image Source="{Binding WaveformImage}"
-                                               Stretch="Fill"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Stretch" />
+                                        <Border HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Top"
+                                                Height="{Binding AudioWaveformVisualHeight}"
+                                                ClipToBounds="True">
+                                            <Border.RenderTransform>
+                                                <TranslateTransform Y="{Binding AudioWaveformVisualTop}" />
+                                            </Border.RenderTransform>
+                                            <Image Source="{Binding WaveformImage}"
+                                                   Stretch="Fill"
+                                                   HorizontalAlignment="Stretch"
+                                                   VerticalAlignment="Stretch" />
+                                        </Border>
                                         <Border Height="2"
                                                 HorizontalAlignment="Stretch"
                                                 VerticalAlignment="Top"

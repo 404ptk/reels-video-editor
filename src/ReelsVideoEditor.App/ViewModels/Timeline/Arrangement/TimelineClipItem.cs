@@ -43,6 +43,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private bool isAudioLevelLineVisible;
 
+    [ObservableProperty]
+    private double audioWaveformVisualHeight = 1;
+
+    [ObservableProperty]
+    private double audioWaveformVisualTop;
+
     public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds)
     {
         Name = name;

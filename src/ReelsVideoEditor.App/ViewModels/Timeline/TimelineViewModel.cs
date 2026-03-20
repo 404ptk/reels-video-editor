@@ -493,9 +493,15 @@ public partial class TimelineViewModel : ViewModelBase
 
     private void UpdateAudioClipLevelLine(TimelineClipItem clip)
     {
-        var drawableHeight = Math.Max(0, ClipVisualHeight - 2);
-        clip.AudioLevelLineTop = (1.0 - Math.Clamp(clip.VolumeLevel, 0.0, 1.0)) * drawableHeight;
+        var drawableHeight = Math.Max(2, ClipVisualHeight - 2);
+        var volumeLevel = Math.Clamp(clip.VolumeLevel, 0.0, 1.0);
+
+        clip.AudioLevelLineTop = (1.0 - volumeLevel) * drawableHeight;
         clip.IsAudioLevelLineVisible = clip.VolumeLevel < 0.999;
+
+        var waveformHeight = Math.Max(1.0, drawableHeight * volumeLevel);
+        clip.AudioWaveformVisualHeight = waveformHeight;
+        clip.AudioWaveformVisualTop = (drawableHeight - waveformHeight) / 2.0;
     }
 
     private double ResolveVideoOpacityAt(double seconds)
