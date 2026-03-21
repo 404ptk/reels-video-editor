@@ -79,7 +79,7 @@
                         </Viewbox>
                     </ToggleButton>
                     <ToggleButton Classes="preview-tool" IsChecked="{Binding IsClipperModeEnabled}" ToolTip.Tip="Clipper">
-                        <Viewbox Width="18" Height="18">
+                        <Viewbox Width="22" Height="22">
                             <Canvas Width="24" Height="24">
                                 <Path Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Fill="Transparent" Data="M8 5v10a1 1 0 0 0 1 1h10 M5 8h10a1 1 0 0 1 1 1v10" />
                             </Canvas>
