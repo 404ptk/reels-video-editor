@@ -419,7 +419,7 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
     {
-        if (previewFrame is null || previewViewport is null || boundViewModel is null || !boundViewModel.IsTransformModeEnabled) return;
+        if (previewFrame is null || previewViewport is null || boundViewModel is null) return;
 
         var zoomDelta = e.Delta.Y > 0 ? 0.15 : -0.15;
         var newZoom = Math.Clamp(currentZoom + zoomDelta, 1.0, 5.0);
@@ -452,7 +452,7 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
-        if (currentZoom <= 1.0 || previewViewport is null || boundViewModel is null || !boundViewModel.IsTransformModeEnabled) return;
+        if (currentZoom <= 1.0 || previewViewport is null || boundViewModel is null || boundViewModel.IsTransformModeEnabled) return;
 
         var pointer = e.GetCurrentPoint(previewViewport);
         if (pointer.Properties.IsLeftButtonPressed || pointer.Properties.IsMiddleButtonPressed)
@@ -465,7 +465,7 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        if (!isPanning || previewViewport is null || boundViewModel is null || !boundViewModel.IsTransformModeEnabled) return;
+        if (!isPanning || previewViewport is null || boundViewModel is null || boundViewModel.IsTransformModeEnabled) return;
 
         var pointer = e.GetCurrentPoint(previewViewport);
         var deltaX = pointer.Position.X - lastPanPosition.X;

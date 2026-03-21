@@ -149,7 +149,6 @@
                         </Border.RenderTransform>
 
                         <Panel IsVisible="{Binding IsVideoVisible}">
-                            <!-- Main Content (Clipped) -->
                             <Border BorderBrush="{DynamicResource AccentSubtle}" BorderThickness="1" CornerRadius="8" ClipToBounds="True" Background="Black">
                                 <Image x:Name="PreviewImage"
                                        Source="{Binding CurrentFrame}"
@@ -158,7 +157,6 @@
                                        VerticalAlignment="Stretch" />
                             </Border>
 
-                            <!-- Handles Overlay (Unclipped by video border) -->
                             <Grid Width="{Binding ForegroundWidth}"
                                   Height="{Binding ForegroundHeight}"
                                   HorizontalAlignment="Center"
@@ -181,7 +179,6 @@
                         </Panel>
                     </Border>
 
-                    <!-- Placeholder -->
                     <StackPanel HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Spacing="6"
