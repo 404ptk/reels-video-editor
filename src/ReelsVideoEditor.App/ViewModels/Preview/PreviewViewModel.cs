@@ -58,8 +58,11 @@ public sealed partial class PreviewViewModel : ViewModelBase
     [ObservableProperty]
     private bool isClipperModeEnabled;
 
+    public bool ShowTransformHandles => IsTransformModeEnabled && IsVideoVisible;
+
     partial void OnIsTransformModeEnabledChanged(bool value)
     {
+        OnPropertyChanged(nameof(ShowTransformHandles));
         if (value)
             IsClipperModeEnabled = false;
         else if (!IsClipperModeEnabled)
@@ -167,6 +170,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasVideoLoaded));
         OnPropertyChanged(nameof(ShowPlaceholder));
         OnPropertyChanged(nameof(IsVideoVisible));
+        OnPropertyChanged(nameof(ShowTransformHandles));
         CurrentPlaybackMilliseconds = 0;
         CurrentPlaybackTimeText = ZeroTime;
         TotalPlaybackTimeText = ZeroTime;
@@ -175,6 +179,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     partial void OnIsVideoHiddenChanged(bool value)
     {
         OnPropertyChanged(nameof(IsVideoVisible));
+        OnPropertyChanged(nameof(ShowTransformHandles));
     }
 
     public void UpdatePlaybackTime(long playbackMilliseconds)
@@ -233,4 +238,38 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(CurrentFrame));
     }
+
+    [ObservableProperty]
+    private double foregroundWidth;
+
+    [ObservableProperty]
+    private double foregroundHeight;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TransformHandleThickness))]
+    [NotifyPropertyChangedFor(nameof(TransformHandleSize))]
+    [NotifyPropertyChangedFor(nameof(TransformHandleOffset))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginTopLeft))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginTopRight))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginBottomLeft))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginBottomRight))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginTopCenter))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginBottomCenter))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginLeftCenter))]
+    [NotifyPropertyChangedFor(nameof(HandleMarginRightCenter))]
+    private double currentZoom = 1.0;
+
+    public double TransformHandleThickness => 2.0 / CurrentZoom;
+    public double TransformHandleSize => 8.0 / CurrentZoom;
+    public double TransformHandleOffset => -4.0 / CurrentZoom;
+
+    public Avalonia.Thickness HandleMarginTopLeft => new(TransformHandleOffset, TransformHandleOffset, 0, 0);
+    public Avalonia.Thickness HandleMarginTopRight => new(0, TransformHandleOffset, TransformHandleOffset, 0);
+    public Avalonia.Thickness HandleMarginBottomLeft => new(TransformHandleOffset, 0, 0, TransformHandleOffset);
+    public Avalonia.Thickness HandleMarginBottomRight => new(0, 0, TransformHandleOffset, TransformHandleOffset);
+    
+    public Avalonia.Thickness HandleMarginTopCenter => new(0, TransformHandleOffset, 0, 0);
+    public Avalonia.Thickness HandleMarginBottomCenter => new(0, 0, 0, TransformHandleOffset);
+    public Avalonia.Thickness HandleMarginLeftCenter => new(TransformHandleOffset, 0, 0, 0);
+    public Avalonia.Thickness HandleMarginRightCenter => new(0, 0, TransformHandleOffset, 0);
 }

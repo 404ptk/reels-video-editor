@@ -157,7 +157,24 @@
                                VerticalAlignment="Stretch"
                                IsVisible="{Binding IsVideoVisible}" />
 
-
+                        <Grid Width="{Binding ForegroundWidth}"
+                              Height="{Binding ForegroundHeight}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              IsVisible="{Binding ShowTransformHandles}">
+                            
+                            <Border BorderBrush="White" BorderThickness="{Binding TransformHandleThickness}" />
+                                    
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
+                            
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
+                            <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
+                        </Grid>
 
                         <StackPanel HorizontalAlignment="Center"
                                     VerticalAlignment="Center"

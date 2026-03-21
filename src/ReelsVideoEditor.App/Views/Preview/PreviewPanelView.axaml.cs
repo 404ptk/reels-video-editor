@@ -245,6 +245,7 @@ public partial class PreviewPanelView : UserControl
 
         if (boundViewModel is not null)
         {
+            UpdateVideoForegroundBounds();
             var totalMs = (long)decoder.Duration.TotalMilliseconds;
             boundViewModel.UpdatePlaybackTime(0);
             boundViewModel.UpdateTotalPlaybackTime(totalMs);
@@ -440,6 +441,7 @@ public partial class PreviewPanelView : UserControl
         
         if (boundViewModel is not null)
         {
+            boundViewModel.CurrentZoom = newZoom;
             boundViewModel.ZoomText = $"Zoom: {Math.Round(currentZoom * 100)}%";
         }
 
@@ -562,7 +564,28 @@ public partial class PreviewPanelView : UserControl
         previewFrame.HorizontalAlignment = HorizontalAlignment.Center;
         previewFrame.VerticalAlignment = VerticalAlignment.Center;
 
+        UpdateVideoForegroundBounds();
+
         ConstrainPan();
         ApplyTransform();
+    }
+
+    private void UpdateVideoForegroundBounds()
+    {
+        if (boundViewModel is null || !decoder.IsOpen || previewFrame is null) return;
+
+        var sourceW = decoder.FrameWidth;
+        var sourceH = decoder.FrameHeight;
+        if (sourceW <= 0 || sourceH <= 0) return;
+
+        var targetW = previewFrame.Width;
+        var targetH = previewFrame.Height;
+
+        var scaleX = targetW / sourceW;
+        var scaleY = targetH / sourceH;
+        var scale = Math.Min(scaleX, scaleY);
+
+        boundViewModel.ForegroundWidth = sourceW * scale;
+        boundViewModel.ForegroundHeight = sourceH * scale;
     }
 }
