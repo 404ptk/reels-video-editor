@@ -29,6 +29,17 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private string fpsText = "0 FPS";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FpsDotColor))]
+    private int fps;
+
+    public string FpsDotColor => Fps switch
+    {
+        >= 50 => "#00FF00",
+        >= 25 => "#FFFF00",
+        _ => "#FF0000"
+    };
+
+    [ObservableProperty]
     private bool isAudioMuted;
 
     [ObservableProperty]

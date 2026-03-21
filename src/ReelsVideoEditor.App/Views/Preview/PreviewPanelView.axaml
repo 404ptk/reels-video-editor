@@ -21,9 +21,29 @@
 
     <Grid RowDefinitions="Auto,*,Auto"
           ClipToBounds="True">
-        <TextBlock Foreground="{DynamicResource AccentMuted}"
-                   FontSize="12"
-                   Text="{Binding Title}" />
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Grid.Column="0"
+                       Foreground="{DynamicResource AccentMuted}"
+                       FontSize="12"
+                       Text="{Binding Title}"
+                       VerticalAlignment="Center" />
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="6"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsVideoVisible}">
+                <Ellipse Width="8"
+                         Height="8"
+                         Fill="{Binding FpsDotColor}"
+                         VerticalAlignment="Center" />
+                <TextBlock Text="{Binding FpsText}"
+                           Foreground="{DynamicResource AccentMuted}"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Grid>
 
         <Border Grid.Row="1"
                 Margin="0,10,0,0"
@@ -46,19 +66,7 @@
                                VerticalAlignment="Stretch"
                                IsVisible="{Binding IsVideoVisible}" />
 
-                        <Border Background="#A0000000"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Top"
-                                Margin="8"
-                                Padding="6,2"
-                                CornerRadius="4"
-                                IsHitTestVisible="False"
-                                IsVisible="{Binding IsVideoVisible}">
-                            <TextBlock Text="{Binding FpsText}"
-                                       Foreground="#00FF00"
-                                       FontSize="11"
-                                       FontWeight="Bold" />
-                        </Border>
+
 
                         <StackPanel HorizontalAlignment="Center"
                                     VerticalAlignment="Center"

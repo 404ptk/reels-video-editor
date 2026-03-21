@@ -377,6 +377,7 @@ public partial class PreviewPanelView : UserControl
         }
         else if (currentTick - lastFpsTick >= 1000)
         {
+            viewModel.Fps = fpsFrameCount;
             viewModel.FpsText = $"{fpsFrameCount} FPS";
             fpsFrameCount = 0;
             lastFpsTick = currentTick;
