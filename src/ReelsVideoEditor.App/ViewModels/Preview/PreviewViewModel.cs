@@ -40,6 +40,9 @@ public sealed partial class PreviewViewModel : ViewModelBase
     };
 
     [ObservableProperty]
+    private string zoomText = "Zoom: 100%";
+
+    [ObservableProperty]
     private bool isAudioMuted;
 
     [ObservableProperty]

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -45,6 +46,12 @@ public partial class PreviewPanelView : UserControl
     private byte[]? tempFrameCopyBuffer;
     private CancellationTokenSource? playbackCts;
 
+    private double currentZoom = 1.0;
+    private double panX = 0.0;
+    private double panY = 0.0;
+    private bool isPanning;
+    private Point lastPanPosition;
+
     public PreviewPanelView()
     {
         InitializeComponent();
@@ -57,6 +64,11 @@ public partial class PreviewPanelView : UserControl
         if (previewViewport is not null)
         {
             previewViewport.SizeChanged += (_, _) => UpdatePreviewFrameSize();
+            previewViewport.PointerWheelChanged += OnPreviewPointerWheelChanged;
+            previewViewport.PointerPressed += OnPreviewPointerPressed;
+            previewViewport.PointerMoved += OnPreviewPointerMoved;
+            previewViewport.PointerReleased += OnPreviewPointerReleased;
+            previewViewport.PointerCaptureLost += OnPreviewPointerCaptureLost;
         }
 
         Loaded += (_, _) => UpdatePreviewFrameSize();
@@ -398,6 +410,117 @@ public partial class PreviewPanelView : UserControl
         renderTarget = null;
     }
 
+    private void OnPreviewPointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)
+    {
+        if (previewFrame is null || previewViewport is null) return;
+
+        var zoomDelta = e.Delta.Y > 0 ? 0.15 : -0.15;
+        var newZoom = Math.Clamp(currentZoom + zoomDelta, 1.0, 5.0);
+
+        if (Math.Abs(newZoom - currentZoom) < 0.001) return;
+
+        var mousePos = e.GetPosition(previewViewport);
+        var centerX = previewViewport.Bounds.Width / 2;
+        var centerY = previewViewport.Bounds.Height / 2;
+
+        var relativeX = mousePos.X - centerX;
+        var relativeY = mousePos.Y - centerY;
+
+        var zoomRatio = newZoom / currentZoom;
+        panX = relativeX - (relativeX - panX) * zoomRatio;
+        panY = relativeY - (relativeY - panY) * zoomRatio;
+
+        currentZoom = newZoom;
+        
+        if (boundViewModel is not null)
+        {
+            boundViewModel.ZoomText = $"Zoom: {Math.Round(currentZoom * 100)}%";
+        }
+
+        ConstrainPan();
+        ApplyTransform();
+        e.Handled = true;
+    }
+
+    private void OnPreviewPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if (currentZoom <= 1.0 || previewViewport is null) return;
+
+        var pointer = e.GetCurrentPoint(previewViewport);
+        if (pointer.Properties.IsLeftButtonPressed || pointer.Properties.IsMiddleButtonPressed)
+        {
+            isPanning = true;
+            lastPanPosition = pointer.Position;
+            e.Handled = true;
+        }
+    }
+
+    private void OnPreviewPointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
+    {
+        if (!isPanning || previewViewport is null) return;
+
+        var pointer = e.GetCurrentPoint(previewViewport);
+        var deltaX = pointer.Position.X - lastPanPosition.X;
+        var deltaY = pointer.Position.Y - lastPanPosition.Y;
+
+        panX += deltaX;
+        panY += deltaY;
+
+        lastPanPosition = pointer.Position;
+
+        ConstrainPan();
+        ApplyTransform();
+        e.Handled = true;
+    }
+
+    private void OnPreviewPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        isPanning = false;
+    }
+
+    private void OnPreviewPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e)
+    {
+        isPanning = false;
+    }
+
+    private void ConstrainPan()
+    {
+        if (previewFrame is null) return;
+
+        if (currentZoom <= 1.0)
+        {
+            panX = 0;
+            panY = 0;
+            return;
+        }
+
+        var scaledWidth = previewFrame.Width * currentZoom;
+        var scaledHeight = previewFrame.Height * currentZoom;
+
+        var maxPanX = Math.Max(0, (scaledWidth - previewFrame.Width) / 2);
+        var maxPanY = Math.Max(0, (scaledHeight - previewFrame.Height) / 2);
+
+        panX = Math.Clamp(panX, -maxPanX, maxPanX);
+        panY = Math.Clamp(panY, -maxPanY, maxPanY);
+    }
+
+    private void ApplyTransform()
+    {
+        if (previewFrame?.RenderTransform is TransformGroup group && group.Children.Count >= 2)
+        {
+            if (group.Children[0] is ScaleTransform scale)
+            {
+                scale.ScaleX = currentZoom;
+                scale.ScaleY = currentZoom;
+            }
+            if (group.Children[1] is TranslateTransform translate)
+            {
+                translate.X = panX;
+                translate.Y = panY;
+            }
+        }
+    }
+
     private void UpdatePreviewFrameSize()
     {
         if (previewFrame is null || previewViewport is null)
@@ -421,5 +544,8 @@ public partial class PreviewPanelView : UserControl
         previewFrame.Height = Math.Max(112, frameHeight);
         previewFrame.HorizontalAlignment = HorizontalAlignment.Center;
         previewFrame.VerticalAlignment = VerticalAlignment.Center;
+
+        ConstrainPan();
+        ApplyTransform();
     }
 }
