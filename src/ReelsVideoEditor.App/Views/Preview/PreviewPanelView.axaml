@@ -17,51 +17,114 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
+
+        <Style Selector="ToggleButton.preview-tool">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentMuted}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleButton.preview-tool:pointerover">
+            <Setter Property="Background" Value="#0AFFFFFF" />
+        </Style>
+        <Style Selector="ToggleButton.preview-tool:checked">
+            <Setter Property="Background" Value="#15FFFFFF" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="#2AFFFFFF" />
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto"
           ClipToBounds="True">
-        <Grid ColumnDefinitions="*,Auto,Auto">
+        <Grid ColumnDefinitions="1*,Auto,1*">
             <TextBlock Grid.Column="0"
                        Foreground="{DynamicResource AccentMuted}"
                        FontSize="12"
                        Text="{Binding Title}"
+                       HorizontalAlignment="Left"
                        VerticalAlignment="Center" />
 
-            <ComboBox Grid.Column="1"
-                      Margin="0,0,16,0"
-                      ItemsSource="{Binding AvailableQualities}"
-                      SelectedItem="{Binding SelectedQuality}"
-                      VerticalAlignment="Center"
-                      FontSize="12"
-                      FontWeight="SemiBold"
-                      Foreground="{DynamicResource AccentMuted}"
-                      Background="Transparent"
-                      BorderBrush="Transparent"
-                      BorderThickness="0" />
+            <Border Grid.Column="1" 
+                    BorderBrush="{DynamicResource AccentSubtle}" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Padding="2" 
+                    Background="#0Affffff" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <ToggleButton Classes="preview-tool" IsChecked="{Binding IsTransformModeEnabled}" ToolTip.Tip="Transform">
+                        <Viewbox Width="18" Height="18">
+                            <Canvas Width="24" Height="24">
+                                <Path Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Fill="Transparent" Data="M3 4a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -2 M17 4a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -2 M17 18a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -2 M11 5h2 M5 11v2 M19 11v2 M11 19h2" />
+                                <Path Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Fill="{Binding $parent[ToggleButton].Foreground}" Data="M3 18a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1l0 -2" />
+                            </Canvas>
+                        </Viewbox>
+                    </ToggleButton>
+                    <ToggleButton Classes="preview-tool" IsChecked="{Binding IsClipperModeEnabled}" ToolTip.Tip="Clipper">
+                        <Viewbox Width="18" Height="18">
+                            <Canvas Width="24" Height="24">
+                                <Path Stroke="{Binding $parent[ToggleButton].Foreground}" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round" Fill="Transparent" Data="M8 5v10a1 1 0 0 0 1 1h10 M5 8h10a1 1 0 0 1 1 1v10" />
+                            </Canvas>
+                        </Viewbox>
+                    </ToggleButton>
+                </StackPanel>
+            </Border>
 
             <StackPanel Grid.Column="2"
-                        Orientation="Vertical"
-                        Spacing="2"
-                        VerticalAlignment="Center"
-                        IsVisible="{Binding IsVideoVisible}">
-                <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Spacing="6">
-                    <Ellipse Width="8"
-                             Height="8"
-                             Fill="{Binding FpsDotColor}"
-                             VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding FpsText}"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="16"
+                        VerticalAlignment="Center">
+                <ComboBox ItemsSource="{Binding AvailableQualities}"
+                          SelectedItem="{Binding SelectedQuality}"
+                          VerticalAlignment="Center"
+                          FontSize="12"
+                          FontWeight="SemiBold"
+                          Foreground="{DynamicResource AccentMuted}"
+                          Background="Transparent"
+                          BorderBrush="Transparent"
+                          BorderThickness="0" />
+
+                <StackPanel Orientation="Vertical"
+                            Spacing="2"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding IsVideoVisible}">
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Spacing="6">
+                        <Ellipse Width="8"
+                                 Height="8"
+                                 Fill="{Binding FpsDotColor}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding FpsText}"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ZoomText}"
                                Foreground="{DynamicResource AccentMuted}"
-                               FontSize="12"
-                               FontWeight="Bold"
-                               VerticalAlignment="Center" />
+                               FontSize="11"
+                               HorizontalAlignment="Right" />
                 </StackPanel>
-                <TextBlock Text="{Binding ZoomText}"
-                           Foreground="{DynamicResource AccentMuted}"
-                           FontSize="11"
-                           HorizontalAlignment="Right" />
             </StackPanel>
         </Grid>
 

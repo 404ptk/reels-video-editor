@@ -52,6 +52,28 @@ public sealed partial class PreviewViewModel : ViewModelBase
     [ObservableProperty]
     private PreviewQuality selectedQuality = PreviewQuality.Mid;
 
+    [ObservableProperty]
+    private bool isTransformModeEnabled = true;
+
+    [ObservableProperty]
+    private bool isClipperModeEnabled;
+
+    partial void OnIsTransformModeEnabledChanged(bool value)
+    {
+        if (value)
+            IsClipperModeEnabled = false;
+        else if (!IsClipperModeEnabled)
+            IsTransformModeEnabled = true;
+    }
+
+    partial void OnIsClipperModeEnabledChanged(bool value)
+    {
+        if (value)
+            IsTransformModeEnabled = false;
+        else if (!IsTransformModeEnabled)
+            IsClipperModeEnabled = true;
+    }
+
     public PreviewQuality[] AvailableQualities { get; } = new[] 
     { 
         PreviewQuality.High, 
