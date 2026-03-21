@@ -65,16 +65,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowTransformHandles));
         if (value)
             IsClipperModeEnabled = false;
-        else if (!IsClipperModeEnabled)
-            IsTransformModeEnabled = true;
     }
 
     partial void OnIsClipperModeEnabledChanged(bool value)
     {
         if (value)
             IsTransformModeEnabled = false;
-        else if (!IsTransformModeEnabled)
-            IsClipperModeEnabled = true;
     }
 
     public PreviewQuality[] AvailableQualities { get; } = new[] 
