@@ -23,8 +23,6 @@ public partial class PreviewPanelView : UserControl
 {
     private const double PreviewAspectRatio = 9.0 / 16.0;
     private const double PreviewPadding = 8;
-    private const int CompositorTargetWidth = 540;
-    private const int CompositorTargetHeight = 960;
 
     private readonly VideoFrameDecoder decoder = new();
     private readonly AudioPlaybackService audioService = new();
@@ -110,6 +108,12 @@ public partial class PreviewPanelView : UserControl
             case nameof(PreviewViewModel.IsAudioMuted):
             case nameof(PreviewViewModel.CurrentAudioVolume):
                 ApplyAudioState(boundViewModel);
+                break;
+            case nameof(PreviewViewModel.SelectedQuality):
+                if (!boundViewModel.IsPlaying)
+                {
+                    _ = RenderSeekFrameAsync(TimeSpan.FromMilliseconds(boundViewModel.CurrentPlaybackMilliseconds), boundViewModel);
+                }
                 break;
         }
     }
@@ -287,13 +291,14 @@ public partial class PreviewPanelView : UserControl
                     var pixels = decoder.ReadNextFrame(currentTime);
                     if (pixels != null)
                     {
+                        var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
                         // Background buffer reuse applies here! 0 unmanaged allocations.
                         composed = compositor.ComposeFrame(
                             pixels,
                             decoder.FrameWidth,
                             decoder.FrameHeight,
-                            CompositorTargetWidth,
-                            CompositorTargetHeight);
+                            targetW,
+                            targetH);
                     }
                 }
 
@@ -327,12 +332,13 @@ public partial class PreviewPanelView : UserControl
                 var pixels = decoder.SeekAndRead(position);
                 if (pixels is null) return null;
 
+                var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
                 return compositor.ComposeFrame(
                     pixels,
                     decoder.FrameWidth,
                     decoder.FrameHeight,
-                    CompositorTargetWidth,
-                    CompositorTargetHeight);
+                    targetW,
+                    targetH);
             }
         });
 
@@ -481,6 +487,17 @@ public partial class PreviewPanelView : UserControl
     private void OnPreviewPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e)
     {
         isPanning = false;
+    }
+
+    private (int Width, int Height) GetTargetResolution(PreviewViewModel viewModel, int sourceWidth, int sourceHeight)
+    {
+        return viewModel.SelectedQuality switch
+        {
+            PreviewQuality.High => (1080, 1920),
+            PreviewQuality.Mid => (720, 1280),
+            PreviewQuality.Low => (360, 640),
+            _ => (720, 1280)
+        };
     }
 
     private void ConstrainPan()

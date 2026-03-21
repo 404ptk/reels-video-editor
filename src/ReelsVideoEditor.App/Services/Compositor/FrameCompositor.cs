@@ -11,6 +11,8 @@ public sealed class FrameCompositor : IDisposable
     private SKBitmap? composedBitmap;
     private SKBitmap? sourceBitmap;
     private SKBitmap? tinyBitmap;
+    private SKBitmap? blurredTinyBitmap;
+    private SKCanvas? tinyCanvas;
     private int lastTargetWidth;
     private int lastTargetHeight;
     private bool disposed;
@@ -71,27 +73,49 @@ public sealed class FrameCompositor : IDisposable
 
         var bgRect = new SKRect(bgX, bgY, bgX + bgWidth, bgY + bgHeight);
 
-        int tinyWidth = Math.Max(1, source.Width / 40);
-        int tinyHeight = Math.Max(1, source.Height / 40);
+        // Downscale to a tiny resolution (1/20) for lightning fast blur
+        int tinyWidth = Math.Max(1, source.Width / 20);
+        int tinyHeight = Math.Max(1, source.Height / 20);
 
         if (tinyBitmap is null || tinyBitmap.Width != tinyWidth || tinyBitmap.Height != tinyHeight)
         {
             tinyBitmap?.Dispose();
             tinyBitmap = new SKBitmap(tinyWidth, tinyHeight, source.ColorType, source.AlphaType);
+            
+            blurredTinyBitmap?.Dispose();
+            blurredTinyBitmap = new SKBitmap(tinyWidth, tinyHeight, source.ColorType, source.AlphaType);
+            
+            tinyCanvas?.Dispose();
+            tinyCanvas = new SKCanvas(blurredTinyBitmap);
         }
 
-        source.ScalePixels(tinyBitmap, SKFilterQuality.None);
+        // Fast bilinear downscale
+        source.ScalePixels(tinyBitmap, SKFilterQuality.Low);
 
+        tinyCanvas.Clear(SKColors.Black);
+        
         using var darkenFilter = SKColorFilter.CreateBlendMode(new SKColor(0, 0, 0, 100), SKBlendMode.SrcOver);
+        // Apply blur on the tiny bitmap, making it instantaneous
+        using var blurFilter = SKImageFilter.CreateBlur(BlurSigma / 15f, BlurSigma / 15f);
+        using var combinedFilter = SKImageFilter.CreateColorFilter(darkenFilter, blurFilter);
 
-        using var paint = new SKPaint
+        using var tinyPaint = new SKPaint
         {
-            ColorFilter = darkenFilter,
+            ImageFilter = combinedFilter,
+            IsAntialias = false
+        };
+        
+        tinyCanvas.DrawBitmap(tinyBitmap, 0, 0, tinyPaint);
+        tinyCanvas.Flush();
+
+        using var mainPaint = new SKPaint
+        {
             IsAntialias = false,
-            FilterQuality = SKFilterQuality.Low
+            // Bilinear upscale of the already-blurred tiny image gives a perfect smooth gradient
+            FilterQuality = SKFilterQuality.Low 
         };
 
-        canvas.DrawBitmap(tinyBitmap, bgRect, paint);
+        canvas.DrawBitmap(blurredTinyBitmap, bgRect, mainPaint);
     }
 
     private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight)
@@ -118,17 +142,19 @@ public sealed class FrameCompositor : IDisposable
 
     public void Dispose()
     {
-        if (disposed)
-        {
-            return;
-        }
-
+        if (disposed) return;
+        
         disposed = true;
         composedBitmap?.Dispose();
-        composedBitmap = null;
         sourceBitmap?.Dispose();
-        sourceBitmap = null;
         tinyBitmap?.Dispose();
+        blurredTinyBitmap?.Dispose();
+        tinyCanvas?.Dispose();
+        
+        composedBitmap = null;
+        sourceBitmap = null;
         tinyBitmap = null;
+        blurredTinyBitmap = null;
+        tinyCanvas = null;
     }
 }

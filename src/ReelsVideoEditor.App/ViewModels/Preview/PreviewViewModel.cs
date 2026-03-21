@@ -6,6 +6,13 @@ using System.IO;
 
 namespace ReelsVideoEditor.App.ViewModels.Preview;
 
+public enum PreviewQuality
+{
+    High,
+    Mid,
+    Low
+}
+
 public sealed partial class PreviewViewModel : ViewModelBase
 {
     private const string ZeroTime = "00:00:00";
@@ -41,6 +48,16 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private string zoomText = "Zoom: 100%";
+
+    [ObservableProperty]
+    private PreviewQuality selectedQuality = PreviewQuality.Mid;
+
+    public PreviewQuality[] AvailableQualities { get; } = new[] 
+    { 
+        PreviewQuality.High, 
+        PreviewQuality.Mid, 
+        PreviewQuality.Low 
+    };
 
     [ObservableProperty]
     private bool isAudioMuted;
