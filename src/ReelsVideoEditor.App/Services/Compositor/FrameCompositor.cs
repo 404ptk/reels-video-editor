@@ -17,7 +17,7 @@ public sealed class FrameCompositor : IDisposable
     private int lastTargetHeight;
     private bool disposed;
 
-    public SKBitmap ComposeFrame(byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight)
+    public SKBitmap ComposeFrame(byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX = 0f, float offsetY = 0f)
     {
         if (composedBitmap is null || lastTargetWidth != targetWidth || lastTargetHeight != targetHeight)
         {
@@ -54,7 +54,7 @@ public sealed class FrameCompositor : IDisposable
             DrawBlurredBackground(canvas, sourceBitmap, targetWidth, targetHeight);
         }
 
-        DrawCenteredForeground(canvas, sourceBitmap, sourceWidth, sourceHeight, targetWidth, targetHeight);
+        DrawCenteredForeground(canvas, sourceBitmap, sourceWidth, sourceHeight, targetWidth, targetHeight, offsetX, offsetY);
 
         canvas.Flush();
         return composedBitmap;
@@ -77,7 +77,7 @@ public sealed class FrameCompositor : IDisposable
         int tinyWidth = Math.Max(1, source.Width / 20);
         int tinyHeight = Math.Max(1, source.Height / 20);
 
-        if (tinyBitmap is null || tinyBitmap.Width != tinyWidth || tinyBitmap.Height != tinyHeight)
+        if (tinyBitmap is null || blurredTinyBitmap is null || tinyCanvas is null || tinyBitmap.Width != tinyWidth || tinyBitmap.Height != tinyHeight)
         {
             tinyBitmap?.Dispose();
             tinyBitmap = new SKBitmap(tinyWidth, tinyHeight, source.ColorType, source.AlphaType);
@@ -92,7 +92,7 @@ public sealed class FrameCompositor : IDisposable
         // Fast bilinear downscale
         source.ScalePixels(tinyBitmap, SKFilterQuality.Low);
 
-        tinyCanvas.Clear(SKColors.Black);
+        tinyCanvas!.Clear(SKColors.Black);
         
         using var darkenFilter = SKColorFilter.CreateBlendMode(new SKColor(0, 0, 0, 100), SKBlendMode.SrcOver);
         // Apply blur on the tiny bitmap, making it instantaneous
@@ -115,10 +115,10 @@ public sealed class FrameCompositor : IDisposable
             FilterQuality = SKFilterQuality.Low 
         };
 
-        canvas.DrawBitmap(blurredTinyBitmap, bgRect, mainPaint);
+        canvas.DrawBitmap(blurredTinyBitmap!, bgRect, mainPaint);
     }
 
-    private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight)
+    private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX, float offsetY)
     {
         var scaleX = (float)targetWidth / sourceWidth;
         var scaleY = (float)targetHeight / sourceHeight;
@@ -126,8 +126,8 @@ public sealed class FrameCompositor : IDisposable
 
         var fgWidth = sourceWidth * fgScale;
         var fgHeight = sourceHeight * fgScale;
-        var fgX = (targetWidth - fgWidth) / 2f;
-        var fgY = (targetHeight - fgHeight) / 2f;
+        var fgX = (targetWidth - fgWidth) / 2f + offsetX;
+        var fgY = (targetHeight - fgHeight) / 2f + offsetY;
 
         var fgRect = new SKRect(fgX, fgY, fgX + fgWidth, fgY + fgHeight);
 

@@ -164,6 +164,10 @@
                                   ClipToBounds="False"
                                   IsVisible="{Binding IsTransformModeEnabled, Mode=OneWay}">
                                   
+                                <Grid.RenderTransform>
+                                    <TranslateTransform X="{Binding TransformX}" Y="{Binding TransformY}" />
+                                </Grid.RenderTransform>
+                                  
                                 <Border BorderBrush="White" BorderThickness="{Binding TransformHandleThickness}" />
                                         
                                 <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />

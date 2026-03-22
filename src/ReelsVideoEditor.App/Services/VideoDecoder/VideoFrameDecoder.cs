@@ -78,6 +78,12 @@ public sealed class VideoFrameDecoder : IDisposable
         }
 
         var clampedPosition = ClampPosition(position);
+
+        if (clampedPosition == lastDecodedPosition && lastFrameBuffer is not null)
+        {
+            return lastFrameBuffer;
+        }
+
         isSequentialMode = false;
 
         try

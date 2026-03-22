@@ -39,6 +39,8 @@ public partial class PreviewPanelView : UserControl
     private WriteableBitmap? renderTarget;
     private bool isSeeking;
     private TimeSpan? pendingSeekPosition;
+    private bool isRecomposing;
+    private bool pendingRecompose;
     private int fpsFrameCount;
     private long lastFpsTick;
     private byte[]? tempFrameCopyBuffer;
@@ -49,6 +51,9 @@ public partial class PreviewPanelView : UserControl
     private double panY = 0.0;
     private bool isPanning;
     private Point lastPanPosition;
+    
+    private double currentPreviewFrameWidth = 64;
+    private double currentPreviewFrameHeight = 112;
 
     public PreviewPanelView()
     {
@@ -110,10 +115,16 @@ public partial class PreviewPanelView : UserControl
                 ApplyAudioState(boundViewModel);
                 break;
             case nameof(PreviewViewModel.SelectedQuality):
+            case nameof(PreviewViewModel.TransformX):
+            case nameof(PreviewViewModel.TransformY):
                 if (!boundViewModel.IsPlaying)
                 {
-                    _ = RenderSeekFrameAsync(TimeSpan.FromMilliseconds(boundViewModel.CurrentPlaybackMilliseconds), boundViewModel);
+                    TriggerRecomposeAsync();
                 }
+                break;
+            case nameof(PreviewViewModel.IsTransformModeEnabled):
+                ConstrainPan();
+                ApplyTransform();
                 break;
         }
     }
@@ -293,13 +304,18 @@ public partial class PreviewPanelView : UserControl
                     if (pixels != null)
                     {
                         var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
+                        var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
+                        var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
+                        
                         // Background buffer reuse applies here! 0 unmanaged allocations.
                         composed = compositor.ComposeFrame(
                             pixels,
                             decoder.FrameWidth,
                             decoder.FrameHeight,
                             targetW,
-                            targetH);
+                            targetH,
+                            renderOffsetX,
+                            renderOffsetY);
                     }
                 }
 
@@ -334,18 +350,45 @@ public partial class PreviewPanelView : UserControl
                 if (pixels is null) return null;
 
                 var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
+                var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
+                var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
+
                 return compositor.ComposeFrame(
                     pixels,
                     decoder.FrameWidth,
                     decoder.FrameHeight,
                     targetW,
-                    targetH);
+                    targetH,
+                    renderOffsetX,
+                    renderOffsetY);
             }
         });
 
         if (composed is not null)
         {
             CopyToWriteableBitmap(composed, viewModel);
+        }
+    }
+
+    private async void TriggerRecomposeAsync()
+    {
+        if (boundViewModel is null) return;
+        
+        pendingRecompose = true;
+        if (isRecomposing) return;
+
+        isRecomposing = true;
+        try
+        {
+            while (pendingRecompose)
+            {
+                pendingRecompose = false;
+                await RenderSeekFrameAsync(TimeSpan.FromMilliseconds(boundViewModel.CurrentPlaybackMilliseconds), boundViewModel);
+            }
+        }
+        finally
+        {
+            isRecomposing = false;
         }
     }
 
@@ -452,7 +495,12 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
-        if (currentZoom <= 1.0 || previewViewport is null || boundViewModel is null || boundViewModel.IsTransformModeEnabled) return;
+        if (previewViewport is null || boundViewModel is null) return;
+
+        bool canPanZoom = currentZoom > 1.0 && !boundViewModel.IsTransformModeEnabled;
+        bool canPanTransform = boundViewModel.IsTransformModeEnabled;
+
+        if (!canPanZoom && !canPanTransform) return;
 
         var pointer = e.GetCurrentPoint(previewViewport);
         if (pointer.Properties.IsLeftButtonPressed || pointer.Properties.IsMiddleButtonPressed)
@@ -465,16 +513,24 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        if (!isPanning || previewViewport is null || boundViewModel is null || boundViewModel.IsTransformModeEnabled) return;
+        if (!isPanning || previewViewport is null || boundViewModel is null) return;
 
         var pointer = e.GetCurrentPoint(previewViewport);
         var deltaX = pointer.Position.X - lastPanPosition.X;
         var deltaY = pointer.Position.Y - lastPanPosition.Y;
 
+        lastPanPosition = pointer.Position;
+
+        if (boundViewModel.IsTransformModeEnabled)
+        {
+            boundViewModel.TransformX += deltaX;
+            boundViewModel.TransformY += deltaY;
+            e.Handled = true;
+            return;
+        }
+
         panX += deltaX;
         panY += deltaY;
-
-        lastPanPosition = pointer.Position;
 
         ConstrainPan();
         ApplyTransform();
@@ -505,6 +561,11 @@ public partial class PreviewPanelView : UserControl
     private void ConstrainPan()
     {
         if (previewFrame is null) return;
+
+        if (boundViewModel?.IsTransformModeEnabled == true)
+        {
+            return;
+        }
 
         if (currentZoom <= 1.0)
         {
@@ -561,6 +622,9 @@ public partial class PreviewPanelView : UserControl
 
         previewFrame.Width = Math.Max(64, frameWidth);
         previewFrame.Height = Math.Max(112, frameHeight);
+        currentPreviewFrameWidth = previewFrame.Width;
+        currentPreviewFrameHeight = previewFrame.Height;
+        
         previewFrame.HorizontalAlignment = HorizontalAlignment.Center;
         previewFrame.VerticalAlignment = VerticalAlignment.Center;
 
