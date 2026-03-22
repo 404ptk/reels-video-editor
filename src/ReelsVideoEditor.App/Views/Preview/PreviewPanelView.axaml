@@ -172,15 +172,45 @@
                                   
                                 <Border BorderBrush="White" BorderThickness="{Binding TransformHandleThickness}" />
                                         
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
+                                <Ellipse Classes="TransformHandle" Tag="TopLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
+                                <Ellipse Classes="TransformHandle" Tag="TopRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
+                                <Ellipse Classes="TransformHandle" Tag="BottomLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
+                                <Ellipse Classes="TransformHandle" Tag="BottomRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
                                 
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
-                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
+                                <Ellipse Classes="TransformHandle" Tag="Top" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
+                                <Ellipse Classes="TransformHandle" Tag="Bottom" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
+                                <Ellipse Classes="TransformHandle" Tag="Left" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
+                                <Ellipse Classes="TransformHandle" Tag="Right" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
+                            </Grid>
+
+                            <Grid Width="{Binding ScaledForegroundWidth}"
+                                  Height="{Binding ScaledForegroundHeight}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  ClipToBounds="False"
+                                  IsVisible="{Binding ShowClipperHandles, Mode=OneWay}">
+
+                                <Grid.RenderTransform>
+                                    <TranslateTransform X="{Binding TransformX}" Y="{Binding TransformY}" />
+                                </Grid.RenderTransform>
+
+                                <Canvas ClipToBounds="False">
+                                    <Rectangle Width="{Binding CropOverlayWidth}"
+                                               Height="{Binding CropOverlayHeight}"
+                                               Canvas.Left="{Binding CropOverlayLeft}"
+                                               Canvas.Top="{Binding CropOverlayTop}"
+                                               Stroke="White"
+                                               StrokeThickness="{Binding TransformHandleThickness}" />
+
+                                    <Ellipse Classes="ClipperHandle" Tag="TopLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopLeftX}" Canvas.Top="{Binding CropHandleTopLeftY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="Top" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopCenterX}" Canvas.Top="{Binding CropHandleTopCenterY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="TopRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopRightX}" Canvas.Top="{Binding CropHandleTopRightY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="Left" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleLeftCenterX}" Canvas.Top="{Binding CropHandleLeftCenterY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="Right" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleRightCenterX}" Canvas.Top="{Binding CropHandleRightCenterY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="BottomLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomLeftX}" Canvas.Top="{Binding CropHandleBottomLeftY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="Bottom" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomCenterX}" Canvas.Top="{Binding CropHandleBottomCenterY}" />
+                                    <Ellipse Classes="ClipperHandle" Tag="BottomRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomRightX}" Canvas.Top="{Binding CropHandleBottomRightY}" />
+                                </Canvas>
                             </Grid>
                         </Panel>
                     </Border>

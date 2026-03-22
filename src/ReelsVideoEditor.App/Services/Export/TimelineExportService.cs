@@ -20,6 +20,10 @@ public class TimelineExportService
         double renderOffsetX,
         double renderOffsetY,
         double renderScale,
+        double cropLeft,
+        double cropTop,
+        double cropRight,
+        double cropBottom,
         string outputPath,
         string resolution,
         IProgress<double> progress)
@@ -62,6 +66,18 @@ public class TimelineExportService
         var ffmpegCommand = new StringBuilder();
         ffmpegCommand.Append("-y ");
 
+        cropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
+        cropTop = Math.Clamp(cropTop, 0.0, 0.95);
+        cropRight = Math.Clamp(cropRight, 0.0, 0.95);
+        cropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
+
+        var visibleCropWidth = Math.Max(0.05, 1.0 - cropLeft - cropRight);
+        var visibleCropHeight = Math.Max(0.05, 1.0 - cropTop - cropBottom);
+        var cropLeftExpr = cropLeft.ToString(CultureInfo.InvariantCulture);
+        var cropTopExpr = cropTop.ToString(CultureInfo.InvariantCulture);
+        var cropWidthExpr = visibleCropWidth.ToString(CultureInfo.InvariantCulture);
+        var cropHeightExpr = visibleCropHeight.ToString(CultureInfo.InvariantCulture);
+
         foreach (var v in videos)
         {
             ffmpegCommand.Append($"-i \"{v.Path}\" ");
@@ -102,7 +118,7 @@ public class TimelineExportService
 
             ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
 
-            ffmpegCommand.Append($"[v{i}_input_fg]scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            ffmpegCommand.Append($"[v{i}_input_fg]crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,pad={scaledWidth}:{scaledHeight}:x=iw*{cropLeftExpr}:y=ih*{cropTopExpr}:color=black,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
 
             ffmpegCommand.Append($"[v{i}_bg][v{i}_fg]overlay=(W-w)/2+{offsetXStr}:(H-h)/2+{offsetYStr}[v{i}];");
 

@@ -17,7 +17,19 @@ public sealed class FrameCompositor : IDisposable
     private int lastTargetHeight;
     private bool disposed;
 
-    public SKBitmap ComposeFrame(byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX = 0f, float offsetY = 0f, float scale = 1f)
+    public SKBitmap ComposeFrame(
+        byte[] sourcePixels,
+        int sourceWidth,
+        int sourceHeight,
+        int targetWidth,
+        int targetHeight,
+        float offsetX = 0f,
+        float offsetY = 0f,
+        float scale = 1f,
+        float cropLeft = 0f,
+        float cropTop = 0f,
+        float cropRight = 0f,
+        float cropBottom = 0f)
     {
         if (composedBitmap is null || lastTargetWidth != targetWidth || lastTargetHeight != targetHeight)
         {
@@ -54,7 +66,20 @@ public sealed class FrameCompositor : IDisposable
             DrawBlurredBackground(canvas, sourceBitmap, targetWidth, targetHeight);
         }
 
-        DrawCenteredForeground(canvas, sourceBitmap, sourceWidth, sourceHeight, targetWidth, targetHeight, offsetX, offsetY, scale);
+        DrawCenteredForeground(
+            canvas,
+            sourceBitmap,
+            sourceWidth,
+            sourceHeight,
+            targetWidth,
+            targetHeight,
+            offsetX,
+            offsetY,
+            scale,
+            cropLeft,
+            cropTop,
+            cropRight,
+            cropBottom);
 
         canvas.Flush();
         return composedBitmap;
@@ -118,19 +143,50 @@ public sealed class FrameCompositor : IDisposable
         canvas.DrawBitmap(blurredTinyBitmap!, bgRect, mainPaint);
     }
 
-    private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX, float offsetY, float scale)
+    private static void DrawCenteredForeground(
+        SKCanvas canvas,
+        SKBitmap source,
+        int sourceWidth,
+        int sourceHeight,
+        int targetWidth,
+        int targetHeight,
+        float offsetX,
+        float offsetY,
+        float scale,
+        float cropLeft,
+        float cropTop,
+        float cropRight,
+        float cropBottom)
     {
+        cropLeft = Math.Clamp(cropLeft, 0f, 0.95f);
+        cropTop = Math.Clamp(cropTop, 0f, 0.95f);
+        cropRight = Math.Clamp(cropRight, 0f, 0.95f);
+        cropBottom = Math.Clamp(cropBottom, 0f, 0.95f);
+
         var scaleX = (float)targetWidth / sourceWidth;
         var scaleY = (float)targetHeight / sourceHeight;
         var baseFgScale = Math.Min(scaleX, scaleY);
         var fgScale = baseFgScale * scale;
 
-        var fgWidth = sourceWidth * fgScale;
-        var fgHeight = sourceHeight * fgScale;
-        var fgX = (targetWidth - fgWidth) / 2f + offsetX;
-        var fgY = (targetHeight - fgHeight) / 2f + offsetY;
+        var fullFgWidth = sourceWidth * fgScale;
+        var fullFgHeight = sourceHeight * fgScale;
+        var fullFgX = (targetWidth - fullFgWidth) / 2f + offsetX;
+        var fullFgY = (targetHeight - fullFgHeight) / 2f + offsetY;
 
-        var fgRect = new SKRect(fgX, fgY, fgX + fgWidth, fgY + fgHeight);
+        var visibleWidthRatio = Math.Max(0.05f, 1f - cropLeft - cropRight);
+        var visibleHeightRatio = Math.Max(0.05f, 1f - cropTop - cropBottom);
+
+        var srcLeft = sourceWidth * cropLeft;
+        var srcTop = sourceHeight * cropTop;
+        var srcWidth = sourceWidth * visibleWidthRatio;
+        var srcHeight = sourceHeight * visibleHeightRatio;
+        var sourceRect = new SKRect(srcLeft, srcTop, srcLeft + srcWidth, srcTop + srcHeight);
+
+        var dstLeft = fullFgX + (fullFgWidth * cropLeft);
+        var dstTop = fullFgY + (fullFgHeight * cropTop);
+        var dstWidth = fullFgWidth * visibleWidthRatio;
+        var dstHeight = fullFgHeight * visibleHeightRatio;
+        var fgRect = new SKRect(dstLeft, dstTop, dstLeft + dstWidth, dstTop + dstHeight);
 
         using var paint = new SKPaint
         {
@@ -138,7 +194,7 @@ public sealed class FrameCompositor : IDisposable
             FilterQuality = SKFilterQuality.Low
         };
 
-        canvas.DrawBitmap(source, fgRect, paint);
+        canvas.DrawBitmap(source, sourceRect, fgRect, paint);
     }
 
     public void Dispose()

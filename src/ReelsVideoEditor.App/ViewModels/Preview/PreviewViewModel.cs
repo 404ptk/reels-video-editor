@@ -59,6 +59,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private bool isClipperModeEnabled;
 
     public bool ShowTransformHandles => IsTransformModeEnabled && IsVideoVisible;
+    public bool ShowClipperHandles => IsClipperModeEnabled && IsVideoVisible;
 
     partial void OnIsTransformModeEnabledChanged(bool value)
     {
@@ -69,6 +70,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     partial void OnIsClipperModeEnabledChanged(bool value)
     {
+        OnPropertyChanged(nameof(ShowClipperHandles));
         if (value)
             IsTransformModeEnabled = false;
     }
@@ -167,6 +169,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowPlaceholder));
         OnPropertyChanged(nameof(IsVideoVisible));
         OnPropertyChanged(nameof(ShowTransformHandles));
+        OnPropertyChanged(nameof(ShowClipperHandles));
         CurrentPlaybackMilliseconds = 0;
         CurrentPlaybackTimeText = ZeroTime;
         TotalPlaybackTimeText = ZeroTime;
@@ -176,6 +179,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsVideoVisible));
         OnPropertyChanged(nameof(ShowTransformHandles));
+        OnPropertyChanged(nameof(ShowClipperHandles));
     }
 
     public void UpdatePlaybackTime(long playbackMilliseconds)
@@ -249,9 +253,6 @@ public sealed partial class PreviewViewModel : ViewModelBase
     public double ScaledForegroundWidth => ForegroundWidth * TransformScale;
     public double ScaledForegroundHeight => ForegroundHeight * TransformScale;
 
-    partial void OnForegroundWidthChanged(double value) => OnPropertyChanged(nameof(ScaledForegroundWidth));
-    partial void OnForegroundHeightChanged(double value) => OnPropertyChanged(nameof(ScaledForegroundHeight));
-
     [ObservableProperty]
     private double transformX;
 
@@ -291,4 +292,83 @@ public sealed partial class PreviewViewModel : ViewModelBase
     public Avalonia.Thickness HandleMarginBottomCenter => new(0, 0, 0, TransformHandleOffset);
     public Avalonia.Thickness HandleMarginLeftCenter => new(TransformHandleOffset, 0, 0, 0);
     public Avalonia.Thickness HandleMarginRightCenter => new(0, 0, TransformHandleOffset, 0);
+
+    [ObservableProperty]
+    private double cropLeft;
+
+    [ObservableProperty]
+    private double cropTop;
+
+    [ObservableProperty]
+    private double cropRight;
+
+    [ObservableProperty]
+    private double cropBottom;
+
+    public double CropOverlayLeft => ScaledForegroundWidth * CropLeft;
+    public double CropOverlayTop => ScaledForegroundHeight * CropTop;
+    public double CropOverlayWidth => Math.Max(0, ScaledForegroundWidth * (1.0 - CropLeft - CropRight));
+    public double CropOverlayHeight => Math.Max(0, ScaledForegroundHeight * (1.0 - CropTop - CropBottom));
+    public double CropHandleOffset => TransformHandleOffset;
+
+    public double CropHandleTopLeftX => CropOverlayLeft + CropHandleOffset;
+    public double CropHandleTopLeftY => CropOverlayTop + CropHandleOffset;
+    public double CropHandleTopCenterX => CropOverlayLeft + (CropOverlayWidth / 2.0) + CropHandleOffset;
+    public double CropHandleTopCenterY => CropOverlayTop + CropHandleOffset;
+    public double CropHandleTopRightX => CropOverlayLeft + CropOverlayWidth + CropHandleOffset;
+    public double CropHandleTopRightY => CropOverlayTop + CropHandleOffset;
+    public double CropHandleLeftCenterX => CropOverlayLeft + CropHandleOffset;
+    public double CropHandleLeftCenterY => CropOverlayTop + (CropOverlayHeight / 2.0) + CropHandleOffset;
+    public double CropHandleRightCenterX => CropOverlayLeft + CropOverlayWidth + CropHandleOffset;
+    public double CropHandleRightCenterY => CropOverlayTop + (CropOverlayHeight / 2.0) + CropHandleOffset;
+    public double CropHandleBottomLeftX => CropOverlayLeft + CropHandleOffset;
+    public double CropHandleBottomLeftY => CropOverlayTop + CropOverlayHeight + CropHandleOffset;
+    public double CropHandleBottomCenterX => CropOverlayLeft + (CropOverlayWidth / 2.0) + CropHandleOffset;
+    public double CropHandleBottomCenterY => CropOverlayTop + CropOverlayHeight + CropHandleOffset;
+    public double CropHandleBottomRightX => CropOverlayLeft + CropOverlayWidth + CropHandleOffset;
+    public double CropHandleBottomRightY => CropOverlayTop + CropOverlayHeight + CropHandleOffset;
+
+    partial void OnForegroundWidthChanged(double value)
+    {
+        OnPropertyChanged(nameof(ScaledForegroundWidth));
+        NotifyCropOverlayChanged();
+    }
+
+    partial void OnForegroundHeightChanged(double value)
+    {
+        OnPropertyChanged(nameof(ScaledForegroundHeight));
+        NotifyCropOverlayChanged();
+    }
+
+    partial void OnTransformScaleChanged(double value) => NotifyCropOverlayChanged();
+    partial void OnCurrentZoomChanged(double value) => NotifyCropOverlayChanged();
+    partial void OnCropLeftChanged(double value) => NotifyCropOverlayChanged();
+    partial void OnCropTopChanged(double value) => NotifyCropOverlayChanged();
+    partial void OnCropRightChanged(double value) => NotifyCropOverlayChanged();
+    partial void OnCropBottomChanged(double value) => NotifyCropOverlayChanged();
+
+    private void NotifyCropOverlayChanged()
+    {
+        OnPropertyChanged(nameof(CropOverlayLeft));
+        OnPropertyChanged(nameof(CropOverlayTop));
+        OnPropertyChanged(nameof(CropOverlayWidth));
+        OnPropertyChanged(nameof(CropOverlayHeight));
+        OnPropertyChanged(nameof(CropHandleOffset));
+        OnPropertyChanged(nameof(CropHandleTopLeftX));
+        OnPropertyChanged(nameof(CropHandleTopLeftY));
+        OnPropertyChanged(nameof(CropHandleTopCenterX));
+        OnPropertyChanged(nameof(CropHandleTopCenterY));
+        OnPropertyChanged(nameof(CropHandleTopRightX));
+        OnPropertyChanged(nameof(CropHandleTopRightY));
+        OnPropertyChanged(nameof(CropHandleLeftCenterX));
+        OnPropertyChanged(nameof(CropHandleLeftCenterY));
+        OnPropertyChanged(nameof(CropHandleRightCenterX));
+        OnPropertyChanged(nameof(CropHandleRightCenterY));
+        OnPropertyChanged(nameof(CropHandleBottomLeftX));
+        OnPropertyChanged(nameof(CropHandleBottomLeftY));
+        OnPropertyChanged(nameof(CropHandleBottomCenterX));
+        OnPropertyChanged(nameof(CropHandleBottomCenterY));
+        OnPropertyChanged(nameof(CropHandleBottomRightX));
+        OnPropertyChanged(nameof(CropHandleBottomRightY));
+    }
 }

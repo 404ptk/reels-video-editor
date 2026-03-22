@@ -56,9 +56,26 @@ public partial class PreviewPanelView : UserControl
     private double scaleStartDistance;
     private double scaleStartValue;
     private Point dragCenter;
+    private bool isCropping;
+    private CropHandle activeCropHandle = CropHandle.None;
+
+    private const double MinCropVisibleNormalized = 0.05;
     
     private double currentPreviewFrameWidth = 64;
     private double currentPreviewFrameHeight = 112;
+
+    private enum CropHandle
+    {
+        None,
+        TopLeft,
+        Top,
+        TopRight,
+        Left,
+        Right,
+        BottomLeft,
+        Bottom,
+        BottomRight
+    }
 
     public PreviewPanelView()
     {
@@ -123,6 +140,10 @@ public partial class PreviewPanelView : UserControl
             case nameof(PreviewViewModel.TransformX):
             case nameof(PreviewViewModel.TransformY):
             case nameof(PreviewViewModel.TransformScale):
+            case nameof(PreviewViewModel.CropLeft):
+            case nameof(PreviewViewModel.CropTop):
+            case nameof(PreviewViewModel.CropRight):
+            case nameof(PreviewViewModel.CropBottom):
                 if (!boundViewModel.IsPlaying)
                 {
                     TriggerRecomposeAsync();
@@ -322,7 +343,11 @@ public partial class PreviewPanelView : UserControl
                             targetH,
                             renderOffsetX,
                             renderOffsetY,
-                            (float)viewModel.TransformScale);
+                            (float)viewModel.TransformScale,
+                            (float)viewModel.CropLeft,
+                            (float)viewModel.CropTop,
+                            (float)viewModel.CropRight,
+                            (float)viewModel.CropBottom);
                     }
                 }
 
@@ -368,7 +393,11 @@ public partial class PreviewPanelView : UserControl
                     targetH,
                     renderOffsetX,
                     renderOffsetY,
-                    (float)viewModel.TransformScale);
+                    (float)viewModel.TransformScale,
+                    (float)viewModel.CropLeft,
+                    (float)viewModel.CropTop,
+                    (float)viewModel.CropRight,
+                    (float)viewModel.CropBottom);
             }
         });
 
@@ -521,7 +550,21 @@ public partial class PreviewPanelView : UserControl
             }
         }
 
-        bool canPanZoom = currentZoom > 1.0 && !boundViewModel.IsTransformModeEnabled;
+        if (boundViewModel.IsClipperModeEnabled && e.Source is Avalonia.Controls.Shapes.Ellipse cropEllipse && cropEllipse.Classes.Contains("ClipperHandle"))
+        {
+            if (pointer.Properties.IsLeftButtonPressed)
+            {
+                activeCropHandle = ParseCropHandle(cropEllipse.Tag as string);
+                if (activeCropHandle != CropHandle.None)
+                {
+                    isCropping = true;
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
+
+        bool canPanZoom = currentZoom > 1.0 && !boundViewModel.IsTransformModeEnabled && !boundViewModel.IsClipperModeEnabled;
         bool canPanTransform = boundViewModel.IsTransformModeEnabled;
 
         if (!canPanZoom && !canPanTransform) return;
@@ -548,6 +591,13 @@ public partial class PreviewPanelView : UserControl
                 var newScale = scaleStartValue * (currentDistance / scaleStartDistance);
                 boundViewModel.TransformScale = Math.Max(0.1, newScale);
             }
+            e.Handled = true;
+            return;
+        }
+
+        if (isCropping)
+        {
+            ApplyCropDrag(pointer.Position);
             e.Handled = true;
             return;
         }
@@ -579,13 +629,83 @@ public partial class PreviewPanelView : UserControl
     {
         isPanning = false;
         isScaling = false;
+        isCropping = false;
+        activeCropHandle = CropHandle.None;
     }
 
     private void OnPreviewPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e)
     {
         isPanning = false;
         isScaling = false;
+        isCropping = false;
+        activeCropHandle = CropHandle.None;
     }
+
+    private void ApplyCropDrag(Point pointerPosition)
+    {
+        if (boundViewModel is null || activeCropHandle == CropHandle.None)
+        {
+            return;
+        }
+
+        var fgWidth = boundViewModel.ScaledForegroundWidth;
+        var fgHeight = boundViewModel.ScaledForegroundHeight;
+        if (fgWidth <= 1 || fgHeight <= 1)
+        {
+            return;
+        }
+
+        var centerX = (previewViewport?.Bounds.Width ?? 0) / 2.0;
+        var centerY = (previewViewport?.Bounds.Height ?? 0) / 2.0;
+        var fgLeft = centerX + boundViewModel.TransformX - (fgWidth / 2.0);
+        var fgTop = centerY + boundViewModel.TransformY - (fgHeight / 2.0);
+
+        var xNorm = (pointerPosition.X - fgLeft) / fgWidth;
+        var yNorm = (pointerPosition.Y - fgTop) / fgHeight;
+        xNorm = Math.Clamp(xNorm, 0.0, 1.0);
+        yNorm = Math.Clamp(yNorm, 0.0, 1.0);
+
+        var maxLeft = Math.Max(0.0, 1.0 - boundViewModel.CropRight - MinCropVisibleNormalized);
+        var maxTop = Math.Max(0.0, 1.0 - boundViewModel.CropBottom - MinCropVisibleNormalized);
+        var maxRight = Math.Max(0.0, 1.0 - boundViewModel.CropLeft - MinCropVisibleNormalized);
+        var maxBottom = Math.Max(0.0, 1.0 - boundViewModel.CropTop - MinCropVisibleNormalized);
+
+        if (activeCropHandle is CropHandle.TopLeft or CropHandle.Left or CropHandle.BottomLeft)
+        {
+            boundViewModel.CropLeft = Math.Clamp(xNorm, 0.0, maxLeft);
+        }
+
+        if (activeCropHandle is CropHandle.TopRight or CropHandle.Right or CropHandle.BottomRight)
+        {
+            var right = 1.0 - xNorm;
+            boundViewModel.CropRight = Math.Clamp(right, 0.0, maxRight);
+        }
+
+        if (activeCropHandle is CropHandle.TopLeft or CropHandle.Top or CropHandle.TopRight)
+        {
+            boundViewModel.CropTop = Math.Clamp(yNorm, 0.0, maxTop);
+        }
+
+        if (activeCropHandle is CropHandle.BottomLeft or CropHandle.Bottom or CropHandle.BottomRight)
+        {
+            var bottom = 1.0 - yNorm;
+            boundViewModel.CropBottom = Math.Clamp(bottom, 0.0, maxBottom);
+        }
+    }
+
+    private static CropHandle ParseCropHandle(string? tag) =>
+        tag switch
+        {
+            "TopLeft" => CropHandle.TopLeft,
+            "Top" => CropHandle.Top,
+            "TopRight" => CropHandle.TopRight,
+            "Left" => CropHandle.Left,
+            "Right" => CropHandle.Right,
+            "BottomLeft" => CropHandle.BottomLeft,
+            "Bottom" => CropHandle.Bottom,
+            "BottomRight" => CropHandle.BottomRight,
+            _ => CropHandle.None
+        };
 
     private (int Width, int Height) GetTargetResolution(PreviewViewModel viewModel, int sourceWidth, int sourceHeight)
     {

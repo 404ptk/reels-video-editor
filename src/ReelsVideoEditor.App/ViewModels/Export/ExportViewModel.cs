@@ -96,6 +96,10 @@ public sealed partial class ExportViewModel : ViewModelBase
             double renderOffsetX = (PreviewContext?.TransformX ?? 0) * (exportW / (PreviewContext?.PreviewFrameWidth ?? 1));
             double renderOffsetY = (PreviewContext?.TransformY ?? 0) * (exportH / (PreviewContext?.PreviewFrameHeight ?? 1));
             double renderScale = PreviewContext?.TransformScale ?? 1.0;
+            double cropLeft = PreviewContext?.CropLeft ?? 0.0;
+            double cropTop = PreviewContext?.CropTop ?? 0.0;
+            double cropRight = PreviewContext?.CropRight ?? 0.0;
+            double cropBottom = PreviewContext?.CropBottom ?? 0.0;
 
             var exporter = new Services.Export.TimelineExportService();
             await exporter.ExportAsync(
@@ -106,6 +110,10 @@ public sealed partial class ExportViewModel : ViewModelBase
                 renderOffsetX,
                 renderOffsetY,
                 renderScale,
+                cropLeft,
+                cropTop,
+                cropRight,
+                cropBottom,
                 fullPath, SelectedResolution, new Progress<double>(p => ExportProgress = p));
             
             ShowMessage?.Invoke("Export Complete", $"Video successfully exported to:\n{fullPath}");
