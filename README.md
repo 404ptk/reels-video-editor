@@ -1,46 +1,100 @@
 # Reels Video Editor
 
-Starter desktop app in `.NET 8` + `Avalonia UI` for building a short-form video editor.
+Desktop short-form video editor (reels/shorts) built with `C#`, `.NET 8`, and `Avalonia UI`.
 
-## Why this stack
+![Reels Video Editor - UI](readme_images/homepage.png)
 
-- `Avalonia UI` gives a desktop UI that works well in VS Code.
-- `dotnet watch run` gives a quick edit-refresh loop during development.
-- `FFmpeg` is already installed on this machine, so we can later build export and transform pipelines without extra setup.
+## About the Project
 
-## Current status
+`Reels Video Editor` is a desktop app focused on fast editing for vertical formats (`9:16`) with a straightforward workflow:
 
-- Stable SDK pinned with `global.json`
-- Avalonia templates installed
-- VS Code Avalonia extension installed
-- Starter MVVM desktop app created
-- Ready for next step: import video, preview pipeline, export job
+1. import clips,
+2. arrange them on the timeline,
+3. preview the result,
+4. export to `mp4` via `FFmpeg`.
 
-## Project structure
+The project is developed iteratively — some modules are already production-ready, while others are intentional placeholders for upcoming stages.
 
-- `ReelsVideoEditor.sln` — solution
-- `src/ReelsVideoEditor.App` — desktop app shell
-- `.vscode/tasks.json` — quick run/watch tasks
+## Current Features
+
+### Available Now
+
+- video import via drag & drop into Explorer,
+- clip duration detection (`ffprobe`),
+- thumbnail generation (`ffmpeg`),
+- adding clips to the timeline with automatic linked audio,
+- timeline zoom + lane height adjustment,
+- playhead scrubbing and preview synchronization,
+- preview play/pause/stop,
+- audio mute / video hide in timeline context,
+- `mp4` export (`libx264` + `aac`) with progress reporting,
+- output format (`9:16` / `16:9`) and resolution selection.
+
+### TODO
+
+- effects panel,
+- text panel,
+- watermark panel.
+
+## Architecture
+
+The project follows **MVVM** with a clear separation of responsibilities.
+
+### Layers
+
+- `Views/` — UI layer (`.axaml` + code-behind),
+- `ViewModels/` — state and interaction logic,
+- `Services/` — integration/process logic (e.g. `FFmpeg` export),
+- `Effects/` — dedicated place for video effect logic,
+- `DragDrop/` — drag-and-drop contracts and payloads,
+- `ViewModels/Timeline/Arrangement` — clip arrangement and timeline layout logic.
+
+### Key Flows
+
+- `MainWindowViewModel` composes modules and orchestrates `Timeline ↔ Preview ↔ Export` communication.
+- `TimelineViewModel` manages clips, ticks, zoom, and playhead events.
+- `PreviewViewModel` stores playback state and preview transforms.
+- `TimelineExportService` builds filter graphs and runs export via `ffmpeg`.
+
+## Repository Structure
+
+- `ReelsVideoEditor.sln` — solution,
+- `global.json` — pinned SDK version,
+- `src/ReelsVideoEditor.App/` — desktop application,
+- `src/ReelsVideoEditor.App/Services/Export/` — export pipeline,
+- `src/ReelsVideoEditor.App/ViewModels/` — MVVM logic,
+- `readme_images/` — documentation assets.
+
+## Requirements
+
+- `.NET SDK 8.x`,
+- `ffmpeg` and `ffprobe` available in `PATH` **or** provided as local `ffmpeg.exe` / `ffprobe.exe` files.
 
 ## Run
 
 ```powershell
-cd c:\Users\PC\Documents\GITHUB\reels-video-editor
-
+Set-Location ".\reels-video-editor"
 dotnet restore
-
 dotnet run --project .\src\ReelsVideoEditor.App\ReelsVideoEditor.App.csproj
 ```
 
-## Hot reload / fast iteration
+## Roadmap
 
-```powershell
-cd c:\Users\PC\Documents\GITHUB\reels-video-editor
+### Short Term
 
-dotnet watch run --project .\src\ReelsVideoEditor.App\ReelsVideoEditor.App.csproj
-```
+- finalize crop support in the rendering pipeline,
 
-Notes:
-- For code changes, `dotnet watch` applies standard .NET hot reload when supported.
-- For XAML work, the installed Avalonia VS Code tooling improves the edit/preview loop.
-- We can decide in the next step whether to build a real timeline preview directly in-app, or to use FFmpeg for first export-only iterations.
+### Mid Term
+
+- full effects panel with presets,
+- text and watermark tools (positioning, styling, animations),
+- improved multi-clip composition model in preview.
+
+### Long Term
+
+- export videos for social media platforms,
+- automated tests for core modules (timeline/export).
+
+## Status
+
+The project is actively developed and currently focused on intensive preview and effects refinement.
