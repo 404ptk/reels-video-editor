@@ -52,6 +52,11 @@ public partial class PreviewPanelView : UserControl
     private bool isPanning;
     private Point lastPanPosition;
     
+    private bool isScaling;
+    private double scaleStartDistance;
+    private double scaleStartValue;
+    private Point dragCenter;
+    
     private double currentPreviewFrameWidth = 64;
     private double currentPreviewFrameHeight = 112;
 
@@ -117,6 +122,7 @@ public partial class PreviewPanelView : UserControl
             case nameof(PreviewViewModel.SelectedQuality):
             case nameof(PreviewViewModel.TransformX):
             case nameof(PreviewViewModel.TransformY):
+            case nameof(PreviewViewModel.TransformScale):
                 if (!boundViewModel.IsPlaying)
                 {
                     TriggerRecomposeAsync();
@@ -315,7 +321,8 @@ public partial class PreviewPanelView : UserControl
                             targetW,
                             targetH,
                             renderOffsetX,
-                            renderOffsetY);
+                            renderOffsetY,
+                            (float)viewModel.TransformScale);
                     }
                 }
 
@@ -360,7 +367,8 @@ public partial class PreviewPanelView : UserControl
                     targetW,
                     targetH,
                     renderOffsetX,
-                    renderOffsetY);
+                    renderOffsetY,
+                    (float)viewModel.TransformScale);
             }
         });
 
@@ -497,12 +505,27 @@ public partial class PreviewPanelView : UserControl
     {
         if (previewViewport is null || boundViewModel is null) return;
 
+        var pointer = e.GetCurrentPoint(previewViewport);
+
+        if (boundViewModel.IsTransformModeEnabled && e.Source is Avalonia.Controls.Shapes.Ellipse ellipse && ellipse.Classes.Contains("TransformHandle"))
+        {
+            if (pointer.Properties.IsLeftButtonPressed)
+            {
+                isScaling = true;
+                scaleStartValue = boundViewModel.TransformScale;
+                var vpCenter = new Point(previewViewport.Bounds.Width / 2, previewViewport.Bounds.Height / 2);
+                dragCenter = new Point(vpCenter.X + boundViewModel.TransformX, vpCenter.Y + boundViewModel.TransformY);
+                scaleStartDistance = Math.Sqrt(Math.Pow(pointer.Position.X - dragCenter.X, 2) + Math.Pow(pointer.Position.Y - dragCenter.Y, 2));
+                e.Handled = true;
+                return;
+            }
+        }
+
         bool canPanZoom = currentZoom > 1.0 && !boundViewModel.IsTransformModeEnabled;
         bool canPanTransform = boundViewModel.IsTransformModeEnabled;
 
         if (!canPanZoom && !canPanTransform) return;
 
-        var pointer = e.GetCurrentPoint(previewViewport);
         if (pointer.Properties.IsLeftButtonPressed || pointer.Properties.IsMiddleButtonPressed)
         {
             isPanning = true;
@@ -513,9 +536,24 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        if (!isPanning || previewViewport is null || boundViewModel is null) return;
+        if (previewViewport is null || boundViewModel is null) return;
 
         var pointer = e.GetCurrentPoint(previewViewport);
+
+        if (isScaling)
+        {
+            var currentDistance = Math.Sqrt(Math.Pow(pointer.Position.X - dragCenter.X, 2) + Math.Pow(pointer.Position.Y - dragCenter.Y, 2));
+            if (scaleStartDistance > 0)
+            {
+                var newScale = scaleStartValue * (currentDistance / scaleStartDistance);
+                boundViewModel.TransformScale = Math.Max(0.1, newScale);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        if (!isPanning) return;
+
         var deltaX = pointer.Position.X - lastPanPosition.X;
         var deltaY = pointer.Position.Y - lastPanPosition.Y;
 
@@ -540,11 +578,13 @@ public partial class PreviewPanelView : UserControl
     private void OnPreviewPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
     {
         isPanning = false;
+        isScaling = false;
     }
 
     private void OnPreviewPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e)
     {
         isPanning = false;
+        isScaling = false;
     }
 
     private (int Width, int Height) GetTargetResolution(PreviewViewModel viewModel, int sourceWidth, int sourceHeight)

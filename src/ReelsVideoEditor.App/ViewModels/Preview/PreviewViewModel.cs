@@ -242,6 +242,17 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private double foregroundHeight;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScaledForegroundWidth))]
+    [NotifyPropertyChangedFor(nameof(ScaledForegroundHeight))]
+    private double transformScale = 1.0;
+
+    public double ScaledForegroundWidth => ForegroundWidth * TransformScale;
+    public double ScaledForegroundHeight => ForegroundHeight * TransformScale;
+
+    partial void OnForegroundWidthChanged(double value) => OnPropertyChanged(nameof(ScaledForegroundWidth));
+    partial void OnForegroundHeightChanged(double value) => OnPropertyChanged(nameof(ScaledForegroundHeight));
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]

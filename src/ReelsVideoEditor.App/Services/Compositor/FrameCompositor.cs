@@ -17,7 +17,7 @@ public sealed class FrameCompositor : IDisposable
     private int lastTargetHeight;
     private bool disposed;
 
-    public SKBitmap ComposeFrame(byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX = 0f, float offsetY = 0f)
+    public SKBitmap ComposeFrame(byte[] sourcePixels, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX = 0f, float offsetY = 0f, float scale = 1f)
     {
         if (composedBitmap is null || lastTargetWidth != targetWidth || lastTargetHeight != targetHeight)
         {
@@ -54,7 +54,7 @@ public sealed class FrameCompositor : IDisposable
             DrawBlurredBackground(canvas, sourceBitmap, targetWidth, targetHeight);
         }
 
-        DrawCenteredForeground(canvas, sourceBitmap, sourceWidth, sourceHeight, targetWidth, targetHeight, offsetX, offsetY);
+        DrawCenteredForeground(canvas, sourceBitmap, sourceWidth, sourceHeight, targetWidth, targetHeight, offsetX, offsetY, scale);
 
         canvas.Flush();
         return composedBitmap;
@@ -118,11 +118,12 @@ public sealed class FrameCompositor : IDisposable
         canvas.DrawBitmap(blurredTinyBitmap!, bgRect, mainPaint);
     }
 
-    private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX, float offsetY)
+    private static void DrawCenteredForeground(SKCanvas canvas, SKBitmap source, int sourceWidth, int sourceHeight, int targetWidth, int targetHeight, float offsetX, float offsetY, float scale)
     {
         var scaleX = (float)targetWidth / sourceWidth;
         var scaleY = (float)targetHeight / sourceHeight;
-        var fgScale = Math.Min(scaleX, scaleY);
+        var baseFgScale = Math.Min(scaleX, scaleY);
+        var fgScale = baseFgScale * scale;
 
         var fgWidth = sourceWidth * fgScale;
         var fgHeight = sourceHeight * fgScale;

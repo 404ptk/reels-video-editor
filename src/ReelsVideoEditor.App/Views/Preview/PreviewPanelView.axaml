@@ -159,8 +159,8 @@
                                        VerticalAlignment="Stretch" />
                             </Border>
 
-                            <Grid Width="{Binding ForegroundWidth}"
-                                  Height="{Binding ForegroundHeight}"
+                            <Grid Width="{Binding ScaledForegroundWidth}"
+                                  Height="{Binding ScaledForegroundHeight}"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   ClipToBounds="False"
@@ -172,15 +172,15 @@
                                   
                                 <Border BorderBrush="White" BorderThickness="{Binding TransformHandleThickness}" />
                                         
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
                                 
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
-                                <Ellipse Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
+                                <Ellipse Classes="TransformHandle" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
                             </Grid>
                         </Panel>
                     </Border>
