@@ -259,6 +259,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private double transformY;
 
     [ObservableProperty]
+    private double previewFrameWidth = 1.0;
+
+    [ObservableProperty]
+    private double previewFrameHeight = 1.0;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TransformHandleThickness))]
     [NotifyPropertyChangedFor(nameof(TransformHandleSize))]
     [NotifyPropertyChangedFor(nameof(TransformHandleOffset))]

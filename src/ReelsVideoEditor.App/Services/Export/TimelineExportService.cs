@@ -17,6 +17,9 @@ public class TimelineExportService
         IEnumerable<TimelineClipItem> audioClips,
         bool isVideoHidden,
         bool isAudioMuted,
+        double renderOffsetX,
+        double renderOffsetY,
+        double renderScale,
         string outputPath,
         string resolution,
         IProgress<double> progress)
@@ -87,13 +90,21 @@ public class TimelineExportService
             int extHeight = (int)(height * 1.3);
             extHeight = extHeight % 2 == 0 ? extHeight : extHeight + 1;
 
+            int scaledWidth = (int)(width * renderScale);
+            scaledWidth = scaledWidth % 2 == 0 ? scaledWidth : scaledWidth + 1;
+            int scaledHeight = (int)(height * renderScale);
+            scaledHeight = scaledHeight % 2 == 0 ? scaledHeight : scaledHeight + 1;
+
+            string offsetXStr = renderOffsetX.ToString(CultureInfo.InvariantCulture);
+            string offsetYStr = renderOffsetY.ToString(CultureInfo.InvariantCulture);
+
             ffmpegCommand.Append($"[{currentInputIndex}:v]split[v{i}_input_bg][v{i}_input_fg];");
 
             ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
 
-            ffmpegCommand.Append($"[v{i}_input_fg]scale={width}:{height}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            ffmpegCommand.Append($"[v{i}_input_fg]scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
 
-            ffmpegCommand.Append($"[v{i}_bg][v{i}_fg]overlay=(W-w)/2:(H-h)/2[v{i}];");
+            ffmpegCommand.Append($"[v{i}_bg][v{i}_fg]overlay=(W-w)/2+{offsetXStr}:(H-h)/2+{offsetYStr}[v{i}];");
 
             videoOutputs.Add($"[v{i}]");
             currentInputIndex++;

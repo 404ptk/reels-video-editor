@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Export;
@@ -21,6 +22,8 @@ public sealed partial class ExportViewModel : ViewModelBase
     public Func<Task<IStorageFolder?>>? RequestDirectory { get; set; }
 
     public TimelineViewModel? TimelineContext { get; set; }
+    
+    public PreviewViewModel? PreviewContext { get; set; }
 
     [ObservableProperty]
     private string outputName = "MyReel";
@@ -86,12 +89,23 @@ public sealed partial class ExportViewModel : ViewModelBase
 
         try
         {
+            var parts = SelectedResolution.Split('x');
+            int exportW = int.Parse(parts[0]);
+            int exportH = int.Parse(parts[1]);
+
+            double renderOffsetX = (PreviewContext?.TransformX ?? 0) * (exportW / (PreviewContext?.PreviewFrameWidth ?? 1));
+            double renderOffsetY = (PreviewContext?.TransformY ?? 0) * (exportH / (PreviewContext?.PreviewFrameHeight ?? 1));
+            double renderScale = PreviewContext?.TransformScale ?? 1.0;
+
             var exporter = new Services.Export.TimelineExportService();
             await exporter.ExportAsync(
                 TimelineContext.VideoClips, 
                 TimelineContext.AudioClips, 
                 TimelineContext.IsVideoHidden,
                 TimelineContext.IsAudioMuted,
+                renderOffsetX,
+                renderOffsetY,
+                renderScale,
                 fullPath, SelectedResolution, new Progress<double>(p => ExportProgress = p));
             
             ShowMessage?.Invoke("Export Complete", $"Video successfully exported to:\n{fullPath}");

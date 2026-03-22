@@ -55,6 +55,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
         };
 
+        Export.PreviewContext = Preview;
+
         Timeline.PropertyChanged += (sender, args) =>
         {
             if (args.PropertyName == nameof(TimelineViewModel.IsAudioMuted))

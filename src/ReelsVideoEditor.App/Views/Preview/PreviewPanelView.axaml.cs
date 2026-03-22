@@ -665,6 +665,12 @@ public partial class PreviewPanelView : UserControl
         currentPreviewFrameWidth = previewFrame.Width;
         currentPreviewFrameHeight = previewFrame.Height;
         
+        if (boundViewModel != null)
+        {
+            boundViewModel.PreviewFrameWidth = currentPreviewFrameWidth;
+            boundViewModel.PreviewFrameHeight = currentPreviewFrameHeight;
+        }
+        
         previewFrame.HorizontalAlignment = HorizontalAlignment.Center;
         previewFrame.VerticalAlignment = VerticalAlignment.Center;
 
