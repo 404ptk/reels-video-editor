@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -59,6 +60,7 @@ public partial class PreviewPanelView : UserControl
     private Point dragCenter;
     private bool isCropping;
     private CropHandle activeCropHandle = CropHandle.None;
+    private bool hasActiveTransformCropEdit;
 
     private const double MinCropVisibleNormalized = 0.05;
     
@@ -81,6 +83,7 @@ public partial class PreviewPanelView : UserControl
     public PreviewPanelView()
     {
         InitializeComponent();
+        Focusable = true;
 
         VideoFrameDecoder.InitializeFFmpeg();
 
@@ -91,12 +94,14 @@ public partial class PreviewPanelView : UserControl
 
         if (previewViewport is not null)
         {
+            previewViewport.Focusable = true;
             previewViewport.SizeChanged += (_, _) => UpdatePreviewFrameSize();
             previewViewport.PointerWheelChanged += OnPreviewPointerWheelChanged;
             previewViewport.PointerPressed += OnPreviewPointerPressed;
             previewViewport.PointerMoved += OnPreviewPointerMoved;
             previewViewport.PointerReleased += OnPreviewPointerReleased;
             previewViewport.PointerCaptureLost += OnPreviewPointerCaptureLost;
+            previewViewport.KeyDown += OnPreviewViewportKeyDown;
         }
 
         Loaded += (_, _) => UpdatePreviewFrameSize();
@@ -536,12 +541,15 @@ public partial class PreviewPanelView : UserControl
     {
         if (previewViewport is null || boundViewModel is null) return;
 
+        previewViewport.Focus();
+
         var pointer = e.GetCurrentPoint(previewViewport);
 
         if (boundViewModel.IsTransformModeEnabled && e.Source is Avalonia.Controls.Shapes.Ellipse ellipse && ellipse.Classes.Contains("TransformHandle"))
         {
             if (pointer.Properties.IsLeftButtonPressed)
             {
+                BeginTransformCropEditSession();
                 isScaling = true;
                 scaleStartValue = boundViewModel.TransformScale;
                 var vpCenter = new Point(previewViewport.Bounds.Width / 2, previewViewport.Bounds.Height / 2);
@@ -559,6 +567,7 @@ public partial class PreviewPanelView : UserControl
                 activeCropHandle = ParseCropHandle(cropEllipse.Tag as string);
                 if (activeCropHandle != CropHandle.None)
                 {
+                    BeginTransformCropEditSession();
                     isCropping = true;
                     e.Handled = true;
                     return;
@@ -573,6 +582,11 @@ public partial class PreviewPanelView : UserControl
 
         if (pointer.Properties.IsLeftButtonPressed || pointer.Properties.IsMiddleButtonPressed)
         {
+            if (canPanTransform)
+            {
+                BeginTransformCropEditSession();
+            }
+
             isPanning = true;
             lastPanPosition = pointer.Position;
             e.Handled = true;
@@ -629,6 +643,7 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
     {
+        EndTransformCropEditSession();
         isPanning = false;
         isScaling = false;
         isCropping = false;
@@ -637,10 +652,47 @@ public partial class PreviewPanelView : UserControl
 
     private void OnPreviewPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e)
     {
+        EndTransformCropEditSession();
         isPanning = false;
         isScaling = false;
         isCropping = false;
         activeCropHandle = CropHandle.None;
+    }
+
+    private void OnPreviewViewportKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (boundViewModel is null)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Z && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            boundViewModel.UndoTransformCrop();
+            e.Handled = true;
+        }
+    }
+
+    private void BeginTransformCropEditSession()
+    {
+        if (hasActiveTransformCropEdit || boundViewModel is null)
+        {
+            return;
+        }
+
+        hasActiveTransformCropEdit = true;
+        boundViewModel.BeginTransformCropEdit();
+    }
+
+    private void EndTransformCropEditSession()
+    {
+        if (!hasActiveTransformCropEdit || boundViewModel is null)
+        {
+            return;
+        }
+
+        hasActiveTransformCropEdit = false;
+        boundViewModel.CommitTransformCropEdit();
     }
 
     private void ApplyCropDrag(Point pointerPosition)

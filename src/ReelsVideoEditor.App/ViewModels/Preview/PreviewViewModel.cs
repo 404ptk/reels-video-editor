@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Media.Imaging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ReelsVideoEditor.App.ViewModels.Preview;
@@ -16,6 +17,8 @@ public enum PreviewQuality
 public sealed partial class PreviewViewModel : ViewModelBase
 {
     private const string ZeroTime = "00:00:00";
+    private readonly Stack<TransformCropState> transformCropUndoStack = new();
+    private TransformCropState? pendingEditStartState;
 
     public Func<string?>? ResolveVideoPath { get; set; }
 
@@ -371,4 +374,71 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(CropHandleBottomRightX));
         OnPropertyChanged(nameof(CropHandleBottomRightY));
     }
+
+    public void BeginTransformCropEdit()
+    {
+        pendingEditStartState ??= CaptureTransformCropState();
+    }
+
+    public void CommitTransformCropEdit()
+    {
+        if (pendingEditStartState is null)
+        {
+            return;
+        }
+
+        var finalState = CaptureTransformCropState();
+        if (!pendingEditStartState.Value.Equals(finalState))
+        {
+            transformCropUndoStack.Push(pendingEditStartState.Value);
+        }
+
+        pendingEditStartState = null;
+    }
+
+    public bool CanUndoTransformCrop => transformCropUndoStack.Count > 0;
+
+    public void UndoTransformCrop()
+    {
+        if (transformCropUndoStack.Count == 0)
+        {
+            return;
+        }
+
+        pendingEditStartState = null;
+        var previous = transformCropUndoStack.Pop();
+        ApplyTransformCropState(previous);
+    }
+
+    private TransformCropState CaptureTransformCropState()
+    {
+        return new TransformCropState(
+            TransformX,
+            TransformY,
+            TransformScale,
+            CropLeft,
+            CropTop,
+            CropRight,
+            CropBottom);
+    }
+
+    private void ApplyTransformCropState(TransformCropState state)
+    {
+        TransformX = state.TransformX;
+        TransformY = state.TransformY;
+        TransformScale = state.TransformScale;
+        CropLeft = state.CropLeft;
+        CropTop = state.CropTop;
+        CropRight = state.CropRight;
+        CropBottom = state.CropBottom;
+    }
+
+    private readonly record struct TransformCropState(
+        double TransformX,
+        double TransformY,
+        double TransformScale,
+        double CropLeft,
+        double CropTop,
+        double CropRight,
+        double CropBottom);
 }
