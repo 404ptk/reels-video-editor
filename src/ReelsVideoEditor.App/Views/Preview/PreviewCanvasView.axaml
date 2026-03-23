@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Preview"
+             x:Class="ReelsVideoEditor.App.Views.Preview.PreviewCanvasView"
+             x:DataType="vm:PreviewViewModel">
+
+    <Border Margin="0,10,0,0"
+            ClipToBounds="True">
+        <Border Margin="16">
+            <Grid x:Name="PreviewViewport"
+                  ClipToBounds="False"
+                  Background="Transparent">
+
+                <Border x:Name="PreviewFrame"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        ClipToBounds="False"
+                        RenderTransformOrigin="0.5,0.5">
+                    <Border.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform />
+                            <TranslateTransform />
+                        </TransformGroup>
+                    </Border.RenderTransform>
+
+                    <Panel IsVisible="{Binding IsVideoVisible}">
+                        <Border BorderBrush="{DynamicResource AccentSubtle}" BorderThickness="1" CornerRadius="8" ClipToBounds="True" Background="Black">
+                            <Image x:Name="PreviewImage"
+                                   Source="{Binding CurrentFrame}"
+                                   Stretch="Uniform"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch" />
+                        </Border>
+
+                        <Grid Width="{Binding ScaledForegroundWidth}"
+                              Height="{Binding ScaledForegroundHeight}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              ClipToBounds="False"
+                              IsVisible="{Binding IsTransformModeEnabled, Mode=OneWay}">
+
+                            <Grid.RenderTransform>
+                                <TranslateTransform X="{Binding TransformX}" Y="{Binding TransformY}" />
+                            </Grid.RenderTransform>
+
+                            <Border BorderBrush="White" BorderThickness="{Binding TransformHandleThickness}" />
+
+                            <Ellipse Classes="TransformHandle" Tag="TopLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding HandleMarginTopLeft}" />
+                            <Ellipse Classes="TransformHandle" Tag="TopRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="{Binding HandleMarginTopRight}" />
+                            <Ellipse Classes="TransformHandle" Tag="BottomLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomLeft}" />
+                            <Ellipse Classes="TransformHandle" Tag="BottomRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomRight}" />
+
+                            <Ellipse Classes="TransformHandle" Tag="Top" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="{Binding HandleMarginTopCenter}" />
+                            <Ellipse Classes="TransformHandle" Tag="Bottom" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="{Binding HandleMarginBottomCenter}" />
+                            <Ellipse Classes="TransformHandle" Tag="Left" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="{Binding HandleMarginLeftCenter}" />
+                            <Ellipse Classes="TransformHandle" Tag="Right" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="{Binding HandleMarginRightCenter}" />
+                        </Grid>
+
+                        <Grid Width="{Binding ScaledForegroundWidth}"
+                              Height="{Binding ScaledForegroundHeight}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              ClipToBounds="False"
+                              IsVisible="{Binding ShowClipperHandles, Mode=OneWay}">
+
+                            <Grid.RenderTransform>
+                                <TranslateTransform X="{Binding TransformX}" Y="{Binding TransformY}" />
+                            </Grid.RenderTransform>
+
+                            <Canvas ClipToBounds="False">
+                                <Rectangle Width="{Binding CropOverlayWidth}"
+                                           Height="{Binding CropOverlayHeight}"
+                                           Canvas.Left="{Binding CropOverlayLeft}"
+                                           Canvas.Top="{Binding CropOverlayTop}"
+                                           Stroke="White"
+                                           StrokeThickness="{Binding TransformHandleThickness}" />
+
+                                <Ellipse Classes="ClipperHandle" Tag="TopLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopLeftX}" Canvas.Top="{Binding CropHandleTopLeftY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="Top" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopCenterX}" Canvas.Top="{Binding CropHandleTopCenterY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="TopRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleTopRightX}" Canvas.Top="{Binding CropHandleTopRightY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="Left" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleLeftCenterX}" Canvas.Top="{Binding CropHandleLeftCenterY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="Right" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleRightCenterX}" Canvas.Top="{Binding CropHandleRightCenterY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="BottomLeft" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomLeftX}" Canvas.Top="{Binding CropHandleBottomLeftY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="Bottom" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomCenterX}" Canvas.Top="{Binding CropHandleBottomCenterY}" />
+                                <Ellipse Classes="ClipperHandle" Tag="BottomRight" Cursor="Hand" Width="{Binding TransformHandleSize}" Height="{Binding TransformHandleSize}" Fill="White" Canvas.Left="{Binding CropHandleBottomRightX}" Canvas.Top="{Binding CropHandleBottomRightY}" />
+                            </Canvas>
+                        </Grid>
+                    </Panel>
+                </Border>
+
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="6"
+                            IsVisible="{Binding ShowPlaceholder}">
+                    <TextBlock Text="{Binding PlaceholderTitle}"
+                               Foreground="{DynamicResource Accent}"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding PlaceholderSubtitle}"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontSize="11"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</UserControl>

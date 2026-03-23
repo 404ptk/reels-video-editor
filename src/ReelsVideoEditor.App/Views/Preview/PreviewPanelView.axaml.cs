@@ -29,6 +29,7 @@ public partial class PreviewPanelView : UserControl
     private readonly FrameCompositor compositor = new();
     private readonly Border? previewFrame;
     private readonly Control? previewViewport;
+    private readonly Image? previewImage;
 
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
@@ -83,8 +84,10 @@ public partial class PreviewPanelView : UserControl
 
         VideoFrameDecoder.InitializeFFmpeg();
 
-        previewFrame = this.FindControl<Border>("PreviewFrame");
-        previewViewport = this.FindControl<Control>("PreviewViewport");
+        var previewCanvas = this.FindControl<PreviewCanvasView>("PreviewCanvas");
+        previewFrame = previewCanvas?.FindControl<Border>("PreviewFrame");
+        previewViewport = previewCanvas?.FindControl<Control>("PreviewViewport");
+        previewImage = previewCanvas?.FindControl<Image>("PreviewImage");
 
         if (previewViewport is not null)
         {
@@ -465,7 +468,6 @@ public partial class PreviewPanelView : UserControl
         
         viewModel.CurrentFrame = renderTarget;
 
-        var previewImage = this.FindControl<Image>("PreviewImage");
         previewImage?.InvalidateVisual();
 
         fpsFrameCount++;

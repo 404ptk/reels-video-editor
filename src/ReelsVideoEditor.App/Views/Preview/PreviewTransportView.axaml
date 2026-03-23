@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Preview"
+             x:Class="ReelsVideoEditor.App.Views.Preview.PreviewTransportView"
+             x:DataType="vm:PreviewViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.icon-btn">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style Selector="Button.icon-btn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Margin="0,12,0,0"
+                HorizontalAlignment="Center"
+                Spacing="6">
+        <Grid HorizontalAlignment="Center"
+              ColumnDefinitions="74,Auto,74">
+            <TextBlock Text="{Binding CurrentPlaybackTimeText}"
+                       Grid.Column="0"
+                       Foreground="{DynamicResource AccentMuted}"
+                       FontFamily="Consolas"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Right" />
+            <TextBlock Text="/"
+                       Grid.Column="1"
+                       Margin="4,0"
+                       Foreground="{DynamicResource AccentSubtle}"
+                       FontSize="13"
+                       FontWeight="SemiBold" />
+            <TextBlock Text="{Binding TotalPlaybackTimeText}"
+                       Grid.Column="2"
+                       Foreground="{DynamicResource AccentMuted}"
+                       FontFamily="Consolas"
+                       FontSize="13"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Left" />
+        </Grid>
+
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+            <Button Width="42"
+                    Height="36"
+                    Classes="icon-btn"
+                    Command="{Binding TogglePlayPauseCommand}"
+                    ToolTip.Tip="Play / Pause">
+                <Path Data="{Binding PlayPauseIconPath}"
+                      Width="16"
+                      Height="16"
+                      Stretch="Uniform"
+                      Fill="{DynamicResource Accent}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+            </Button>
+
+            <Button Width="42"
+                    Height="36"
+                    Classes="icon-btn"
+                    Command="{Binding StopCommand}"
+                    ToolTip.Tip="Stop">
+                <Path Data="M4,4 H12 V12 H4 Z"
+                      Width="16"
+                      Height="16"
+                      Stretch="Uniform"
+                      Fill="{DynamicResource Accent}"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</UserControl>
