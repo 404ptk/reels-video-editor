@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 using ReelsVideoEditor.App.ViewModels.Timeline;
@@ -107,10 +108,77 @@ public partial class TimelinePanelView : UserControl
         if (timelineCanvas == null) return;
 
         _dragStartPoint = eventArgs.GetPosition(timelineCanvas);
-        viewModel.ClearSelection();
+
+        if (viewModel.IsCutterToolActive)
+        {
+            viewModel.SeekCutterToCanvasPosition(_dragStartPoint.Value.X);
+
+            if (IsPointerOverClip(eventArgs.Source))
+            {
+                viewModel.TryCutAtPlayhead();
+            }
+
+            eventArgs.Handled = true;
+            return;
+        }
 
         viewModel.SeekToPosition(_dragStartPoint.Value.X);
+
+        viewModel.ClearSelection();
         eventArgs.Handled = true;
+    }
+
+    private static bool IsPointerOverClip(object? source)
+    {
+        if (source is not Visual sourceVisual)
+        {
+            return false;
+        }
+
+        if (sourceVisual is StyledElement sourceElement && sourceElement.DataContext is TimelineClipItem)
+        {
+            return true;
+        }
+
+        foreach (var ancestor in sourceVisual.GetVisualAncestors())
+        {
+            if (ancestor is StyledElement styledElement && styledElement.DataContext is TimelineClipItem)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void TimelineCanvas_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (sender is not Control canvas || DataContext is not TimelineViewModel viewModel)
+        {
+            return;
+        }
+
+        var pointerX = eventArgs.GetPosition(canvas).X;
+        viewModel.UpdateCutterMarkerFromCanvas(pointerX, visible: true);
+    }
+
+    private void TimelineCanvas_OnPointerEntered(object? sender, PointerEventArgs eventArgs)
+    {
+        if (sender is not Control canvas || DataContext is not TimelineViewModel viewModel)
+        {
+            return;
+        }
+
+        var pointerX = eventArgs.GetPosition(canvas).X;
+        viewModel.UpdateCutterMarkerFromCanvas(pointerX, visible: true);
+    }
+
+    private void TimelineCanvas_OnPointerExited(object? sender, PointerEventArgs eventArgs)
+    {
+        if (DataContext is TimelineViewModel viewModel)
+        {
+            viewModel.HideCutterMarker();
+        }
     }
 
     private void TimelineSeekSurface_OnPointerMoved(object? sender, PointerEventArgs eventArgs)

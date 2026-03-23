@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -24,19 +25,15 @@ public partial class TimelineViewModel : ViewModelBase
     private const double LaneClipVerticalPadding = 12;
     private const int MinLaneContentHeight = 30;
     private const int MaxLaneContentHeight = 140;
+    private const int MaxVideoLines = 9;
     private readonly TimelineClipArrangementService clipArrangementService = new();
     private readonly TimelineWaveformRenderService waveformRenderService = new();
     
     private readonly Stack<Action> undoStack = new();
+    private bool isBatchUpdatingClips;
 
     [ObservableProperty]
     private int zoomPercent = 100;
-
-    [ObservableProperty]
-    private bool isVideoSolo;
-
-    [ObservableProperty]
-    private bool isVideoHidden;
 
     [ObservableProperty]
     private bool isAudioMuted;
@@ -68,6 +65,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public ObservableCollection<TimelineClipItem> AudioClips { get; } = [];
 
+    public ObservableCollection<VideoLaneItem> VideoLanes { get; } = [new("VIDEO", true, false, false)];
+
     public ObservableCollection<TimelineClipItem> Clips => VideoClips;
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
@@ -78,7 +77,16 @@ public partial class TimelineViewModel : ViewModelBase
 
     public double ClipVisualHeight => Math.Max(18, LaneContainerHeight - LaneClipVerticalPadding);
 
-    public double TimelineCanvasHeight => TickSectionHeight + TrackTopSpacing + LaneContainerHeight + TrackGap + LaneContainerHeight;
+    public int VideoLaneCount => VideoLanes.Count;
+
+    public bool CanAddNewLine => VideoLaneCount < MaxVideoLines;
+
+    // Compatibility surface used by preview/export; maps to primary lane state.
+    public bool IsVideoSolo => VideoLanes.FirstOrDefault()?.IsSolo ?? false;
+
+    public bool IsVideoHidden => VideoLanes.FirstOrDefault()?.IsHidden ?? false;
+
+    public double TimelineCanvasHeight => TickSectionHeight + TrackTopSpacing + (VideoLaneCount * LaneContainerHeight) + (VideoLaneCount * TrackGap) + LaneContainerHeight;
 
     public double PlayheadHeight => TimelineCanvasHeight;
 
@@ -95,6 +103,11 @@ public partial class TimelineViewModel : ViewModelBase
     public TimelineViewModel()
     {
         VideoClips.CollectionChanged += OnVideoClipsChanged;
+        VideoLanes.CollectionChanged += OnVideoLanesChanged;
+        foreach (var lane in VideoLanes)
+        {
+            lane.PropertyChanged += OnVideoLanePropertyChanged;
+        }
         BuildMinorTicks();
         RebuildMajorTicks();
     }
@@ -105,6 +118,9 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(TimelineCanvasWidth));
         OnPropertyChanged(nameof(PlayheadLeft));
         OnPropertyChanged(nameof(PlayheadVisualLeft));
+        OnPropertyChanged(nameof(CutterMarkerLeft));
+        OnPropertyChanged(nameof(CutterMarkerVisualLeft));
+        OnPropertyChanged(nameof(CutterMarkerContainerLeft));
         RebuildMajorTicks();
         clipArrangementService.RebuildLayouts(VideoClips, TickWidth);
         clipArrangementService.RebuildLayouts(AudioClips, TickWidth);
@@ -124,6 +140,57 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(TimelineCanvasHeight));
         OnPropertyChanged(nameof(PlayheadHeight));
         RefreshClipLevelLines();
+    }
+
+    private void OnVideoLanesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (var item in e.OldItems)
+            {
+                if (item is VideoLaneItem lane)
+                {
+                    lane.PropertyChanged -= OnVideoLanePropertyChanged;
+                }
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (var item in e.NewItems)
+            {
+                if (item is VideoLaneItem lane)
+                {
+                    lane.PropertyChanged += OnVideoLanePropertyChanged;
+                }
+            }
+        }
+
+        OnPropertyChanged(nameof(VideoLaneCount));
+        OnPropertyChanged(nameof(CanAddNewLine));
+        OnPropertyChanged(nameof(TimelineCanvasHeight));
+        OnPropertyChanged(nameof(PlayheadHeight));
+        OnPropertyChanged(nameof(IsVideoSolo));
+        OnPropertyChanged(nameof(IsVideoHidden));
+    }
+
+    private void OnVideoLanePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not VideoLaneItem lane || !lane.IsPrimary)
+        {
+            return;
+        }
+
+        if (e.PropertyName == nameof(VideoLaneItem.IsSolo))
+        {
+            OnPropertyChanged(nameof(IsVideoSolo));
+            return;
+        }
+
+        if (e.PropertyName == nameof(VideoLaneItem.IsHidden))
+        {
+            OnPropertyChanged(nameof(IsVideoHidden));
+        }
     }
 
     partial void OnIsPlaybackActiveChanged(bool value)
@@ -322,6 +389,11 @@ public partial class TimelineViewModel : ViewModelBase
 
     private void OnVideoClipsChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
     {
+        if (isBatchUpdatingClips)
+        {
+            return;
+        }
+
         OnPropertyChanged(nameof(HasClips));
         PreviewClipChanged?.Invoke();
 
@@ -510,3 +582,24 @@ public partial class TimelineViewModel : ViewModelBase
 public sealed record TimelineMinorTick(bool ShowLine);
 
 public sealed record TimelineMajorTick(string Label, double Width);
+
+public sealed partial class VideoLaneItem : ObservableObject
+{
+    public VideoLaneItem(string label, bool isPrimary, bool isSolo, bool isHidden)
+    {
+        Label = label;
+        IsPrimary = isPrimary;
+        IsSolo = isSolo;
+        IsHidden = isHidden;
+    }
+
+    public string Label { get; }
+
+    public bool IsPrimary { get; }
+
+    [ObservableProperty]
+    private bool isSolo;
+
+    [ObservableProperty]
+    private bool isHidden;
+}
