@@ -244,6 +244,7 @@ public partial class TimelineViewModel : ViewModelBase
     public IReadOnlyList<PreviewVideoLayer> ResolvePreviewVideoLayers(long playbackMilliseconds)
     {
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        var hasAnySelectedVideoClip = VideoClips.Any(clip => clip.IsSelected);
         var activeClips = ResolveVisibleVideoClips()
             .Where(clip =>
                 timelineSeconds >= clip.StartSeconds
@@ -269,7 +270,15 @@ public partial class TimelineViewModel : ViewModelBase
                 clip.Path,
                 localMilliseconds,
                 DrawBlurredBackground: i == 0,
-                IsSelected: clip.IsSelected));
+                IsSelected: clip.IsSelected,
+                HasAnySelectedVideoClip: hasAnySelectedVideoClip,
+                TransformX: clip.TransformX,
+                TransformY: clip.TransformY,
+                TransformScale: clip.TransformScale,
+                CropLeft: clip.CropLeft,
+                CropTop: clip.CropTop,
+                CropRight: clip.CropRight,
+                CropBottom: clip.CropBottom));
         }
 
         return result;
@@ -322,6 +331,53 @@ public partial class TimelineViewModel : ViewModelBase
 
         // Foreground overlays on upper lanes should not generate their own blurred fill.
         return lane.IsPrimary;
+    }
+
+    public bool HasSelectedVideoClip()
+    {
+        return VideoClips.Any(clip => clip.IsSelected);
+    }
+
+    public PreviewClipTransform ResolveTransformTargetState()
+    {
+        var targetClip = ResolveTransformTargetClip();
+        if (targetClip is null)
+        {
+            return PreviewClipTransform.Default;
+        }
+
+        return new PreviewClipTransform(
+            targetClip.TransformX,
+            targetClip.TransformY,
+            targetClip.TransformScale,
+            targetClip.CropLeft,
+            targetClip.CropTop,
+            targetClip.CropRight,
+            targetClip.CropBottom);
+    }
+
+    public void ApplyTransformToTarget(
+        double transformX,
+        double transformY,
+        double transformScale,
+        double cropLeft,
+        double cropTop,
+        double cropRight,
+        double cropBottom)
+    {
+        var targetClip = ResolveTransformTargetClip();
+        if (targetClip is null)
+        {
+            return;
+        }
+
+        targetClip.TransformX = transformX;
+        targetClip.TransformY = transformY;
+        targetClip.TransformScale = Math.Max(0.1, transformScale);
+        targetClip.CropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
+        targetClip.CropTop = Math.Clamp(cropTop, 0.0, 0.95);
+        targetClip.CropRight = Math.Clamp(cropRight, 0.0, 0.95);
+        targetClip.CropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
     }
 
     public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
@@ -629,6 +685,42 @@ public partial class TimelineViewModel : ViewModelBase
         }
 
         return visibleClips
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenBy(clip => clip.StartSeconds)
+            .FirstOrDefault();
+    }
+
+    private TimelineClipItem? ResolveTransformTargetClip()
+    {
+        var selectedClip = ResolveSelectedVideoClip();
+        if (selectedClip is not null)
+        {
+            return selectedClip;
+        }
+
+        return ResolvePreviewClip();
+    }
+
+    private TimelineClipItem? ResolveSelectedVideoClip()
+    {
+        var selected = VideoClips.Where(clip => clip.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            return null;
+        }
+
+        var activeSelected = selected
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault(clip =>
+                PlayheadSeconds >= clip.StartSeconds
+                && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds);
+        if (activeSelected is not null)
+        {
+            return activeSelected;
+        }
+
+        return selected
             .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
             .ThenBy(clip => clip.StartSeconds)
             .FirstOrDefault();
@@ -960,7 +1052,31 @@ public sealed partial class VideoLaneItem : ObservableObject
     private bool isHidden;
 }
 
-public sealed record PreviewVideoLayer(string Path, long PlaybackMilliseconds, bool DrawBlurredBackground, bool IsSelected);
+public sealed record PreviewVideoLayer(
+    string Path,
+    long PlaybackMilliseconds,
+    bool DrawBlurredBackground,
+    bool IsSelected,
+    bool HasAnySelectedVideoClip,
+    double TransformX,
+    double TransformY,
+    double TransformScale,
+    double CropLeft,
+    double CropTop,
+    double CropRight,
+    double CropBottom);
+
+public sealed record PreviewClipTransform(
+    double TransformX,
+    double TransformY,
+    double TransformScale,
+    double CropLeft,
+    double CropTop,
+    double CropRight,
+    double CropBottom)
+{
+    public static PreviewClipTransform Default { get; } = new(0, 0, 1, 0, 0, 0, 0);
+}
 
 public sealed record PreviewAudioState(string? Path, long PlaybackMilliseconds, double VolumeLevel, bool ShouldPlay)
 {

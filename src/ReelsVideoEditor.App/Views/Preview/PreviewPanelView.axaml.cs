@@ -403,6 +403,9 @@ public partial class PreviewPanelView : UserControl
                 if (resolveLayers is not null)
                 {
                     var layers = resolveLayers(currentMs);
+                    var hasAnySelection = viewModel.HasSelectedVideoClip?.Invoke() ?? false;
+                    var hasActiveSelectedLayer = layers.Any(layer => layer.IsSelected);
+                    viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveSelectedLayer;
                     composed = ComposeMultipleLayers(viewModel, layers);
                     if (composed is null)
                     {
@@ -468,6 +471,9 @@ public partial class PreviewPanelView : UserControl
         if (resolveLayers is not null)
         {
             resolvedLayers = resolveLayers((long)position.TotalMilliseconds);
+            var hasAnySelection = viewModel.HasSelectedVideoClip?.Invoke() ?? false;
+            var hasActiveSelectedLayer = resolvedLayers.Any(layer => layer.IsSelected);
+            viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveSelectedLayer;
             UpdateVideoForegroundBoundsForLayers(viewModel, resolvedLayers);
         }
 
@@ -524,7 +530,6 @@ public partial class PreviewPanelView : UserControl
         var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
         var sourceWidthForTarget = 0;
         var sourceHeightForTarget = 0;
-        var selectedFrameLayerIndex = -1;
 
         for (var i = 0; i < layers.Count; i++)
         {
@@ -573,11 +578,6 @@ public partial class PreviewPanelView : UserControl
                     0f,
                     0f,
                     layer.DrawBlurredBackground));
-
-                if (layer.IsSelected)
-                {
-                    selectedFrameLayerIndex = frameLayers.Count - 1;
-                }
             }
         }
 
@@ -593,29 +593,21 @@ public partial class PreviewPanelView : UserControl
         }
 
         var (targetW, targetH) = GetTargetResolution(viewModel, sourceWidthForTarget, sourceHeightForTarget);
-        var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
-        var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
-
-        var transformLayerIndex = selectedFrameLayerIndex;
-
-        if (transformLayerIndex < 0)
-        {
-            transformLayerIndex = frameLayers.Count - 1;
-        }
-
         for (var i = 0; i < frameLayers.Count; i++)
         {
             var layer = frameLayers[i];
-            var isTransformLayer = i == transformLayerIndex;
+            var sourceLayer = layers[i];
+            var renderOffsetX = (float)(sourceLayer.TransformX * ((double)targetW / currentPreviewFrameWidth));
+            var renderOffsetY = (float)(sourceLayer.TransformY * ((double)targetH / currentPreviewFrameHeight));
             frameLayers[i] = layer with
             {
-                OffsetX = isTransformLayer ? renderOffsetX : 0f,
-                OffsetY = isTransformLayer ? renderOffsetY : 0f,
-                Scale = isTransformLayer ? (float)viewModel.TransformScale : 1f,
-                CropLeft = isTransformLayer ? (float)viewModel.CropLeft : 0f,
-                CropTop = isTransformLayer ? (float)viewModel.CropTop : 0f,
-                CropRight = isTransformLayer ? (float)viewModel.CropRight : 0f,
-                CropBottom = isTransformLayer ? (float)viewModel.CropBottom : 0f
+                OffsetX = renderOffsetX,
+                OffsetY = renderOffsetY,
+                Scale = (float)sourceLayer.TransformScale,
+                CropLeft = (float)sourceLayer.CropLeft,
+                CropTop = (float)sourceLayer.CropTop,
+                CropRight = (float)sourceLayer.CropRight,
+                CropBottom = (float)sourceLayer.CropBottom
             };
         }
 

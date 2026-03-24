@@ -27,6 +27,8 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<long, PreviewAudioState>? ResolveAudioState { get; set; }
 
+    public Func<bool>? HasSelectedVideoClip { get; set; }
+
     public Func<long>? ResolvePlaybackMaxMilliseconds { get; set; }
 
     public Action<long>? PlaybackTimeChanged { get; set; }
@@ -68,8 +70,11 @@ public sealed partial class PreviewViewModel : ViewModelBase
     [ObservableProperty]
     private bool isClipperModeEnabled;
 
-    public bool ShowTransformHandles => IsTransformModeEnabled && IsVideoVisible;
-    public bool ShowClipperHandles => IsClipperModeEnabled && IsVideoVisible;
+    [ObservableProperty]
+    private bool isTransformTargetActive = true;
+
+    public bool ShowTransformHandles => IsTransformModeEnabled && IsVideoVisible && IsTransformTargetActive;
+    public bool ShowClipperHandles => IsClipperModeEnabled && IsVideoVisible && IsTransformTargetActive;
 
     partial void OnIsTransformModeEnabledChanged(bool value)
     {
@@ -191,6 +196,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
     partial void OnIsVideoHiddenChanged(bool value)
     {
         OnPropertyChanged(nameof(IsVideoVisible));
+        OnPropertyChanged(nameof(ShowTransformHandles));
+        OnPropertyChanged(nameof(ShowClipperHandles));
+    }
+
+    partial void OnIsTransformTargetActiveChanged(bool value)
+    {
         OnPropertyChanged(nameof(ShowTransformHandles));
         OnPropertyChanged(nameof(ShowClipperHandles));
     }

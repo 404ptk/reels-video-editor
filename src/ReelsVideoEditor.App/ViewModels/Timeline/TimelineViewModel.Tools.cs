@@ -218,7 +218,14 @@ public partial class TimelineViewModel
         {
             IsSelected = source.IsSelected,
             VolumeLevel = source.VolumeLevel,
-            VideoLaneLabel = source.VideoLaneLabel
+            VideoLaneLabel = source.VideoLaneLabel,
+            TransformX = source.TransformX,
+            TransformY = source.TransformY,
+            TransformScale = source.TransformScale,
+            CropLeft = source.CropLeft,
+            CropTop = source.CropTop,
+            CropRight = source.CropRight,
+            CropBottom = source.CropBottom
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -266,7 +273,14 @@ public partial class TimelineViewModel
             clip.DurationSeconds,
             clip.VolumeLevel,
             clip.IsSelected,
-            clip.VideoLaneLabel)).ToList();
+            clip.VideoLaneLabel,
+            clip.TransformX,
+            clip.TransformY,
+            clip.TransformScale,
+            clip.CropLeft,
+            clip.CropTop,
+            clip.CropRight,
+            clip.CropBottom)).ToList();
     }
 
     private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
@@ -291,7 +305,14 @@ public partial class TimelineViewModel
         {
             VolumeLevel = snapshot.VolumeLevel,
             IsSelected = snapshot.IsSelected,
-            VideoLaneLabel = snapshot.VideoLaneLabel
+            VideoLaneLabel = snapshot.VideoLaneLabel,
+            TransformX = snapshot.TransformX,
+            TransformY = snapshot.TransformY,
+            TransformScale = snapshot.TransformScale,
+            CropLeft = snapshot.CropLeft,
+            CropTop = snapshot.CropTop,
+            CropRight = snapshot.CropRight,
+            CropBottom = snapshot.CropBottom
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -329,7 +350,14 @@ public partial class TimelineViewModel
         double DurationSeconds,
         double VolumeLevel,
         bool IsSelected,
-        string VideoLaneLabel);
+        string VideoLaneLabel,
+        double TransformX,
+        double TransformY,
+        double TransformScale,
+        double CropLeft,
+        double CropTop,
+        double CropRight,
+        double CropBottom);
 }
 
 public enum TimelineTool

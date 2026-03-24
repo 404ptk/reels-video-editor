@@ -48,6 +48,27 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private double audioWaveformVisualTop;
 
+    [ObservableProperty]
+    private double transformX;
+
+    [ObservableProperty]
+    private double transformY;
+
+    [ObservableProperty]
+    private double transformScale = 1.0;
+
+    [ObservableProperty]
+    private double cropLeft;
+
+    [ObservableProperty]
+    private double cropTop;
+
+    [ObservableProperty]
+    private double cropRight;
+
+    [ObservableProperty]
+    private double cropBottom;
+
     public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds, Guid? linkId = null)
     {
         LinkId = linkId ?? Guid.NewGuid();

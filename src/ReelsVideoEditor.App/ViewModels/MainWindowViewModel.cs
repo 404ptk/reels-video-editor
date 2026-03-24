@@ -13,6 +13,8 @@ namespace ReelsVideoEditor.App.ViewModels;
 
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
+    private bool isSyncingPreviewTransformFromTimeline;
+
     [ObservableProperty]
     private SidebarSection selectedSection = SidebarSection.Explorer;
 
@@ -53,9 +55,36 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),
             ResolveVideoLayers = playbackMilliseconds => Timeline.ResolvePreviewVideoLayers(playbackMilliseconds),
             ResolveAudioState = playbackMilliseconds => Timeline.ResolvePreviewAudioState(playbackMilliseconds),
+            HasSelectedVideoClip = () => Timeline.HasSelectedVideoClip(),
             ResolvePlaybackMaxMilliseconds = () => Timeline.ResolvePlaybackDurationMilliseconds(),
             PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
             PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
+        };
+
+        Preview.PropertyChanged += (_, args) =>
+        {
+            if (isSyncingPreviewTransformFromTimeline)
+            {
+                return;
+            }
+
+            if (args.PropertyName == nameof(PreviewViewModel.TransformX)
+                || args.PropertyName == nameof(PreviewViewModel.TransformY)
+                || args.PropertyName == nameof(PreviewViewModel.TransformScale)
+                || args.PropertyName == nameof(PreviewViewModel.CropLeft)
+                || args.PropertyName == nameof(PreviewViewModel.CropTop)
+                || args.PropertyName == nameof(PreviewViewModel.CropRight)
+                || args.PropertyName == nameof(PreviewViewModel.CropBottom))
+            {
+                Timeline.ApplyTransformToTarget(
+                    Preview.TransformX,
+                    Preview.TransformY,
+                    Preview.TransformScale,
+                    Preview.CropLeft,
+                    Preview.CropTop,
+                    Preview.CropRight,
+                    Preview.CropBottom);
+            }
         };
 
         Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
@@ -88,6 +117,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             var resolvedPath = Timeline.ResolvePreviewClipPath();
             Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
+            SyncPreviewTransformFromTimelineTarget();
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
                 Preview.Stop();
@@ -101,13 +131,35 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Timeline.PreviewSelectionChanged = () =>
         {
+            SyncPreviewTransformFromTimelineTarget();
             if (!Preview.IsPlaying)
             {
                 Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
             }
         };
 
+        SyncPreviewTransformFromTimelineTarget();
         Timeline.RefreshPreviewLevels();
+    }
+
+    private void SyncPreviewTransformFromTimelineTarget()
+    {
+        var transformState = Timeline.ResolveTransformTargetState();
+        isSyncingPreviewTransformFromTimeline = true;
+        try
+        {
+            Preview.TransformX = transformState.TransformX;
+            Preview.TransformY = transformState.TransformY;
+            Preview.TransformScale = transformState.TransformScale;
+            Preview.CropLeft = transformState.CropLeft;
+            Preview.CropTop = transformState.CropTop;
+            Preview.CropRight = transformState.CropRight;
+            Preview.CropBottom = transformState.CropBottom;
+        }
+        finally
+        {
+            isSyncingPreviewTransformFromTimeline = false;
+        }
     }
 
     [RelayCommand]

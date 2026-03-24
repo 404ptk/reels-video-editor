@@ -6,30 +6,28 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.Services.Export;
 
 public class TimelineExportService
 {
     public async Task ExportAsync(
-        IEnumerable<TimelineClipItem> videoClips,
-        IEnumerable<TimelineClipItem> audioClips,
-        bool isVideoHidden,
+        IReadOnlyList<ExportVideoClipInput> videoClips,
+        IReadOnlyList<ExportAudioClipInput> audioClips,
         bool isAudioMuted,
-        double renderOffsetX,
-        double renderOffsetY,
-        double renderScale,
-        double cropLeft,
-        double cropTop,
-        double cropRight,
-        double cropBottom,
         string outputPath,
         string resolution,
+        double previewFrameWidth,
+        double previewFrameHeight,
         IProgress<double> progress)
     {
-        var videos = isVideoHidden ? new List<TimelineClipItem>() : videoClips.OrderBy(c => c.StartSeconds).ToList();
-        var audios = isAudioMuted ? new List<TimelineClipItem>() : audioClips.OrderBy(c => c.StartSeconds).ToList();
+        var videos = videoClips
+            .OrderByDescending(c => c.LaneOrder)
+            .ThenBy(c => c.StartSeconds)
+            .ToList();
+        var audios = isAudioMuted
+            ? new List<ExportAudioClipInput>()
+            : audioClips.OrderBy(c => c.StartSeconds).ToList();
 
         if (videos.Count == 0 && audios.Count == 0)
         {
@@ -37,27 +35,17 @@ public class TimelineExportService
         }
 
         double totalDuration = 0;
-        double minStartSeconds = double.MaxValue;
 
         foreach (var v in videos) 
         {
             totalDuration = Math.Max(totalDuration, v.StartSeconds + v.DurationSeconds);
-            minStartSeconds = Math.Min(minStartSeconds, v.StartSeconds);
         }
         foreach (var a in audios) 
         {
             totalDuration = Math.Max(totalDuration, a.StartSeconds + a.DurationSeconds);
-            minStartSeconds = Math.Min(minStartSeconds, a.StartSeconds);
         }
 
         if (totalDuration == 0) totalDuration = 5;
-        
-        double timeOffset = 0;
-        if (minStartSeconds > 0 && minStartSeconds != double.MaxValue)
-        {
-            timeOffset = minStartSeconds;
-            totalDuration -= timeOffset;
-        }
 
         var parts = resolution.Split('x');
         int width = int.Parse(parts[0]);
@@ -65,18 +53,6 @@ public class TimelineExportService
 
         var ffmpegCommand = new StringBuilder();
         ffmpegCommand.Append("-y ");
-
-        cropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
-        cropTop = Math.Clamp(cropTop, 0.0, 0.95);
-        cropRight = Math.Clamp(cropRight, 0.0, 0.95);
-        cropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
-
-        var visibleCropWidth = Math.Max(0.05, 1.0 - cropLeft - cropRight);
-        var visibleCropHeight = Math.Max(0.05, 1.0 - cropTop - cropBottom);
-        var cropLeftExpr = cropLeft.ToString(CultureInfo.InvariantCulture);
-        var cropTopExpr = cropTop.ToString(CultureInfo.InvariantCulture);
-        var cropWidthExpr = visibleCropWidth.ToString(CultureInfo.InvariantCulture);
-        var cropHeightExpr = visibleCropHeight.ToString(CultureInfo.InvariantCulture);
 
         foreach (var v in videos)
         {
@@ -93,36 +69,51 @@ public class TimelineExportService
         ffmpegCommand.Append($"color=c=black:s={width}x{height}:d={totalDuration.ToString(CultureInfo.InvariantCulture)}[base];");
 
         int currentInputIndex = 0;
+        var fgOverlayXByIndex = new List<string>(videos.Count);
+        var fgOverlayYByIndex = new List<string>(videos.Count);
 
-        var videoOutputs = new List<string>();
         for (int i = 0; i < videos.Count; i++)
         {
             var v = videos[i];
-            var adjustedStart = v.StartSeconds - timeOffset;
-            var ptsStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
+            var ptsStart = v.StartSeconds.ToString(CultureInfo.InvariantCulture);
 
             int extWidth = (int)(width * 1.3);
             extWidth = extWidth % 2 == 0 ? extWidth : extWidth + 1;
             int extHeight = (int)(height * 1.3);
             extHeight = extHeight % 2 == 0 ? extHeight : extHeight + 1;
 
-            int scaledWidth = (int)(width * renderScale);
+            var transformScale = Math.Max(0.1, v.TransformScale);
+            int scaledWidth = (int)(width * transformScale);
             scaledWidth = scaledWidth % 2 == 0 ? scaledWidth : scaledWidth + 1;
-            int scaledHeight = (int)(height * renderScale);
+            int scaledHeight = (int)(height * transformScale);
             scaledHeight = scaledHeight % 2 == 0 ? scaledHeight : scaledHeight + 1;
 
-            string offsetXStr = renderOffsetX.ToString(CultureInfo.InvariantCulture);
-            string offsetYStr = renderOffsetY.ToString(CultureInfo.InvariantCulture);
+            var safePreviewWidth = Math.Max(1.0, previewFrameWidth);
+            var safePreviewHeight = Math.Max(1.0, previewFrameHeight);
+            var offsetX = v.TransformX * (width / safePreviewWidth);
+            var offsetY = v.TransformY * (height / safePreviewHeight);
+            string offsetXStr = offsetX.ToString(CultureInfo.InvariantCulture);
+            string offsetYStr = offsetY.ToString(CultureInfo.InvariantCulture);
+            fgOverlayXByIndex.Add($"(W-w)/2+{offsetXStr}");
+            fgOverlayYByIndex.Add($"(H-h)/2+{offsetYStr}");
+
+            var cropLeft = Math.Clamp(v.CropLeft, 0.0, 0.95);
+            var cropTop = Math.Clamp(v.CropTop, 0.0, 0.95);
+            var cropRight = Math.Clamp(v.CropRight, 0.0, 0.95);
+            var cropBottom = Math.Clamp(v.CropBottom, 0.0, 0.95);
+            var visibleCropWidth = Math.Max(0.05, 1.0 - cropLeft - cropRight);
+            var visibleCropHeight = Math.Max(0.05, 1.0 - cropTop - cropBottom);
+            var cropLeftExpr = cropLeft.ToString(CultureInfo.InvariantCulture);
+            var cropTopExpr = cropTop.ToString(CultureInfo.InvariantCulture);
+            var cropWidthExpr = visibleCropWidth.ToString(CultureInfo.InvariantCulture);
+            var cropHeightExpr = visibleCropHeight.ToString(CultureInfo.InvariantCulture);
 
             ffmpegCommand.Append($"[{currentInputIndex}:v]split[v{i}_input_bg][v{i}_input_fg];");
 
             ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
 
-            ffmpegCommand.Append($"[v{i}_input_fg]crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,pad={scaledWidth}:{scaledHeight}:x=iw*{cropLeftExpr}:y=ih*{cropTopExpr}:color=black,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            ffmpegCommand.Append($"[v{i}_input_fg]crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
 
-            ffmpegCommand.Append($"[v{i}_bg][v{i}_fg]overlay=(W-w)/2+{offsetXStr}:(H-h)/2+{offsetYStr}[v{i}];");
-
-            videoOutputs.Add($"[v{i}]");
             currentInputIndex++;
         }
 
@@ -130,14 +121,24 @@ public class TimelineExportService
         for (int i = 0; i < videos.Count; i++)
         {
             var v = videos[i];
-            var adjustedStart = v.StartSeconds - timeOffset;
-            var enableStart = adjustedStart.ToString(CultureInfo.InvariantCulture);
-            var enableEnd = (adjustedStart + v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
+            var enableStart = v.StartSeconds.ToString(CultureInfo.InvariantCulture);
+            var enableEnd = (v.StartSeconds + v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
 
+            var lowerActiveExpression = BuildAnyPreviousLayerActiveExpression(videos, i);
+            var activeExpression = $"between(t,{enableStart},{enableEnd})";
+            var bgEnableExpression = lowerActiveExpression == "0"
+                ? activeExpression
+                : $"{activeExpression}*not({lowerActiveExpression})";
+            var fgEnableExpression = activeExpression;
+
+            string bgStep = $"[mix{i}_bg]";
             string nextBg = i == videos.Count - 1 ? "[outv]" : $"[bg{i+1}]";
-            ffmpegCommand.Append($"{lastBackground}[v{i}]overlay=enable='between(t,{enableStart},{enableEnd})':eof_action=pass{nextBg};");
+            ffmpegCommand.Append($"{lastBackground}[v{i}_bg]overlay=enable='{bgEnableExpression}':eof_action=pass{bgStep};");
+            ffmpegCommand.Append($"{bgStep}[v{i}_fg]overlay={fgOverlayXByIndex[i]}:{fgOverlayYByIndex[i]}:enable='{fgEnableExpression}':eof_action=pass{nextBg};");
             lastBackground = nextBg;
-        }        if (videos.Count == 0)
+        }
+
+        if (videos.Count == 0)
         {
             ffmpegCommand.Append("[base]copy[outv];");
         }
@@ -146,8 +147,7 @@ public class TimelineExportService
         for (int i = 0; i < audios.Count; i++)
         {
             var a = audios[i];
-            var adjustedStart = a.StartSeconds - timeOffset;
-            var delayMs = (int)(adjustedStart * 1000);
+            var delayMs = (int)(a.StartSeconds * 1000);
             var volume = Math.Clamp(a.VolumeLevel, 0.0, 1.0).ToString(CultureInfo.InvariantCulture);
 
             ffmpegCommand.Append($"[{currentInputIndex}:a]volume={volume},adelay={delayMs}|{delayMs}[a{i}];");
@@ -159,7 +159,7 @@ public class TimelineExportService
             {
                 ffmpegCommand.Append(aOut);
             }
-            ffmpegCommand.Append($"amix=inputs={audios.Count}:duration=first:dropout_transition=2[outa]\"");
+            ffmpegCommand.Append($"amix=inputs={audios.Count}:duration=longest:dropout_transition=2[outa]\"");
         }
         else
         {
@@ -173,6 +173,35 @@ public class TimelineExportService
         ffmpegCommand.Append($"\"{outputPath}\"");
 
         await ExecuteFFmpegAsync(ffmpegCommand.ToString(), progress, totalDuration);
+    }
+
+    private static string BuildAnyPreviousLayerActiveExpression(IReadOnlyList<ExportVideoClipInput> videos, int currentIndex)
+    {
+        if (currentIndex <= 0)
+        {
+            return "0";
+        }
+
+        var expressions = new List<string>(currentIndex);
+        for (var i = 0; i < currentIndex; i++)
+        {
+            var previous = videos[i];
+            var start = previous.StartSeconds.ToString(CultureInfo.InvariantCulture);
+            var end = (previous.StartSeconds + previous.DurationSeconds).ToString(CultureInfo.InvariantCulture);
+            expressions.Add($"between(t,{start},{end})");
+        }
+
+        if (expressions.Count == 0)
+        {
+            return "0";
+        }
+
+        if (expressions.Count == 1)
+        {
+            return expressions[0];
+        }
+
+        return $"gt({string.Join("+", expressions)},0)";
     }
 
     private static async Task ExecuteFFmpegAsync(string arguments, IProgress<double> progress, double totalDurationSeconds)
@@ -198,10 +227,18 @@ public class TimelineExportService
 
         process.Start();
 
+        var stderrLines = new List<string>();
+
         while (!process.StandardError.EndOfStream)
         {
             var line = await process.StandardError.ReadLineAsync();
             if (line == null) continue;
+
+            stderrLines.Add(line);
+            if (stderrLines.Count > 120)
+            {
+                stderrLines.RemoveAt(0);
+            }
 
             if (line.Contains("time="))
             {
@@ -219,7 +256,10 @@ public class TimelineExportService
 
         if (process.ExitCode != 0)
         {
-            throw new Exception($"FFmpeg exited with code {process.ExitCode}");
+            var stderrTail = stderrLines.Count > 0
+                ? string.Join(Environment.NewLine, stderrLines.TakeLast(30))
+                : "No stderr output captured.";
+            throw new Exception($"FFmpeg exited with code {process.ExitCode}.{Environment.NewLine}Arguments: {arguments}{Environment.NewLine}Details:{Environment.NewLine}{stderrTail}");
         }
     }
 
@@ -234,3 +274,22 @@ public class TimelineExportService
         return "ffmpeg";
     }
 }
+
+public readonly record struct ExportVideoClipInput(
+    string Path,
+    double StartSeconds,
+    double DurationSeconds,
+    int LaneOrder,
+    double TransformX,
+    double TransformY,
+    double TransformScale,
+    double CropLeft,
+    double CropTop,
+    double CropRight,
+    double CropBottom);
+
+public readonly record struct ExportAudioClipInput(
+    string Path,
+    double StartSeconds,
+    double DurationSeconds,
+    double VolumeLevel);

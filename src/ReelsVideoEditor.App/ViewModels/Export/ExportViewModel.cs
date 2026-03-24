@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
+using ReelsVideoEditor.App.Services.Export;
 
 namespace ReelsVideoEditor.App.ViewModels.Export;
 
@@ -89,32 +90,69 @@ public sealed partial class ExportViewModel : ViewModelBase
 
         try
         {
-            var parts = SelectedResolution.Split('x');
-            int exportW = int.Parse(parts[0]);
-            int exportH = int.Parse(parts[1]);
+            var lanesByLabel = TimelineContext.VideoLanes
+                .Select((lane, index) => new { lane.Label, LaneIndex = index, lane.IsHidden, lane.IsSolo })
+                .ToDictionary(item => item.Label, item => item, StringComparer.Ordinal);
+            var hasSoloLanes = TimelineContext.VideoLanes.Any(lane => lane.IsSolo);
 
-            double renderOffsetX = (PreviewContext?.TransformX ?? 0) * (exportW / (PreviewContext?.PreviewFrameWidth ?? 1));
-            double renderOffsetY = (PreviewContext?.TransformY ?? 0) * (exportH / (PreviewContext?.PreviewFrameHeight ?? 1));
-            double renderScale = PreviewContext?.TransformScale ?? 1.0;
-            double cropLeft = PreviewContext?.CropLeft ?? 0.0;
-            double cropTop = PreviewContext?.CropTop ?? 0.0;
-            double cropRight = PreviewContext?.CropRight ?? 0.0;
-            double cropBottom = PreviewContext?.CropBottom ?? 0.0;
+            var exportVideos = TimelineContext.VideoClips
+                .Where(clip =>
+                {
+                    var lane = lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var resolvedLane)
+                        ? resolvedLane
+                        : lanesByLabel.Values.FirstOrDefault();
+                    if (lane is null)
+                    {
+                        return false;
+                    }
+
+                    if (lane.IsHidden)
+                    {
+                        return false;
+                    }
+
+                    if (hasSoloLanes && !lane.IsSolo)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                })
+                .Select(clip => new ExportVideoClipInput(
+                    clip.Path,
+                    clip.StartSeconds,
+                    clip.DurationSeconds,
+                    lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var lane) ? lane.LaneIndex : int.MaxValue,
+                    clip.TransformX,
+                    clip.TransformY,
+                    clip.TransformScale,
+                    clip.CropLeft,
+                    clip.CropTop,
+                    clip.CropRight,
+                    clip.CropBottom))
+                .ToList();
+
+            var exportAudios = TimelineContext.AudioClips
+                .Select(clip => new ExportAudioClipInput(
+                    clip.Path,
+                    clip.StartSeconds,
+                    clip.DurationSeconds,
+                    clip.VolumeLevel))
+                .ToList();
+
+            var previewFrameWidth = Math.Max(1, PreviewContext?.PreviewFrameWidth ?? 1);
+            var previewFrameHeight = Math.Max(1, PreviewContext?.PreviewFrameHeight ?? 1);
 
             var exporter = new Services.Export.TimelineExportService();
             await exporter.ExportAsync(
-                TimelineContext.VideoClips, 
-                TimelineContext.AudioClips, 
-                TimelineContext.IsVideoHidden,
+                exportVideos,
+                exportAudios,
                 TimelineContext.IsAudioMuted,
-                renderOffsetX,
-                renderOffsetY,
-                renderScale,
-                cropLeft,
-                cropTop,
-                cropRight,
-                cropBottom,
-                fullPath, SelectedResolution, new Progress<double>(p => ExportProgress = p));
+                fullPath,
+                SelectedResolution,
+                previewFrameWidth,
+                previewFrameHeight,
+                new Progress<double>(p => ExportProgress = p));
             
             ShowMessage?.Invoke("Export Complete", $"Video successfully exported to:\n{fullPath}");
         }
