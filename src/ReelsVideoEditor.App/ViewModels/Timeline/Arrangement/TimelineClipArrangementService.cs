@@ -5,7 +5,7 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 public sealed class TimelineClipArrangementService
 {
-    public TimelineClipItem BuildClip(string name, string path, double durationSeconds, double dropX, double tickWidth, double timelineDurationSeconds)
+    public static TimelineClipItem BuildClip(string name, string path, double durationSeconds, double dropX, double tickWidth, double timelineDurationSeconds)
     {
         var safeDuration = double.IsFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds : 5;
         var startSeconds = Math.Max(0, dropX / tickWidth);
@@ -23,7 +23,7 @@ public sealed class TimelineClipArrangementService
         return clip;
     }
 
-    public void RebuildLayouts(IEnumerable<TimelineClipItem> clips, double tickWidth)
+    public static void RebuildLayouts(IEnumerable<TimelineClipItem> clips, double tickWidth)
     {
         foreach (var clip in clips)
         {
@@ -31,13 +31,14 @@ public sealed class TimelineClipArrangementService
         }
     }
 
-    public TimelineClipItem BuildLinkedAudioClip(TimelineClipItem sourceVideoClip)
+    public static TimelineClipItem BuildLinkedAudioClip(TimelineClipItem sourceVideoClip)
     {
         var audioClip = new TimelineClipItem(
             sourceVideoClip.Name,
             sourceVideoClip.Path,
             sourceVideoClip.StartSeconds,
-            sourceVideoClip.DurationSeconds);
+            sourceVideoClip.DurationSeconds,
+            sourceVideoClip.LinkId);
 
         audioClip.Left = sourceVideoClip.Left;
         audioClip.Width = sourceVideoClip.Width;

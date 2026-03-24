@@ -7,6 +7,7 @@ using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using System;
+using System.Linq;
 
 namespace ReelsVideoEditor.App.Views.Timeline;
 
@@ -14,9 +15,15 @@ public partial class TimelinePanelView : UserControl
 {
     private Point? _dragStartPoint;
     private TimelineClipItem? _activeLevelClip;
+    private TimelineClipItem? _draggingVideoClip;
     private bool _isAdjustingAudioLevel;
+    private bool _isDraggingVideoClip;
+    private double _draggingClipInitialStartSeconds;
+    private double _draggingClipPointerOffsetSeconds;
+    private double? _lastDragOverCanvasX;
     private const double ClipTopEdgeThreshold = 6;
     private const double LevelHandleHitThreshold = 5;
+    private const double ClipLeftInset = 10;
 
     public TimelinePanelView()
     {
@@ -61,9 +68,18 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineTrack_OnDragOver(object? sender, DragEventArgs eventArgs)
     {
-        eventArgs.DragEffects = TryGetClipPayload(eventArgs, out _, out _, out _)
-            ? DragDropEffects.Copy
-            : DragDropEffects.None;
+        var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _);
+        eventArgs.DragEffects = hasPayload ? DragDropEffects.Copy : DragDropEffects.None;
+
+        if (hasPayload)
+        {
+            var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+            if (timelineCanvas is not null)
+            {
+                _lastDragOverCanvasX = eventArgs.GetPosition(timelineCanvas).X;
+            }
+        }
+
         eventArgs.Handled = true;
     }
 
@@ -79,8 +95,93 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
-        var dropPositionX = eventArgs.GetPosition(trackControl).X;
+        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+        var referenceControl = timelineCanvas as Control ?? trackControl;
+        var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
+        if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
+        {
+            dropCanvasX = _lastDragOverCanvasX.Value;
+        }
+
+        var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
         viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX);
+        _lastDragOverCanvasX = null;
+        eventArgs.Handled = true;
+    }
+
+    private void VideoClip_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (_isAdjustingAudioLevel)
+        {
+            return;
+        }
+
+        if (DataContext is not TimelineViewModel viewModel
+            || sender is not Control control
+            || control.DataContext is not TimelineClipItem clip)
+        {
+            return;
+        }
+
+        var point = eventArgs.GetCurrentPoint(control);
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+        if (timelineCanvas is null)
+        {
+            return;
+        }
+
+        StartVideoClipDrag(viewModel, timelineCanvas, clip, eventArgs);
+        eventArgs.Handled = true;
+    }
+
+    private void VideoClip_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (!_isDraggingVideoClip
+            || DataContext is not TimelineViewModel viewModel
+            || sender is not Control control
+            || control.DataContext is not TimelineClipItem clip
+            || !ReferenceEquals(_draggingVideoClip, clip))
+        {
+            return;
+        }
+
+        var point = eventArgs.GetCurrentPoint(control);
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+        if (timelineCanvas is null)
+        {
+            return;
+        }
+
+        var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
+        var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, viewModel.TickWidth);
+        var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
+
+        viewModel.MoveClipToStart(clip, nextStartSeconds);
+        eventArgs.Handled = true;
+    }
+
+    private void VideoClip_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
+    {
+        if (!_isDraggingVideoClip
+            || DataContext is not TimelineViewModel viewModel
+            || sender is not Control control
+            || control.DataContext is not TimelineClipItem clip
+            || !ReferenceEquals(_draggingVideoClip, clip))
+        {
+            return;
+        }
+
+        EndVideoClipDrag(clip, viewModel, commit: true);
         eventArgs.Handled = true;
     }
 
@@ -106,6 +207,13 @@ public partial class TimelinePanelView : UserControl
 
         var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
         if (timelineCanvas == null) return;
+
+        if (TryResolveClipFromPointer(seekSurface, timelineCanvas, viewModel, eventArgs, out var clipUnderPointer))
+        {
+            StartVideoClipDrag(viewModel, timelineCanvas, clipUnderPointer, eventArgs);
+            eventArgs.Handled = true;
+            return;
+        }
 
         _dragStartPoint = eventArgs.GetPosition(timelineCanvas);
 
@@ -188,6 +296,31 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
+        if (_isDraggingVideoClip)
+        {
+            if (DataContext is TimelineViewModel dragViewModel && _draggingVideoClip is TimelineClipItem draggingClip)
+            {
+                var timelineCanvasForDrag = this.FindControl<Grid>("TimelineCanvas");
+                if (timelineCanvasForDrag is not null)
+                {
+                    var dragPointerPoint = eventArgs.GetCurrentPoint(sender as Visual ?? this);
+                    if (!dragPointerPoint.Properties.IsLeftButtonPressed)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        var pointerCanvasX = eventArgs.GetPosition(timelineCanvasForDrag).X;
+                        var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, dragViewModel.TickWidth);
+                        var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
+                        dragViewModel.MoveClipToStart(draggingClip, nextStartSeconds);
+                    }
+                }
+            }
+
+            return;
+        }
+
         if (_dragStartPoint == null || DataContext is not TimelineViewModel viewModel || sender is not Control control)
             return;
             
@@ -224,6 +357,13 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineSeekSurface_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
     {
+        if (_isDraggingVideoClip
+            && DataContext is TimelineViewModel viewModel
+            && _draggingVideoClip is TimelineClipItem clip)
+        {
+            EndVideoClipDrag(clip, viewModel, commit: true);
+        }
+
         _dragStartPoint = null;
         var selectionBox = this.FindControl<Border>("SelectionBox");
         if (selectionBox != null)
@@ -324,6 +464,100 @@ public partial class TimelinePanelView : UserControl
         {
             control.Cursor = null;
         }
+    }
+
+    private void EndVideoClipDrag(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
+    {
+        var previousStartSeconds = _draggingClipInitialStartSeconds;
+
+        if (commit)
+        {
+            viewModel.CommitClipMove(clip, previousStartSeconds);
+        }
+
+        _isDraggingVideoClip = false;
+        _draggingVideoClip = null;
+        _draggingClipPointerOffsetSeconds = 0;
+        _draggingClipInitialStartSeconds = 0;
+    }
+
+    private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
+    {
+        var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
+        var clipLeftInCanvas = ClipLeftInset + clip.Left;
+        _draggingClipPointerOffsetSeconds = Math.Clamp(
+            (pointerCanvasX - clipLeftInCanvas) / Math.Max(0.0001, viewModel.TickWidth),
+            0,
+            clip.DurationSeconds);
+
+        _draggingVideoClip = clip;
+        _draggingClipInitialStartSeconds = clip.StartSeconds;
+        _dragStartPoint = null;
+        _isDraggingVideoClip = true;
+
+        viewModel.ClearSelection();
+        clip.IsSelected = true;
+    }
+
+    private static bool TryResolveClipFromSource(object? source, out TimelineClipItem clip)
+    {
+        clip = null!;
+
+        if (source is StyledElement sourceElement && sourceElement.DataContext is TimelineClipItem sourceClip)
+        {
+            clip = sourceClip;
+            return true;
+        }
+
+        if (source is not Visual sourceVisual)
+        {
+            return false;
+        }
+
+        foreach (var ancestor in sourceVisual.GetVisualAncestors())
+        {
+            if (ancestor is StyledElement styledElement && styledElement.DataContext is TimelineClipItem ancestorClip)
+            {
+                clip = ancestorClip;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryResolveClipFromPointer(
+        Control seekSurface,
+        Control timelineCanvas,
+        TimelineViewModel viewModel,
+        PointerPressedEventArgs eventArgs,
+        out TimelineClipItem clip)
+    {
+        if (TryResolveClipFromSource(eventArgs.Source, out clip))
+        {
+            return true;
+        }
+
+        var pointerXInCanvas = eventArgs.GetPosition(timelineCanvas).X - ClipLeftInset;
+        if (!double.IsFinite(pointerXInCanvas))
+        {
+            clip = null!;
+            return false;
+        }
+
+        var pointerYInSurface = eventArgs.GetPosition(seekSurface).Y;
+        var laneTop = 6.0;
+        var laneBottom = laneTop + viewModel.ClipVisualHeight;
+        if (pointerYInSurface < laneTop || pointerYInSurface > laneBottom)
+        {
+            clip = null!;
+            return false;
+        }
+
+        clip = viewModel.VideoClips
+            .FirstOrDefault(candidate => pointerXInCanvas >= candidate.Left && pointerXInCanvas <= candidate.Left + candidate.Width)!;
+
+        return clip is not null;
     }
 
     private static bool IsPointerOnAudioLevelLine(TimelineClipItem clip, double localY)

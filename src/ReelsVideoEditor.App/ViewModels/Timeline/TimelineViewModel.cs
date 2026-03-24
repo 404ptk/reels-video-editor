@@ -26,8 +26,6 @@ public partial class TimelineViewModel : ViewModelBase
     private const int MinLaneContentHeight = 30;
     private const int MaxLaneContentHeight = 140;
     private const int MaxVideoLines = 9;
-    private readonly TimelineClipArrangementService clipArrangementService = new();
-    private readonly TimelineWaveformRenderService waveformRenderService = new();
     
     private readonly Stack<Action> undoStack = new();
     private bool isBatchUpdatingClips;
@@ -49,9 +47,11 @@ public partial class TimelineViewModel : ViewModelBase
 
     private long lastPlaybackMilliseconds = -1;
     private double playbackMaxSeconds = TimelineDurationSeconds;
+    private double playbackSessionClipStartSeconds;
+    private TimelineClipItem? lastPreviewClip;
     private bool hasPlaybackSession;
 
-    public Action<double>? PlayheadSeekRequested { get; set; }
+    public Action<long>? PlaybackSeekRequested { get; set; }
 
     public Action? PreviewClipChanged { get; set; }
 
@@ -96,7 +96,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public bool HasClips => VideoClips.Count > 0;
 
-    public bool IsPlayheadVisible => true;
+    public static bool IsPlayheadVisible => true;
 
     private static double TimelineBaseWidth => BaseTickWidth * TimelineDurationSeconds;
 
@@ -122,14 +122,15 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(CutterMarkerVisualLeft));
         OnPropertyChanged(nameof(CutterMarkerContainerLeft));
         RebuildMajorTicks();
-        clipArrangementService.RebuildLayouts(VideoClips, TickWidth);
-        clipArrangementService.RebuildLayouts(AudioClips, TickWidth);
+        TimelineClipArrangementService.RebuildLayouts(VideoClips, TickWidth);
+        TimelineClipArrangementService.RebuildLayouts(AudioClips, TickWidth);
     }
 
     partial void OnPlayheadSecondsChanged(double value)
     {
         OnPropertyChanged(nameof(PlayheadLeft));
         OnPropertyChanged(nameof(PlayheadVisualLeft));
+        NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
     }
 
@@ -203,10 +204,10 @@ public partial class TimelineViewModel : ViewModelBase
 
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX)
     {
-        var clip = clipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
+        var clip = TimelineClipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
         VideoClips.Add(clip);
 
-        var linkedAudio = clipArrangementService.BuildLinkedAudioClip(clip);
+        var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
         AudioClips.Add(linkedAudio);
         _ = LoadAudioWaveformAsync(linkedAudio);
 
@@ -225,7 +226,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     public string? ResolvePreviewClipPath()
     {
-        return VideoClips.FirstOrDefault()?.Path;
+        return ResolvePreviewClip()?.Path;
     }
 
     public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
@@ -251,7 +252,8 @@ public partial class TimelineViewModel : ViewModelBase
 
         var playbackSeconds = safePlaybackMilliseconds / 1000.0;
         var clampedSeconds = Math.Clamp(playbackSeconds, 0, playbackMaxSeconds);
-        PlayheadSeconds = Math.Clamp(clampedSeconds, 0, TimelineDurationSeconds);
+        var timelineSeconds = playbackSessionClipStartSeconds + clampedSeconds;
+        PlayheadSeconds = Math.Clamp(timelineSeconds, 0, TimelineDurationSeconds);
     }
 
     public void SeekToPosition(double pointerX)
@@ -261,7 +263,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         PlayheadSeconds = clampedSeconds;
         lastPlaybackMilliseconds = -1;
-        PlayheadSeekRequested?.Invoke(clampedSeconds);
+        PlaybackSeekRequested?.Invoke(ResolvePlaybackSeekMilliseconds(clampedSeconds));
     }
 
     public void SetPlaybackActive(bool isPlaying)
@@ -277,13 +279,52 @@ public partial class TimelineViewModel : ViewModelBase
         var activeClip = ResolvePreviewClip();
         if (activeClip is not null)
         {
+            playbackSessionClipStartSeconds = activeClip.StartSeconds;
             playbackMaxSeconds = Math.Max(0.01, activeClip.DurationSeconds);
             hasPlaybackSession = true;
             return;
         }
 
+        playbackSessionClipStartSeconds = 0;
         playbackMaxSeconds = TimelineDurationSeconds;
         hasPlaybackSession = false;
+    }
+
+    public void MoveClipToStart(TimelineClipItem clip, double requestedStartSeconds)
+    {
+        var maxStartSeconds = Math.Max(0, TimelineDurationSeconds - clip.DurationSeconds);
+        var clampedStartSeconds = Math.Clamp(requestedStartSeconds, 0, maxStartSeconds);
+        if (Math.Abs(clampedStartSeconds - clip.StartSeconds) < 0.0001)
+        {
+            return;
+        }
+
+        clip.StartSeconds = clampedStartSeconds;
+        TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
+
+        var linkedAudio = AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
+        if (linkedAudio is not null)
+        {
+            linkedAudio.StartSeconds = clampedStartSeconds;
+            TimelineClipArrangementService.RebuildLayouts([linkedAudio], TickWidth);
+        }
+
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
+    }
+
+    public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds)
+    {
+        var currentStartSeconds = clip.StartSeconds;
+        if (Math.Abs(currentStartSeconds - previousStartSeconds) < 0.0001)
+        {
+            return;
+        }
+
+        undoStack.Push(() =>
+        {
+            MoveClipToStart(clip, previousStartSeconds);
+        });
     }
 
     public void RefreshPreviewLevels()
@@ -431,7 +472,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         foreach (var videoClip in VideoClips)
         {
-            var audioClip = clipArrangementService.BuildLinkedAudioClip(videoClip);
+            var audioClip = TimelineClipArrangementService.BuildLinkedAudioClip(videoClip);
 
             var key = $"{audioClip.Path}|{audioClip.StartSeconds:F3}|{audioClip.DurationSeconds:F3}|{audioClip.Name}";
             if (volumeByKey.TryGetValue(key, out var volumeLevel))
@@ -448,7 +489,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     private async Task LoadAudioWaveformAsync(TimelineClipItem audioClip)
     {
-        var waveform = await waveformRenderService.TryRenderWaveformAsync(audioClip.Path);
+        var waveform = await TimelineWaveformRenderService.TryRenderWaveformAsync(audioClip.Path);
         if (waveform is null)
         {
             return;
@@ -459,12 +500,51 @@ public partial class TimelineViewModel : ViewModelBase
 
     private double ResolvePreviewClipStartSeconds()
     {
-        return VideoClips.FirstOrDefault()?.StartSeconds ?? 0;
+        return ResolvePreviewClip()?.StartSeconds ?? 0;
     }
 
     private TimelineClipItem? ResolvePreviewClip()
     {
-        return VideoClips.FirstOrDefault();
+        if (VideoClips.Count == 0)
+        {
+            return null;
+        }
+
+        var playheadMatch = VideoClips
+            .OrderBy(clip => clip.StartSeconds)
+            .FirstOrDefault(clip =>
+                PlayheadSeconds >= clip.StartSeconds
+                && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds);
+        if (playheadMatch is not null)
+        {
+            return playheadMatch;
+        }
+
+        return VideoClips.OrderBy(clip => clip.StartSeconds).FirstOrDefault();
+    }
+
+    private long ResolvePlaybackSeekMilliseconds(double timelineSeconds)
+    {
+        var activeClip = ResolvePreviewClip();
+        if (activeClip is null)
+        {
+            return (long)Math.Round(timelineSeconds * 1000, MidpointRounding.AwayFromZero);
+        }
+
+        var localSeconds = Math.Clamp(timelineSeconds - activeClip.StartSeconds, 0, activeClip.DurationSeconds);
+        return (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+    }
+
+    private void NotifyPreviewClipIfChanged()
+    {
+        var previewClip = ResolvePreviewClip();
+        if (ReferenceEquals(previewClip, lastPreviewClip))
+        {
+            return;
+        }
+
+        lastPreviewClip = previewClip;
+        PreviewClipChanged?.Invoke();
     }
 
     public void SelectClipsInBox(double startX, double endX)
@@ -502,7 +582,7 @@ public partial class TimelineViewModel : ViewModelBase
                 clip.IsSelected = false;
                 VideoClips.Add(clip);
                 
-                var linkedAudio = clipArrangementService.BuildLinkedAudioClip(clip);
+                var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
                 AudioClips.Add(linkedAudio);
                 _ = LoadAudioWaveformAsync(linkedAudio);
             }

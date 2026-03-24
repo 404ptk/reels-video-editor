@@ -175,7 +175,7 @@ public class TimelineExportService
         await ExecuteFFmpegAsync(ffmpegCommand.ToString(), progress, totalDuration);
     }
 
-    private async Task ExecuteFFmpegAsync(string arguments, IProgress<double> progress, double totalDurationSeconds)
+    private static async Task ExecuteFFmpegAsync(string arguments, IProgress<double> progress, double totalDurationSeconds)
     {
         var ffmpegPath = ResolveFFmpegPath();
         if (string.IsNullOrWhiteSpace(ffmpegPath))

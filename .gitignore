@@ -488,3 +488,4 @@ $RECYCLE.BIN/
 # Build output
 build_output.txt
 decoder_log.txt
+timeline_debug_log.txt

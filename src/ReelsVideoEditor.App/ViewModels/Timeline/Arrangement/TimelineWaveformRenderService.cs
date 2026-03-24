@@ -12,7 +12,7 @@ public sealed class TimelineWaveformRenderService
 {
     private const int FfmpegTimeoutMs = 12000;
 
-    public async Task<Bitmap?> TryRenderWaveformAsync(string mediaPath)
+    public static async Task<Bitmap?> TryRenderWaveformAsync(string mediaPath)
     {
         if (string.IsNullOrWhiteSpace(mediaPath) || !File.Exists(mediaPath))
         {

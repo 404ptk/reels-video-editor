@@ -7,7 +7,6 @@ using ReelsVideoEditor.App.ViewModels.Text;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.VideoFiles;
 using ReelsVideoEditor.App.ViewModels.Watermarks;
-using System;
 
 namespace ReelsVideoEditor.App.ViewModels;
 
@@ -69,9 +68,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
         };
 
-        Timeline.PlayheadSeekRequested = seconds =>
+        Timeline.PlaybackSeekRequested = seekMilliseconds =>
         {
-            var seekMilliseconds = (long)Math.Round(seconds * 1000, MidpointRounding.AwayFromZero);
             Preview.SeekToPlaybackPosition(seekMilliseconds);
         };
 

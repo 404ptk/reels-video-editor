@@ -82,17 +82,17 @@ public partial class TimelineViewModel
     }
 
     [RelayCommand]
-    private void Placeholder1()
+    private static void Placeholder1()
     {
     }
 
     [RelayCommand]
-    private void Placeholder2()
+    private static void Placeholder2()
     {
     }
 
     [RelayCommand]
-    private void Placeholder3()
+    private static void Placeholder3()
     {
     }
 
@@ -141,7 +141,7 @@ public partial class TimelineViewModel
         var clampedSeconds = ResolveSnappedCutterSeconds(pointerX);
         PlayheadSeconds = clampedSeconds;
         lastPlaybackMilliseconds = -1;
-        PlayheadSeekRequested?.Invoke(clampedSeconds);
+        PlaybackSeekRequested?.Invoke(ResolvePlaybackSeekMilliseconds(clampedSeconds));
         CutterMarkerSeconds = clampedSeconds;
     }
 
@@ -255,7 +255,7 @@ public partial class TimelineViewModel
         UpdatePreviewLevels();
     }
 
-    private List<ClipSnapshot> CaptureClipSnapshots(IEnumerable<TimelineClipItem> clips)
+    private static List<ClipSnapshot> CaptureClipSnapshots(IEnumerable<TimelineClipItem> clips)
     {
         return clips.Select(clip => new ClipSnapshot(
             clip.Name,

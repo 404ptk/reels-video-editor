@@ -372,7 +372,7 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
-                                                    <Border Canvas.Left="{Binding Left}"
+                                                    <Border Canvas.Left="0"
                                                             Width="{Binding Width}"
                                                             Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
                                                             Margin="10,6,0,6"
@@ -380,7 +380,13 @@
                                                             Background="#66C2D8C4"
                                                             BorderBrush="{DynamicResource AccentSubtle}"
                                                             BorderThickness="1"
+                                                            PointerPressed="VideoClip_OnPointerPressed"
+                                                            PointerMoved="VideoClip_OnPointerMoved"
+                                                            PointerReleased="VideoClip_OnPointerReleased"
                                                             Classes.selected="{Binding IsSelected}">
+                                                        <Border.RenderTransform>
+                                                            <TranslateTransform X="{Binding Left}" />
+                                                        </Border.RenderTransform>
                                                         <Border.Styles>
                                                             <Style Selector="Border.selected">
                                                                 <Setter Property="BorderBrush" Value="White" />
@@ -434,7 +440,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
-                                        <Border Canvas.Left="{Binding Left}"
+                                        <Border Canvas.Left="0"
                                                 Width="{Binding Width}"
                                                 Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
                                                 Margin="10,6,0,6"
@@ -445,6 +451,9 @@
                                                 PointerPressed="AudioClipLevel_OnPointerPressed"
                                                 PointerMoved="AudioClipLevel_OnPointerMoved"
                                                 PointerReleased="ClipLevel_OnPointerReleased">
+                                            <Border.RenderTransform>
+                                                <TranslateTransform X="{Binding Left}" />
+                                            </Border.RenderTransform>
                                             <Grid ClipToBounds="True">
                                                 <Border HorizontalAlignment="Stretch"
                                                         VerticalAlignment="Top"

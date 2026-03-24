@@ -761,7 +761,7 @@ public partial class PreviewPanelView : UserControl
             _ => CropHandle.None
         };
 
-    private (int Width, int Height) GetTargetResolution(PreviewViewModel viewModel, int sourceWidth, int sourceHeight)
+    private static (int Width, int Height) GetTargetResolution(PreviewViewModel viewModel, int sourceWidth, int sourceHeight)
     {
         return viewModel.SelectedQuality switch
         {
