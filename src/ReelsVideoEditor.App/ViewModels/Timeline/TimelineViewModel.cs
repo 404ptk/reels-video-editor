@@ -47,9 +47,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     private long lastPlaybackMilliseconds = -1;
     private double playbackMaxSeconds = TimelineDurationSeconds;
-    private double playbackSessionClipStartSeconds;
     private TimelineClipItem? lastPreviewClip;
-    private bool hasPlaybackSession;
 
     public Action<long>? PlaybackSeekRequested { get; set; }
 
@@ -174,11 +172,24 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsVideoSolo));
         OnPropertyChanged(nameof(IsVideoHidden));
         RebuildLaneClipCollections();
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
     }
 
     private void OnVideoLanePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (sender is not VideoLaneItem lane || !lane.IsPrimary)
+        if (sender is not VideoLaneItem lane)
+        {
+            return;
+        }
+
+        if (e.PropertyName == nameof(VideoLaneItem.IsSolo) || e.PropertyName == nameof(VideoLaneItem.IsHidden))
+        {
+            NotifyPreviewClipIfChanged();
+            UpdatePreviewLevels();
+        }
+
+        if (!lane.IsPrimary)
         {
             return;
         }
@@ -197,10 +208,6 @@ public partial class TimelineViewModel : ViewModelBase
 
     partial void OnIsPlaybackActiveChanged(bool value)
     {
-        if (!value)
-        {
-            hasPlaybackSession = false;
-        }
     }
 
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
@@ -232,14 +239,88 @@ public partial class TimelineViewModel : ViewModelBase
         return ResolvePreviewClip()?.Path;
     }
 
+    public IReadOnlyList<PreviewVideoLayer> ResolvePreviewVideoLayers(long playbackMilliseconds)
+    {
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        var activeClips = ResolveVisibleVideoClips()
+            .Where(clip =>
+                timelineSeconds >= clip.StartSeconds
+                && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds)
+            .OrderByDescending(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenBy(clip => clip.StartSeconds)
+            .ToList();
+
+        if (activeClips.Count == 0)
+        {
+            return [];
+        }
+
+        var result = new List<PreviewVideoLayer>(activeClips.Count);
+        for (var i = 0; i < activeClips.Count; i++)
+        {
+            var clip = activeClips[i];
+            var localSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, clip.DurationSeconds);
+            var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+
+            // Only the bottom-most visible layer should paint the blurred fill.
+            result.Add(new PreviewVideoLayer(clip.Path, localMilliseconds, DrawBlurredBackground: i == 0));
+        }
+
+        return result;
+    }
+
+    public PreviewAudioState ResolvePreviewAudioState(long playbackMilliseconds)
+    {
+        if (IsAudioMuted)
+        {
+            return PreviewAudioState.Silent;
+        }
+
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        var activeAudio = AudioClips
+            .OrderByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault(clip =>
+                timelineSeconds >= clip.StartSeconds
+                && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds);
+        if (activeAudio is null)
+        {
+            return PreviewAudioState.Silent;
+        }
+
+        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
+        var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+        var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
+
+        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
+    }
+
+    public long ResolvePlaybackDurationMilliseconds()
+    {
+        var durationSeconds = ResolvePlaybackDurationSeconds();
+        return (long)Math.Round(durationSeconds * 1000, MidpointRounding.AwayFromZero);
+    }
+
+    public bool ShouldPreviewClipUseBlurredBackground()
+    {
+        var previewClip = ResolvePreviewClip();
+        if (previewClip is null)
+        {
+            return true;
+        }
+
+        var lane = ResolveLaneByLabel(previewClip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+        if (lane is null)
+        {
+            return true;
+        }
+
+        // Foreground overlays on upper lanes should not generate their own blurred fill.
+        return lane.IsPrimary;
+    }
+
     public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
     {
         if (!IsPlaybackActive)
-        {
-            return;
-        }
-
-        if (!hasPlaybackSession)
         {
             return;
         }
@@ -255,8 +336,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         var playbackSeconds = safePlaybackMilliseconds / 1000.0;
         var clampedSeconds = Math.Clamp(playbackSeconds, 0, playbackMaxSeconds);
-        var timelineSeconds = playbackSessionClipStartSeconds + clampedSeconds;
-        PlayheadSeconds = Math.Clamp(timelineSeconds, 0, TimelineDurationSeconds);
+        PlayheadSeconds = clampedSeconds;
     }
 
     public void SeekToPosition(double pointerX)
@@ -279,18 +359,7 @@ public partial class TimelineViewModel : ViewModelBase
             return;
         }
 
-        var activeClip = ResolvePreviewClip();
-        if (activeClip is not null)
-        {
-            playbackSessionClipStartSeconds = activeClip.StartSeconds;
-            playbackMaxSeconds = Math.Max(0.01, activeClip.DurationSeconds);
-            hasPlaybackSession = true;
-            return;
-        }
-
-        playbackSessionClipStartSeconds = 0;
-        playbackMaxSeconds = TimelineDurationSeconds;
-        hasPlaybackSession = false;
+        playbackMaxSeconds = ResolvePlaybackDurationSeconds();
     }
 
     public void MoveClipToStart(TimelineClipItem clip, double requestedStartSeconds, string? targetLaneLabel = null)
@@ -469,7 +538,6 @@ public partial class TimelineViewModel : ViewModelBase
         {
             AudioClips.Clear();
             PlayheadSeconds = 0;
-            hasPlaybackSession = false;
             RefreshClipLevelLines();
             UpdatePreviewLevels();
             return;
@@ -537,8 +605,15 @@ public partial class TimelineViewModel : ViewModelBase
             return null;
         }
 
-        var playheadMatch = VideoClips
-            .OrderBy(clip => clip.StartSeconds)
+        var visibleClips = ResolveVisibleVideoClips().ToList();
+        if (visibleClips.Count == 0)
+        {
+            return null;
+        }
+
+        var playheadMatch = visibleClips
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenByDescending(clip => clip.StartSeconds)
             .FirstOrDefault(clip =>
                 PlayheadSeconds >= clip.StartSeconds
                 && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds);
@@ -547,19 +622,78 @@ public partial class TimelineViewModel : ViewModelBase
             return playheadMatch;
         }
 
-        return VideoClips.OrderBy(clip => clip.StartSeconds).FirstOrDefault();
+        return visibleClips
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenBy(clip => clip.StartSeconds)
+            .FirstOrDefault();
+    }
+
+    private IEnumerable<TimelineClipItem> ResolveVisibleVideoClips()
+    {
+        var lanesByLabel = VideoLanes.ToDictionary(lane => lane.Label, lane => lane, StringComparer.Ordinal);
+        var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
+
+        foreach (var clip in VideoClips)
+        {
+            var lane = lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var resolvedLane)
+                ? resolvedLane
+                : ResolvePrimaryVideoLane();
+            if (lane is null)
+            {
+                continue;
+            }
+
+            if (lane.IsHidden)
+            {
+                continue;
+            }
+
+            if (hasSoloLanes && !lane.IsSolo)
+            {
+                continue;
+            }
+
+            yield return clip;
+        }
+    }
+
+    private int ResolveLaneLayerIndex(string laneLabel)
+    {
+        for (var i = 0; i < VideoLanes.Count; i++)
+        {
+            if (string.Equals(VideoLanes[i].Label, laneLabel, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        return VideoLanes.Count;
     }
 
     private long ResolvePlaybackSeekMilliseconds(double timelineSeconds)
     {
-        var activeClip = ResolvePreviewClip();
-        if (activeClip is null)
-        {
-            return (long)Math.Round(timelineSeconds * 1000, MidpointRounding.AwayFromZero);
-        }
+        return (long)Math.Round(Math.Clamp(timelineSeconds, 0, TimelineDurationSeconds) * 1000, MidpointRounding.AwayFromZero);
+    }
 
-        var localSeconds = Math.Clamp(timelineSeconds - activeClip.StartSeconds, 0, activeClip.DurationSeconds);
-        return (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+    private double ResolveTimelineSecondsForLayerPlayback(long playbackMilliseconds)
+    {
+        return Math.Clamp(playbackMilliseconds / 1000.0, 0, TimelineDurationSeconds);
+    }
+
+    private double ResolvePlaybackDurationSeconds()
+    {
+        var maxVideoSeconds = ResolveVisibleVideoClips()
+            .Select(clip => clip.StartSeconds + clip.DurationSeconds)
+            .DefaultIfEmpty(0)
+            .Max();
+        var maxAudioSeconds = IsAudioMuted
+            ? 0
+            : AudioClips
+                .Select(clip => clip.StartSeconds + clip.DurationSeconds)
+                .DefaultIfEmpty(0)
+                .Max();
+        var resolved = Math.Max(maxVideoSeconds, maxAudioSeconds);
+        return Math.Clamp(resolved, 0.01, TimelineDurationSeconds);
     }
 
     private void NotifyPreviewClipIfChanged()
@@ -751,4 +885,11 @@ public sealed partial class VideoLaneItem : ObservableObject
 
     [ObservableProperty]
     private bool isHidden;
+}
+
+public sealed record PreviewVideoLayer(string Path, long PlaybackMilliseconds, bool DrawBlurredBackground);
+
+public sealed record PreviewAudioState(string? Path, long PlaybackMilliseconds, double VolumeLevel, bool ShouldPlay)
+{
+    public static PreviewAudioState Silent { get; } = new(null, 0, 1.0, false);
 }

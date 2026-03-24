@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SkiaSharp;
 
 namespace ReelsVideoEditor.App.Services.Compositor;
@@ -17,6 +18,19 @@ public sealed class FrameCompositor : IDisposable
     private int lastTargetHeight;
     private bool disposed;
 
+    public readonly record struct FrameLayer(
+        byte[] SourcePixels,
+        int SourceWidth,
+        int SourceHeight,
+        float OffsetX,
+        float OffsetY,
+        float Scale,
+        float CropLeft,
+        float CropTop,
+        float CropRight,
+        float CropBottom,
+        bool DrawBlurredBackground);
+
     public SKBitmap ComposeFrame(
         byte[] sourcePixels,
         int sourceWidth,
@@ -29,7 +43,16 @@ public sealed class FrameCompositor : IDisposable
         float cropLeft = 0f,
         float cropTop = 0f,
         float cropRight = 0f,
-        float cropBottom = 0f)
+        float cropBottom = 0f,
+        bool drawBlurredBackground = true)
+    {
+        return ComposeLayers(
+            [new FrameLayer(sourcePixels, sourceWidth, sourceHeight, offsetX, offsetY, scale, cropLeft, cropTop, cropRight, cropBottom, drawBlurredBackground)],
+            targetWidth,
+            targetHeight);
+    }
+
+    public SKBitmap ComposeLayers(IReadOnlyList<FrameLayer> layers, int targetWidth, int targetHeight)
     {
         if (composedBitmap is null || lastTargetWidth != targetWidth || lastTargetHeight != targetHeight)
         {
@@ -39,29 +62,44 @@ public sealed class FrameCompositor : IDisposable
             lastTargetHeight = targetHeight;
         }
 
-        if (sourceBitmap is null || sourceBitmap.Width != sourceWidth || sourceBitmap.Height != sourceHeight)
-        {
-            sourceBitmap?.Dispose();
-            sourceBitmap = new SKBitmap(sourceWidth, sourceHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
-        }
-
-        var sourceSpan = sourcePixels.AsSpan();
-        var expectedSize = sourceWidth * sourceHeight * 4;
-        if (sourceSpan.Length < expectedSize)
-        {
-            return composedBitmap;
-        }
-
-        System.Runtime.InteropServices.Marshal.Copy(sourcePixels, 0, sourceBitmap.GetPixels(), expectedSize);
-
         using var canvas = new SKCanvas(composedBitmap);
         canvas.Clear(SKColors.Black);
 
-        var sourceAspect = (double)sourceWidth / sourceHeight;
+        foreach (var layer in layers)
+        {
+            TryDrawLayer(canvas, layer, targetWidth, targetHeight);
+        }
+
+        canvas.Flush();
+        return composedBitmap;
+    }
+
+    private void TryDrawLayer(SKCanvas canvas, FrameLayer layer, int targetWidth, int targetHeight)
+    {
+        if (layer.SourceWidth <= 0 || layer.SourceHeight <= 0)
+        {
+            return;
+        }
+
+        var expectedSize = layer.SourceWidth * layer.SourceHeight * 4;
+        if (layer.SourcePixels.Length < expectedSize)
+        {
+            return;
+        }
+
+        if (sourceBitmap is null || sourceBitmap.Width != layer.SourceWidth || sourceBitmap.Height != layer.SourceHeight)
+        {
+            sourceBitmap?.Dispose();
+            sourceBitmap = new SKBitmap(layer.SourceWidth, layer.SourceHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+        }
+
+        System.Runtime.InteropServices.Marshal.Copy(layer.SourcePixels, 0, sourceBitmap.GetPixels(), expectedSize);
+
+        var sourceAspect = (double)layer.SourceWidth / layer.SourceHeight;
         var targetAspect = (double)targetWidth / targetHeight;
         var needsBlurFill = Math.Abs(sourceAspect - targetAspect) > 0.05;
 
-        if (needsBlurFill)
+        if (needsBlurFill && layer.DrawBlurredBackground)
         {
             DrawBlurredBackground(canvas, sourceBitmap, targetWidth, targetHeight);
         }
@@ -69,20 +107,17 @@ public sealed class FrameCompositor : IDisposable
         DrawCenteredForeground(
             canvas,
             sourceBitmap,
-            sourceWidth,
-            sourceHeight,
+            layer.SourceWidth,
+            layer.SourceHeight,
             targetWidth,
             targetHeight,
-            offsetX,
-            offsetY,
-            scale,
-            cropLeft,
-            cropTop,
-            cropRight,
-            cropBottom);
-
-        canvas.Flush();
-        return composedBitmap;
+            layer.OffsetX,
+            layer.OffsetY,
+            layer.Scale,
+            layer.CropLeft,
+            layer.CropTop,
+            layer.CropRight,
+            layer.CropBottom);
     }
 
     private void DrawBlurredBackground(SKCanvas canvas, SKBitmap source, int targetWidth, int targetHeight)

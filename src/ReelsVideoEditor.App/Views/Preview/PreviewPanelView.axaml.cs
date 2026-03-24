@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -47,6 +48,9 @@ public partial class PreviewPanelView : UserControl
     private long lastFpsTick;
     private byte[]? tempFrameCopyBuffer;
     private CancellationTokenSource? playbackCts;
+    private readonly Dictionary<string, VideoFrameDecoder> overlayDecoders = new(StringComparer.OrdinalIgnoreCase);
+    private string? activeAudioPath;
+    private long lastAudioSeekMilliseconds = -1;
 
     private double currentZoom = 1.0;
     private double panX = 0.0;
@@ -152,6 +156,7 @@ public partial class PreviewPanelView : UserControl
             case nameof(PreviewViewModel.CropTop):
             case nameof(PreviewViewModel.CropRight):
             case nameof(PreviewViewModel.CropBottom):
+            case nameof(PreviewViewModel.UseBlurredBackground):
                 if (!boundViewModel.IsPlaying)
                 {
                     TriggerRecomposeAsync();
@@ -184,8 +189,7 @@ public partial class PreviewPanelView : UserControl
             {
                 playbackStartMilliseconds = viewModel.CurrentPlaybackMilliseconds;
                 playbackStopwatch.Restart();
-                audioService.Seek(TimeSpan.FromMilliseconds(playbackStartMilliseconds));
-                audioService.Play();
+                SyncAudioToTimeline(viewModel, playbackStartMilliseconds, forceSeek: true);
                 StartPlaybackLoop(viewModel);
             }
 
@@ -222,14 +226,14 @@ public partial class PreviewPanelView : UserControl
         handledSeekRequestVersion = viewModel.SeekRequestVersion;
 
         var targetMilliseconds = Math.Max(0, viewModel.RequestedSeekMilliseconds);
-        var totalLength = (long)decoder.Duration.TotalMilliseconds;
+        var totalLength = viewModel.ResolvePlaybackMaxMilliseconds?.Invoke() ?? (long)decoder.Duration.TotalMilliseconds;
         if (totalLength > 0)
         {
             targetMilliseconds = Math.Min(targetMilliseconds, totalLength);
         }
 
         var targetTime = TimeSpan.FromMilliseconds(targetMilliseconds);
-        audioService.Seek(targetTime);
+        SyncAudioToTimeline(viewModel, targetMilliseconds, forceSeek: true);
         viewModel.UpdatePlaybackTime(targetMilliseconds);
 
         playbackStartMilliseconds = targetMilliseconds;
@@ -268,9 +272,67 @@ public partial class PreviewPanelView : UserControl
         audioService.IsMuted = viewModel.IsAudioMuted;
     }
 
+    private void SyncAudioToTimeline(PreviewViewModel viewModel, long timelineMilliseconds, bool forceSeek = false)
+    {
+        var resolvedAudioState = viewModel.ResolveAudioState?.Invoke(timelineMilliseconds);
+        if (resolvedAudioState is null)
+        {
+            var fallbackMilliseconds = Math.Clamp(timelineMilliseconds, 0, (long)decoder.Duration.TotalMilliseconds);
+            audioService.Seek(TimeSpan.FromMilliseconds(fallbackMilliseconds));
+
+            if (viewModel.IsPlaying)
+            {
+                audioService.Play();
+            }
+            else
+            {
+                audioService.Pause();
+            }
+
+            return;
+        }
+
+        if (!resolvedAudioState.ShouldPlay || string.IsNullOrWhiteSpace(resolvedAudioState.Path))
+        {
+            audioService.Pause();
+            activeAudioPath = null;
+            lastAudioSeekMilliseconds = -1;
+            return;
+        }
+
+        if (!string.Equals(activeAudioPath, resolvedAudioState.Path, StringComparison.OrdinalIgnoreCase))
+        {
+            audioService.Open(resolvedAudioState.Path);
+            activeAudioPath = resolvedAudioState.Path;
+            lastAudioSeekMilliseconds = -1;
+            forceSeek = true;
+        }
+
+        audioService.Volume = (float)Math.Clamp(resolvedAudioState.VolumeLevel, 0.0, 1.0);
+        audioService.IsMuted = viewModel.IsAudioMuted;
+
+        var localMilliseconds = Math.Max(0, resolvedAudioState.PlaybackMilliseconds);
+        if (forceSeek || lastAudioSeekMilliseconds < 0 || Math.Abs(localMilliseconds - lastAudioSeekMilliseconds) > 100)
+        {
+            audioService.Seek(TimeSpan.FromMilliseconds(localMilliseconds));
+            lastAudioSeekMilliseconds = localMilliseconds;
+        }
+
+        if (viewModel.IsPlaying)
+        {
+            audioService.Play();
+        }
+        else
+        {
+            audioService.Pause();
+        }
+    }
+
     private void LoadMedia(string path)
     {
         audioService.Stop();
+        activeAudioPath = null;
+        lastAudioSeekMilliseconds = -1;
 
         try
         {
@@ -292,7 +354,7 @@ public partial class PreviewPanelView : UserControl
         if (boundViewModel is not null)
         {
             UpdateVideoForegroundBounds();
-            var totalMs = (long)decoder.Duration.TotalMilliseconds;
+            var totalMs = boundViewModel.ResolvePlaybackMaxMilliseconds?.Invoke() ?? (long)decoder.Duration.TotalMilliseconds;
             boundViewModel.UpdatePlaybackTime(0);
             boundViewModel.UpdateTotalPlaybackTime(totalMs);
             _ = RenderSeekFrameAsync(TimeSpan.Zero, boundViewModel);
@@ -314,7 +376,12 @@ public partial class PreviewPanelView : UserControl
             {
                 var elapsedMs = playbackStopwatch.ElapsedMilliseconds;
                 var currentMs = playbackStartMilliseconds + elapsedMs;
-                var totalMs = (long)decoder.Duration.TotalMilliseconds;
+                SyncAudioToTimeline(viewModel, currentMs);
+                var totalMs = viewModel.ResolvePlaybackMaxMilliseconds?.Invoke() ?? (long)decoder.Duration.TotalMilliseconds;
+                if (totalMs <= 0)
+                {
+                    totalMs = (long)decoder.Duration.TotalMilliseconds;
+                }
 
                 if (totalMs > 0 && currentMs >= totalMs)
                 {
@@ -331,31 +398,44 @@ public partial class PreviewPanelView : UserControl
                 var currentTime = TimeSpan.FromMilliseconds(currentMs);
 
                 SKBitmap? composed = null;
-                lock (decoder)
+                var resolveLayers = viewModel.ResolveVideoLayers;
+                if (resolveLayers is not null)
                 {
-                    if (!decoder.IsOpen) break;
-
-                    var pixels = decoder.ReadNextFrame(currentTime);
-                    if (pixels != null)
+                    var layers = resolveLayers(currentMs);
+                    composed = ComposeMultipleLayers(viewModel, layers);
+                    if (composed is null)
                     {
-                        var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
-                        var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
-                        var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
-                        
-                        // Background buffer reuse applies here! 0 unmanaged allocations.
-                        composed = compositor.ComposeFrame(
-                            pixels,
-                            decoder.FrameWidth,
-                            decoder.FrameHeight,
-                            targetW,
-                            targetH,
-                            renderOffsetX,
-                            renderOffsetY,
-                            (float)viewModel.TransformScale,
-                            (float)viewModel.CropLeft,
-                            (float)viewModel.CropTop,
-                            (float)viewModel.CropRight,
-                            (float)viewModel.CropBottom);
+                        composed = ComposeBlackFrame(viewModel);
+                    }
+                }
+                else
+                {
+                    lock (decoder)
+                    {
+                        if (!decoder.IsOpen) break;
+
+                        var pixels = decoder.ReadNextFrame(currentTime);
+                        if (pixels != null)
+                        {
+                            var (targetW, targetH) = GetTargetResolution(viewModel, decoder.FrameWidth, decoder.FrameHeight);
+                            var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
+                            var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
+
+                            composed = compositor.ComposeFrame(
+                                pixels,
+                                decoder.FrameWidth,
+                                decoder.FrameHeight,
+                                targetW,
+                                targetH,
+                                renderOffsetX,
+                                renderOffsetY,
+                                (float)viewModel.TransformScale,
+                                (float)viewModel.CropLeft,
+                                (float)viewModel.CropTop,
+                                (float)viewModel.CropRight,
+                                (float)viewModel.CropBottom,
+                                viewModel.UseBlurredBackground);
+                        }
                     }
                 }
 
@@ -384,6 +464,14 @@ public partial class PreviewPanelView : UserControl
 
         var composed = await Task.Run(() =>
         {
+            var resolveLayers = viewModel.ResolveVideoLayers;
+            if (resolveLayers is not null)
+            {
+                var layers = resolveLayers((long)position.TotalMilliseconds);
+                var layeredFrame = ComposeMultipleLayers(viewModel, layers);
+                return layeredFrame ?? ComposeBlackFrame(viewModel);
+            }
+
             lock (decoder)
             {
                 var pixels = decoder.SeekAndRead(position);
@@ -405,7 +493,8 @@ public partial class PreviewPanelView : UserControl
                     (float)viewModel.CropLeft,
                     (float)viewModel.CropTop,
                     (float)viewModel.CropRight,
-                    (float)viewModel.CropBottom);
+                    (float)viewModel.CropBottom,
+                    viewModel.UseBlurredBackground);
             }
         });
 
@@ -415,10 +504,166 @@ public partial class PreviewPanelView : UserControl
         }
     }
 
+    private SKBitmap ComposeBlackFrame(PreviewViewModel viewModel)
+    {
+        var sourceWidth = decoder.FrameWidth > 0 ? decoder.FrameWidth : 720;
+        var sourceHeight = decoder.FrameHeight > 0 ? decoder.FrameHeight : 1280;
+        var (targetW, targetH) = GetTargetResolution(viewModel, sourceWidth, sourceHeight);
+        return compositor.ComposeLayers(Array.Empty<FrameCompositor.FrameLayer>(), targetW, targetH);
+    }
+
+    private SKBitmap? ComposeMultipleLayers(PreviewViewModel viewModel, IReadOnlyList<global::ReelsVideoEditor.App.ViewModels.Timeline.PreviewVideoLayer> layers)
+    {
+        var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
+        var sourceWidthForTarget = 0;
+        var sourceHeightForTarget = 0;
+
+        for (var i = 0; i < layers.Count; i++)
+        {
+            var layer = layers[i];
+            if (string.IsNullOrWhiteSpace(layer.Path))
+            {
+                continue;
+            }
+
+            var layerDecoder = ResolveDecoderForPath(layer.Path);
+            if (layerDecoder is null)
+            {
+                continue;
+            }
+
+            byte[]? pixels;
+            var layerPosition = TimeSpan.FromMilliseconds(Math.Max(0, layer.PlaybackMilliseconds));
+            lock (layerDecoder)
+            {
+                if (!layerDecoder.IsOpen)
+                {
+                    continue;
+                }
+
+                pixels = layerDecoder.SeekAndRead(layerPosition);
+                if (pixels is null)
+                {
+                    continue;
+                }
+
+                if (sourceWidthForTarget == 0 || sourceHeightForTarget == 0)
+                {
+                    sourceWidthForTarget = layerDecoder.FrameWidth;
+                    sourceHeightForTarget = layerDecoder.FrameHeight;
+                }
+
+                frameLayers.Add(new FrameCompositor.FrameLayer(
+                    pixels,
+                    layerDecoder.FrameWidth,
+                    layerDecoder.FrameHeight,
+                    0f,
+                    0f,
+                    1f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    layer.DrawBlurredBackground));
+            }
+        }
+
+        if (frameLayers.Count == 0)
+        {
+            return null;
+        }
+
+        if (sourceWidthForTarget <= 0 || sourceHeightForTarget <= 0)
+        {
+            sourceWidthForTarget = decoder.FrameWidth > 0 ? decoder.FrameWidth : 720;
+            sourceHeightForTarget = decoder.FrameHeight > 0 ? decoder.FrameHeight : 1280;
+        }
+
+        var (targetW, targetH) = GetTargetResolution(viewModel, sourceWidthForTarget, sourceHeightForTarget);
+        var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
+        var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
+
+        var topLayerIndex = frameLayers.Count - 1;
+        for (var i = 0; i < frameLayers.Count; i++)
+        {
+            var layer = frameLayers[i];
+            var isTopLayer = i == topLayerIndex;
+            frameLayers[i] = layer with
+            {
+                OffsetX = isTopLayer ? renderOffsetX : 0f,
+                OffsetY = isTopLayer ? renderOffsetY : 0f,
+                Scale = isTopLayer ? (float)viewModel.TransformScale : 1f,
+                CropLeft = isTopLayer ? (float)viewModel.CropLeft : 0f,
+                CropTop = isTopLayer ? (float)viewModel.CropTop : 0f,
+                CropRight = isTopLayer ? (float)viewModel.CropRight : 0f,
+                CropBottom = isTopLayer ? (float)viewModel.CropBottom : 0f
+            };
+        }
+
+        return compositor.ComposeLayers(frameLayers, targetW, targetH);
+    }
+
+    private VideoFrameDecoder? ResolveDecoderForPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(loadedPath) && string.Equals(path, loadedPath, StringComparison.OrdinalIgnoreCase))
+        {
+            if (decoder.IsOpen)
+            {
+                return decoder;
+            }
+
+            try
+            {
+                decoder.Open(path);
+                return decoder;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        if (overlayDecoders.TryGetValue(path, out var existingDecoder))
+        {
+            if (existingDecoder.IsOpen)
+            {
+                return existingDecoder;
+            }
+
+            try
+            {
+                existingDecoder.Open(path);
+                return existingDecoder;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        var newDecoder = new VideoFrameDecoder();
+        try
+        {
+            newDecoder.Open(path);
+            overlayDecoders[path] = newDecoder;
+            return newDecoder;
+        }
+        catch
+        {
+            newDecoder.Dispose();
+            return null;
+        }
+    }
+
     private async void TriggerRecomposeAsync()
     {
         if (boundViewModel is null) return;
-        
+
         pendingRecompose = true;
         if (isRecomposing) return;
 
@@ -499,7 +744,14 @@ public partial class PreviewPanelView : UserControl
 
         playbackCts?.Cancel();
         decoder.Dispose();
+        foreach (var kvp in overlayDecoders)
+        {
+            kvp.Value.Dispose();
+        }
+        overlayDecoders.Clear();
         audioService.Dispose();
+        activeAudioPath = null;
+        lastAudioSeekMilliseconds = -1;
         compositor.Dispose();
         renderTarget = null;
     }

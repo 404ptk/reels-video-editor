@@ -50,9 +50,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Preview = new PreviewViewModel
         {
             ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),
+            ResolveVideoLayers = playbackMilliseconds => Timeline.ResolvePreviewVideoLayers(playbackMilliseconds),
+            ResolveAudioState = playbackMilliseconds => Timeline.ResolvePreviewAudioState(playbackMilliseconds),
+            ResolvePlaybackMaxMilliseconds = () => Timeline.ResolvePlaybackDurationMilliseconds(),
             PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
             PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
         };
+
+        Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
 
         Export.PreviewContext = Preview;
 
@@ -81,6 +86,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.PreviewClipChanged = () =>
         {
             var resolvedPath = Timeline.ResolvePreviewClipPath();
+            Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
                 Preview.Stop();
@@ -88,8 +94,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
             else if (Preview.SourceVideoPath != resolvedPath)
             {
-                Preview.Stop();
-                Preview.SourceVideoPath = resolvedPath;
+                if (!Preview.IsPlaying)
+                {
+                    Preview.Stop();
+                    Preview.SourceVideoPath = resolvedPath;
+                }
+                else if (string.IsNullOrWhiteSpace(Preview.SourceVideoPath))
+                {
+                    Preview.SourceVideoPath = resolvedPath;
+                }
             }
         };
 

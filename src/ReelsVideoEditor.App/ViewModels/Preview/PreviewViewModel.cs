@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Preview;
 
@@ -21,6 +22,12 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private TransformCropState? pendingEditStartState;
 
     public Func<string?>? ResolveVideoPath { get; set; }
+
+    public Func<long, IReadOnlyList<PreviewVideoLayer>>? ResolveVideoLayers { get; set; }
+
+    public Func<long, PreviewAudioState>? ResolveAudioState { get; set; }
+
+    public Func<long>? ResolvePlaybackMaxMilliseconds { get; set; }
 
     public Action<long>? PlaybackTimeChanged { get; set; }
 
@@ -90,6 +97,9 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isVideoHidden;
+
+    [ObservableProperty]
+    private bool useBlurredBackground = true;
 
     [ObservableProperty]
     private double currentAudioVolume = 1.0;

@@ -245,7 +245,6 @@ public partial class TimelineViewModel
         {
             AudioClips.Clear();
             PlayheadSeconds = 0;
-            hasPlaybackSession = false;
             RebuildLaneClipCollections();
             RefreshClipLevelLines();
             UpdatePreviewLevels();
