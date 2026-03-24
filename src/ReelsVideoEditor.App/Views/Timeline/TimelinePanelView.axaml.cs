@@ -12,6 +12,7 @@ namespace ReelsVideoEditor.App.Views.Timeline;
 
 public partial class TimelinePanelView : UserControl
 {
+    private readonly Border? _timelineRuler;
     private Point? _dragStartPoint;
     private TimelineClipItem? _activeLevelClip;
     private TimelineClipItem? _draggingVideoClip;
@@ -27,6 +28,7 @@ public partial class TimelinePanelView : UserControl
     public TimelinePanelView()
     {
         InitializeComponent();
+        _timelineRuler = this.FindControl<Border>("TimelineRuler");
         AddHandler(KeyDownEvent, TimelinePanelView_OnKeyDown, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, TimelineSeekSurface_OnPointerMoved, RoutingStrategies.Bubble);
         AddHandler(PointerReleasedEvent, TimelineSeekSurface_OnPointerReleased, RoutingStrategies.Bubble);
@@ -207,18 +209,13 @@ public partial class TimelinePanelView : UserControl
         var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
         if (timelineCanvas == null) return;
 
-        if (TryResolveClipFromSource(eventArgs.Source, out var clipUnderPointer))
-        {
-            StartVideoClipDrag(viewModel, timelineCanvas, clipUnderPointer, eventArgs);
-            eventArgs.Handled = true;
-            return;
-        }
-
-        _dragStartPoint = eventArgs.GetPosition(timelineCanvas);
+        var pointerOnCanvas = eventArgs.GetPosition(timelineCanvas);
+        var isRulerClick = ReferenceEquals(sender, _timelineRuler);
+        _dragStartPoint = isRulerClick ? null : pointerOnCanvas;
 
         if (viewModel.IsCutterToolActive)
         {
-            viewModel.SeekCutterToCanvasPosition(_dragStartPoint.Value.X);
+            viewModel.SeekCutterToCanvasPosition(pointerOnCanvas.X);
 
             if (IsPointerOverClip(eventArgs.Source))
             {
@@ -229,7 +226,7 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
-        viewModel.SeekToPosition(_dragStartPoint.Value.X);
+        viewModel.SeekToPosition(pointerOnCanvas.X);
 
         viewModel.ClearSelection();
         eventArgs.Handled = true;
@@ -496,33 +493,6 @@ public partial class TimelinePanelView : UserControl
 
         viewModel.ClearSelection();
         clip.IsSelected = true;
-    }
-
-    private static bool TryResolveClipFromSource(object? source, out TimelineClipItem clip)
-    {
-        clip = null!;
-
-        if (source is StyledElement sourceElement && sourceElement.DataContext is TimelineClipItem sourceClip)
-        {
-            clip = sourceClip;
-            return true;
-        }
-
-        if (source is not Visual sourceVisual)
-        {
-            return false;
-        }
-
-        foreach (var ancestor in sourceVisual.GetVisualAncestors())
-        {
-            if (ancestor is StyledElement styledElement && styledElement.DataContext is TimelineClipItem ancestorClip)
-            {
-                clip = ancestorClip;
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static bool IsPointerOnAudioLevelLine(TimelineClipItem clip, double localY)

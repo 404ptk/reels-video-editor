@@ -270,7 +270,8 @@
                   PointerExited="TimelineCanvas_OnPointerExited"
                   HorizontalAlignment="Left">
                 <StackPanel>
-                    <Border Height="52"
+                        <Border x:Name="TimelineRuler"
+                            Height="52"
                             Background="{DynamicResource BaseBg}"
                             BorderBrush="{DynamicResource AccentSubtle}"
                             BorderThickness="1"
