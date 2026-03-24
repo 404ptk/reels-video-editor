@@ -19,6 +19,7 @@ public partial class TimelinePanelView : UserControl
     private bool _isAdjustingAudioLevel;
     private bool _isDraggingVideoClip;
     private double _draggingClipInitialStartSeconds;
+    private string _draggingClipInitialLaneLabel = string.Empty;
     private double _draggingClipPointerOffsetSeconds;
     private double? _lastDragOverCanvasX;
     private const double ClipTopEdgeThreshold = 6;
@@ -105,7 +106,8 @@ public partial class TimelinePanelView : UserControl
         }
 
         var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
-        viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX);
+        var targetLaneLabel = ResolveLaneLabel(trackControl);
+        viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX, targetLaneLabel);
         _lastDragOverCanvasX = null;
         eventArgs.Handled = true;
     }
@@ -167,7 +169,8 @@ public partial class TimelinePanelView : UserControl
         var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, viewModel.TickWidth);
         var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
 
-        viewModel.MoveClipToStart(clip, nextStartSeconds);
+        var targetLaneLabel = ResolveLaneLabelFromPointer(viewModel, eventArgs);
+        viewModel.MoveClipToStart(clip, nextStartSeconds, targetLaneLabel);
         eventArgs.Handled = true;
     }
 
@@ -309,7 +312,8 @@ public partial class TimelinePanelView : UserControl
                         var pointerCanvasX = eventArgs.GetPosition(timelineCanvasForDrag).X;
                         var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, dragViewModel.TickWidth);
                         var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
-                        dragViewModel.MoveClipToStart(draggingClip, nextStartSeconds);
+                        var targetLaneLabel = ResolveLaneLabelFromPointer(dragViewModel, eventArgs);
+                        dragViewModel.MoveClipToStart(draggingClip, nextStartSeconds, targetLaneLabel);
                     }
                 }
             }
@@ -465,16 +469,18 @@ public partial class TimelinePanelView : UserControl
     private void EndVideoClipDrag(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
     {
         var previousStartSeconds = _draggingClipInitialStartSeconds;
+        var previousLaneLabel = _draggingClipInitialLaneLabel;
 
         if (commit)
         {
-            viewModel.CommitClipMove(clip, previousStartSeconds);
+            viewModel.CommitClipMove(clip, previousStartSeconds, previousLaneLabel);
         }
 
         _isDraggingVideoClip = false;
         _draggingVideoClip = null;
         _draggingClipPointerOffsetSeconds = 0;
         _draggingClipInitialStartSeconds = 0;
+        _draggingClipInitialLaneLabel = string.Empty;
     }
 
     private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
@@ -488,6 +494,7 @@ public partial class TimelinePanelView : UserControl
 
         _draggingVideoClip = clip;
         _draggingClipInitialStartSeconds = clip.StartSeconds;
+        _draggingClipInitialLaneLabel = clip.VideoLaneLabel;
         _dragStartPoint = null;
         _isDraggingVideoClip = true;
 
@@ -522,5 +529,46 @@ public partial class TimelinePanelView : UserControl
         var rawPayload = data.Get(VideoClipDragPayload.Format);
         var parsed = VideoClipDragPayload.TryParse(rawPayload, out path, out name, out durationSeconds);
         return parsed;
+    }
+
+    private static string? ResolveLaneLabel(Control control)
+    {
+        if (control.DataContext is VideoLaneItem lane)
+        {
+            return lane.Label;
+        }
+
+        foreach (var ancestor in control.GetVisualAncestors())
+        {
+            if (ancestor is StyledElement styled && styled.DataContext is VideoLaneItem ancestorLane)
+            {
+                return ancestorLane.Label;
+            }
+        }
+
+        return null;
+    }
+
+    private string? ResolveLaneLabelFromPointer(TimelineViewModel viewModel, PointerEventArgs eventArgs)
+    {
+        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+        if (timelineCanvas is null || viewModel.VideoLanes.Count == 0)
+        {
+            return null;
+        }
+
+        var y = eventArgs.GetPosition(timelineCanvas).Y;
+        y -= 62;
+        if (y < 0)
+        {
+            return null;
+        }
+
+        var laneHeight = viewModel.LaneContainerHeight;
+        var laneStep = laneHeight + 8;
+        var laneIndex = (int)Math.Floor(y / laneStep);
+        laneIndex = Math.Clamp(laneIndex, 0, viewModel.VideoLanes.Count - 1);
+
+        return viewModel.VideoLanes[laneIndex].Label;
     }
 }

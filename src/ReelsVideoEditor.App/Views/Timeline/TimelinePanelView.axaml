@@ -355,8 +355,7 @@
                                     </Border.ContextMenu>
 
                                     <Grid ClipToBounds="True">
-                                        <ItemsControl IsVisible="{Binding IsPrimary}"
-                                                      ItemsSource="{Binding $parent[UserControl].DataContext.VideoClips}"
+                                        <ItemsControl ItemsSource="{Binding Clips}"
                                                       Width="{Binding $parent[UserControl].DataContext.TimelineCanvasWidth}"
                                                       Height="{Binding $parent[UserControl].DataContext.LaneContainerHeight}"
                                                       HorizontalAlignment="Left"

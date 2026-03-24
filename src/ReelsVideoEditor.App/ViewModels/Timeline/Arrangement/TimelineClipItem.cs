@@ -31,6 +31,9 @@ public sealed partial class TimelineClipItem : ObservableObject
     private bool isSelected;
 
     [ObservableProperty]
+    private string videoLaneLabel = string.Empty;
+
+    [ObservableProperty]
     private double volumeLevel = 1.0;
 
     [ObservableProperty]

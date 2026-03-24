@@ -217,7 +217,8 @@ public partial class TimelineViewModel
         var clip = new TimelineClipItem(source.Name, source.Path, startSeconds, durationSeconds)
         {
             IsSelected = source.IsSelected,
-            VolumeLevel = source.VolumeLevel
+            VolumeLevel = source.VolumeLevel,
+            VideoLaneLabel = source.VideoLaneLabel
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -245,11 +246,13 @@ public partial class TimelineViewModel
             AudioClips.Clear();
             PlayheadSeconds = 0;
             hasPlaybackSession = false;
+            RebuildLaneClipCollections();
             RefreshClipLevelLines();
             UpdatePreviewLevels();
             return;
         }
 
+        RebuildLaneClipCollections();
         RebuildAudioFromVideo();
         PlayheadSeconds = Math.Clamp(targetPlayheadSeconds, 0, TimelineDurationSeconds);
         UpdatePreviewLevels();
@@ -263,7 +266,8 @@ public partial class TimelineViewModel
             clip.StartSeconds,
             clip.DurationSeconds,
             clip.VolumeLevel,
-            clip.IsSelected)).ToList();
+            clip.IsSelected,
+            clip.VideoLaneLabel)).ToList();
     }
 
     private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
@@ -287,7 +291,8 @@ public partial class TimelineViewModel
         var clip = new TimelineClipItem(snapshot.Name, snapshot.Path, snapshot.StartSeconds, snapshot.DurationSeconds)
         {
             VolumeLevel = snapshot.VolumeLevel,
-            IsSelected = snapshot.IsSelected
+            IsSelected = snapshot.IsSelected,
+            VideoLaneLabel = snapshot.VideoLaneLabel
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -324,7 +329,8 @@ public partial class TimelineViewModel
         double StartSeconds,
         double DurationSeconds,
         double VolumeLevel,
-        bool IsSelected);
+        bool IsSelected,
+        string VideoLaneLabel);
 }
 
 public enum TimelineTool

@@ -173,6 +173,7 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(PlayheadHeight));
         OnPropertyChanged(nameof(IsVideoSolo));
         OnPropertyChanged(nameof(IsVideoHidden));
+        RebuildLaneClipCollections();
     }
 
     private void OnVideoLanePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -202,9 +203,11 @@ public partial class TimelineViewModel : ViewModelBase
         }
     }
 
-    public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX)
+    public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
     {
         var clip = TimelineClipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
+        var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
+        clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
         VideoClips.Add(clip);
 
         var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
@@ -290,16 +293,32 @@ public partial class TimelineViewModel : ViewModelBase
         hasPlaybackSession = false;
     }
 
-    public void MoveClipToStart(TimelineClipItem clip, double requestedStartSeconds)
+    public void MoveClipToStart(TimelineClipItem clip, double requestedStartSeconds, string? targetLaneLabel = null)
     {
         var maxStartSeconds = Math.Max(0, TimelineDurationSeconds - clip.DurationSeconds);
         var clampedStartSeconds = Math.Clamp(requestedStartSeconds, 0, maxStartSeconds);
+        var targetLane = ResolveLaneByLabel(targetLaneLabel);
+        var laneChanged = targetLane is not null && !string.Equals(clip.VideoLaneLabel, targetLane.Label, StringComparison.Ordinal);
+
         if (Math.Abs(clampedStartSeconds - clip.StartSeconds) < 0.0001)
         {
+            if (!laneChanged)
+            {
+                return;
+            }
+
+            clip.VideoLaneLabel = targetLane!.Label;
+            RebuildLaneClipCollections();
+            NotifyPreviewClipIfChanged();
             return;
         }
 
         clip.StartSeconds = clampedStartSeconds;
+        if (laneChanged)
+        {
+            clip.VideoLaneLabel = targetLane!.Label;
+        }
+
         TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
 
         var linkedAudio = AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
@@ -309,21 +328,27 @@ public partial class TimelineViewModel : ViewModelBase
             TimelineClipArrangementService.RebuildLayouts([linkedAudio], TickWidth);
         }
 
+        if (laneChanged)
+        {
+            RebuildLaneClipCollections();
+        }
+
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
     }
 
-    public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds)
+    public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds, string previousLaneLabel)
     {
         var currentStartSeconds = clip.StartSeconds;
-        if (Math.Abs(currentStartSeconds - previousStartSeconds) < 0.0001)
+        var laneChanged = !string.Equals(clip.VideoLaneLabel, previousLaneLabel, StringComparison.Ordinal);
+        if (Math.Abs(currentStartSeconds - previousStartSeconds) < 0.0001 && !laneChanged)
         {
             return;
         }
 
         undoStack.Push(() =>
         {
-            MoveClipToStart(clip, previousStartSeconds);
+            MoveClipToStart(clip, previousStartSeconds, previousLaneLabel);
         });
     }
 
@@ -434,6 +459,8 @@ public partial class TimelineViewModel : ViewModelBase
         {
             return;
         }
+
+        RebuildLaneClipCollections();
 
         OnPropertyChanged(nameof(HasClips));
         PreviewClipChanged?.Invoke();
@@ -657,6 +684,46 @@ public partial class TimelineViewModel : ViewModelBase
         return linkedAudio?.VolumeLevel ?? 1.0;
     }
 
+    private VideoLaneItem? ResolvePrimaryVideoLane()
+    {
+        return VideoLanes.FirstOrDefault(lane => lane.IsPrimary) ?? VideoLanes.FirstOrDefault();
+    }
+
+    private VideoLaneItem? ResolveLaneByLabel(string? laneLabel)
+    {
+        if (string.IsNullOrWhiteSpace(laneLabel))
+        {
+            return null;
+        }
+
+        return VideoLanes.FirstOrDefault(lane => string.Equals(lane.Label, laneLabel, StringComparison.Ordinal));
+    }
+
+    private void RebuildLaneClipCollections()
+    {
+        foreach (var lane in VideoLanes)
+        {
+            lane.Clips.Clear();
+        }
+
+        var fallbackLane = ResolvePrimaryVideoLane();
+        if (fallbackLane is null)
+        {
+            return;
+        }
+
+        foreach (var clip in VideoClips)
+        {
+            var lane = ResolveLaneByLabel(clip.VideoLaneLabel) ?? fallbackLane;
+            if (!string.Equals(clip.VideoLaneLabel, lane.Label, StringComparison.Ordinal))
+            {
+                clip.VideoLaneLabel = lane.Label;
+            }
+
+            lane.Clips.Add(clip);
+        }
+    }
+
 }
 
 public sealed record TimelineMinorTick(bool ShowLine);
@@ -676,6 +743,8 @@ public sealed partial class VideoLaneItem : ObservableObject
     public string Label { get; }
 
     public bool IsPrimary { get; }
+
+    public ObservableCollection<TimelineClipItem> Clips { get; } = [];
 
     [ObservableProperty]
     private bool isSolo;
