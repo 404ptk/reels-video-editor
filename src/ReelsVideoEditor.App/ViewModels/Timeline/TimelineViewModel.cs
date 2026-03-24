@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using ReelsVideoEditor.App.Services.Composition;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -28,6 +29,7 @@ public partial class TimelineViewModel : ViewModelBase
     private const int MaxVideoLines = 9;
     
     private readonly Stack<Action> undoStack = new();
+    private readonly TimelineCompositionPlanner compositionPlanner = new();
     private bool isBatchUpdatingClips;
 
     [ObservableProperty]
@@ -245,31 +247,23 @@ public partial class TimelineViewModel : ViewModelBase
     {
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
         var hasAnySelectedVideoClip = VideoClips.Any(clip => clip.IsSelected);
-        var activeClips = ResolveVisibleVideoClips()
-            .Where(clip =>
-                timelineSeconds >= clip.StartSeconds
-                && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds)
-            .OrderByDescending(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
-            .ThenBy(clip => clip.StartSeconds)
-            .ToList();
-
-        if (activeClips.Count == 0)
+        var plan = BuildCompositionPlan();
+        var activeLayers = compositionPlanner.ResolveActiveVideoLayers(plan, timelineSeconds);
+        if (activeLayers.Count == 0)
         {
             return [];
         }
 
-        var result = new List<PreviewVideoLayer>(activeClips.Count);
-        for (var i = 0; i < activeClips.Count; i++)
+        var result = new List<PreviewVideoLayer>(activeLayers.Count);
+        for (var i = 0; i < activeLayers.Count; i++)
         {
-            var clip = activeClips[i];
-            var localSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, clip.DurationSeconds);
-            var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+            var layer = activeLayers[i];
+            var clip = layer.Clip;
 
-            // Only the bottom-most visible layer should paint the blurred fill.
             result.Add(new PreviewVideoLayer(
                 clip.Path,
-                localMilliseconds,
-                DrawBlurredBackground: i == 0,
+                layer.PlaybackMilliseconds,
+                layer.DrawBlurredBackground,
                 IsSelected: clip.IsSelected,
                 HasAnySelectedVideoClip: hasAnySelectedVideoClip,
                 TransformX: clip.TransformX,
@@ -286,27 +280,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public PreviewAudioState ResolvePreviewAudioState(long playbackMilliseconds)
     {
-        if (IsAudioMuted)
-        {
-            return PreviewAudioState.Silent;
-        }
-
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
-        var activeAudio = AudioClips
-            .OrderByDescending(clip => clip.StartSeconds)
-            .FirstOrDefault(clip =>
-                timelineSeconds >= clip.StartSeconds
-                && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds);
-        if (activeAudio is null)
-        {
-            return PreviewAudioState.Silent;
-        }
-
-        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
-        var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
-        var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
-
-        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
+        return compositionPlanner.ResolvePreviewAudioState(AudioClips, IsAudioMuted, timelineSeconds);
     }
 
     public long ResolvePlaybackDurationMilliseconds()
@@ -667,27 +642,8 @@ public partial class TimelineViewModel : ViewModelBase
             return null;
         }
 
-        var visibleClips = ResolveVisibleVideoClips().ToList();
-        if (visibleClips.Count == 0)
-        {
-            return null;
-        }
-
-        var playheadMatch = visibleClips
-            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
-            .ThenByDescending(clip => clip.StartSeconds)
-            .FirstOrDefault(clip =>
-                PlayheadSeconds >= clip.StartSeconds
-                && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds);
-        if (playheadMatch is not null)
-        {
-            return playheadMatch;
-        }
-
-        return visibleClips
-            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
-            .ThenBy(clip => clip.StartSeconds)
-            .FirstOrDefault();
+        var plan = BuildCompositionPlan();
+        return compositionPlanner.ResolvePreviewClip(plan, PlayheadSeconds);
     }
 
     private TimelineClipItem? ResolveTransformTargetClip()
@@ -728,44 +684,16 @@ public partial class TimelineViewModel : ViewModelBase
 
     private IEnumerable<TimelineClipItem> ResolveVisibleVideoClips()
     {
-        var lanesByLabel = VideoLanes.ToDictionary(lane => lane.Label, lane => lane, StringComparer.Ordinal);
-        var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
-
-        foreach (var clip in VideoClips)
+        var plan = BuildCompositionPlan();
+        foreach (var item in plan.VisibleVideoClips)
         {
-            var lane = lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var resolvedLane)
-                ? resolvedLane
-                : ResolvePrimaryVideoLane();
-            if (lane is null)
-            {
-                continue;
-            }
-
-            if (lane.IsHidden)
-            {
-                continue;
-            }
-
-            if (hasSoloLanes && !lane.IsSolo)
-            {
-                continue;
-            }
-
-            yield return clip;
+            yield return item.Clip;
         }
     }
 
     private int ResolveLaneLayerIndex(string laneLabel)
     {
-        for (var i = 0; i < VideoLanes.Count; i++)
-        {
-            if (string.Equals(VideoLanes[i].Label, laneLabel, StringComparison.Ordinal))
-            {
-                return i;
-            }
-        }
-
-        return VideoLanes.Count;
+        return compositionPlanner.ResolveLaneLayerIndex(BuildCompositionPlan(), laneLabel);
     }
 
     private long ResolvePlaybackSeekMilliseconds(double timelineSeconds)
@@ -780,18 +708,13 @@ public partial class TimelineViewModel : ViewModelBase
 
     private double ResolvePlaybackDurationSeconds()
     {
-        var maxVideoSeconds = ResolveVisibleVideoClips()
-            .Select(clip => clip.StartSeconds + clip.DurationSeconds)
-            .DefaultIfEmpty(0)
-            .Max();
-        var maxAudioSeconds = IsAudioMuted
-            ? 0
-            : AudioClips
-                .Select(clip => clip.StartSeconds + clip.DurationSeconds)
-                .DefaultIfEmpty(0)
-                .Max();
-        var resolved = Math.Max(maxVideoSeconds, maxAudioSeconds);
-        return Math.Clamp(resolved, 0.01, TimelineDurationSeconds);
+        var plan = BuildCompositionPlan();
+        return compositionPlanner.ResolvePlaybackDurationSeconds(plan, AudioClips, IsAudioMuted, TimelineDurationSeconds);
+    }
+
+    private TimelineCompositionPlan BuildCompositionPlan()
+    {
+        return compositionPlanner.BuildPlan(VideoClips, VideoLanes);
     }
 
     private void NotifyPreviewClipIfChanged()

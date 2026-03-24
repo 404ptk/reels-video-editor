@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ReelsVideoEditor.App.Services.Composition;
 using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.Services.Export;
@@ -14,6 +15,8 @@ namespace ReelsVideoEditor.App.ViewModels.Export;
 
 public sealed partial class ExportViewModel : ViewModelBase
 {
+    private readonly TimelineCompositionPlanner compositionPlanner = new();
+
     public string Title { get; } = "Export";
 
     public string Description { get; } = "Export your video with custom settings and effects";
@@ -90,55 +93,9 @@ public sealed partial class ExportViewModel : ViewModelBase
 
         try
         {
-            var lanesByLabel = TimelineContext.VideoLanes
-                .Select((lane, index) => new { lane.Label, LaneIndex = index, lane.IsHidden, lane.IsSolo })
-                .ToDictionary(item => item.Label, item => item, StringComparer.Ordinal);
-            var hasSoloLanes = TimelineContext.VideoLanes.Any(lane => lane.IsSolo);
-
-            var exportVideos = TimelineContext.VideoClips
-                .Where(clip =>
-                {
-                    var lane = lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var resolvedLane)
-                        ? resolvedLane
-                        : lanesByLabel.Values.FirstOrDefault();
-                    if (lane is null)
-                    {
-                        return false;
-                    }
-
-                    if (lane.IsHidden)
-                    {
-                        return false;
-                    }
-
-                    if (hasSoloLanes && !lane.IsSolo)
-                    {
-                        return false;
-                    }
-
-                    return true;
-                })
-                .Select(clip => new ExportVideoClipInput(
-                    clip.Path,
-                    clip.StartSeconds,
-                    clip.DurationSeconds,
-                    lanesByLabel.TryGetValue(clip.VideoLaneLabel, out var lane) ? lane.LaneIndex : int.MaxValue,
-                    clip.TransformX,
-                    clip.TransformY,
-                    clip.TransformScale,
-                    clip.CropLeft,
-                    clip.CropTop,
-                    clip.CropRight,
-                    clip.CropBottom))
-                .ToList();
-
-            var exportAudios = TimelineContext.AudioClips
-                .Select(clip => new ExportAudioClipInput(
-                    clip.Path,
-                    clip.StartSeconds,
-                    clip.DurationSeconds,
-                    clip.VolumeLevel))
-                .ToList();
+            var plan = compositionPlanner.BuildPlan(TimelineContext.VideoClips, TimelineContext.VideoLanes);
+            var exportVideos = compositionPlanner.BuildExportVideoInputs(plan);
+            var exportAudios = compositionPlanner.BuildExportAudioInputs(TimelineContext.AudioClips);
 
             var previewFrameWidth = Math.Max(1, PreviewContext?.PreviewFrameWidth ?? 1);
             var previewFrameHeight = Math.Max(1, PreviewContext?.PreviewFrameHeight ?? 1);
