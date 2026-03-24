@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.IO;
 using ReelsVideoEditor.App.ViewModels.Effects;
 using ReelsVideoEditor.App.ViewModels.Export;
 using ReelsVideoEditor.App.ViewModels.Preview;
@@ -92,17 +93,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Preview.Stop();
                 Preview.SourceVideoPath = null;
             }
-            else if (Preview.SourceVideoPath != resolvedPath)
+            else if (string.IsNullOrWhiteSpace(Preview.SourceVideoPath) || !File.Exists(Preview.SourceVideoPath))
             {
-                if (!Preview.IsPlaying)
-                {
-                    Preview.Stop();
-                    Preview.SourceVideoPath = resolvedPath;
-                }
-                else if (string.IsNullOrWhiteSpace(Preview.SourceVideoPath))
-                {
-                    Preview.SourceVideoPath = resolvedPath;
-                }
+                Preview.SourceVideoPath = resolvedPath;
+            }
+        };
+
+        Timeline.PreviewSelectionChanged = () =>
+        {
+            if (!Preview.IsPlaying)
+            {
+                Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
             }
         };
 

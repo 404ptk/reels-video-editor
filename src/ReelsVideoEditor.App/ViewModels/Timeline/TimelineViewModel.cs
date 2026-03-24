@@ -53,6 +53,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action? PreviewClipChanged { get; set; }
 
+    public Action? PreviewSelectionChanged { get; set; }
+
     public Action<double>? PreviewLevelsChanged { get; set; }
 
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
@@ -263,7 +265,11 @@ public partial class TimelineViewModel : ViewModelBase
             var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
 
             // Only the bottom-most visible layer should paint the blurred fill.
-            result.Add(new PreviewVideoLayer(clip.Path, localMilliseconds, DrawBlurredBackground: i == 0));
+            result.Add(new PreviewVideoLayer(
+                clip.Path,
+                localMilliseconds,
+                DrawBlurredBackground: i == 0,
+                IsSelected: clip.IsSelected));
         }
 
         return result;
@@ -713,13 +719,30 @@ public partial class TimelineViewModel : ViewModelBase
         double minX = Math.Min(startX, endX);
         double maxX = Math.Max(startX, endX);
 
+        var changed = false;
+
         foreach (var clip in VideoClips)
         {
-            clip.IsSelected = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+            var nextValue = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
         }
         foreach (var clip in AudioClips)
         {
-            clip.IsSelected = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+            var nextValue = (clip.Left < maxX && (clip.Left + clip.Width) > minX);
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            PreviewSelectionChanged?.Invoke();
         }
     }
 
@@ -766,8 +789,58 @@ public partial class TimelineViewModel : ViewModelBase
 
     public void ClearSelection()
     {
-        foreach (var clip in VideoClips) clip.IsSelected = false;
-        foreach (var clip in AudioClips) clip.IsSelected = false;
+        var changed = false;
+        foreach (var clip in VideoClips)
+        {
+            if (clip.IsSelected)
+            {
+                clip.IsSelected = false;
+                changed = true;
+            }
+        }
+
+        foreach (var clip in AudioClips)
+        {
+            if (clip.IsSelected)
+            {
+                clip.IsSelected = false;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            PreviewSelectionChanged?.Invoke();
+        }
+    }
+
+    public void SelectSingleVideoClip(TimelineClipItem selectedClip)
+    {
+        var changed = false;
+        foreach (var clip in VideoClips)
+        {
+            var nextValue = ReferenceEquals(clip, selectedClip);
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
+        }
+
+        foreach (var clip in AudioClips)
+        {
+            var nextValue = clip.LinkId == selectedClip.LinkId;
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            PreviewSelectionChanged?.Invoke();
+        }
     }
 
     private void UpdatePreviewLevels()
@@ -887,7 +960,7 @@ public sealed partial class VideoLaneItem : ObservableObject
     private bool isHidden;
 }
 
-public sealed record PreviewVideoLayer(string Path, long PlaybackMilliseconds, bool DrawBlurredBackground);
+public sealed record PreviewVideoLayer(string Path, long PlaybackMilliseconds, bool DrawBlurredBackground, bool IsSelected);
 
 public sealed record PreviewAudioState(string? Path, long PlaybackMilliseconds, double VolumeLevel, bool ShouldPlay)
 {

@@ -498,8 +498,7 @@ public partial class TimelinePanelView : UserControl
         _dragStartPoint = null;
         _isDraggingVideoClip = true;
 
-        viewModel.ClearSelection();
-        clip.IsSelected = true;
+        viewModel.SelectSingleVideoClip(clip);
     }
 
     private static bool IsPointerOnAudioLevelLine(TimelineClipItem clip, double localY)

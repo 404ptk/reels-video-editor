@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -462,13 +463,19 @@ public partial class PreviewPanelView : UserControl
         if (!decoder.IsOpen || viewModel.IsVideoHidden)
             return;
 
+        var resolveLayers = viewModel.ResolveVideoLayers;
+        IReadOnlyList<global::ReelsVideoEditor.App.ViewModels.Timeline.PreviewVideoLayer>? resolvedLayers = null;
+        if (resolveLayers is not null)
+        {
+            resolvedLayers = resolveLayers((long)position.TotalMilliseconds);
+            UpdateVideoForegroundBoundsForLayers(viewModel, resolvedLayers);
+        }
+
         var composed = await Task.Run(() =>
         {
-            var resolveLayers = viewModel.ResolveVideoLayers;
-            if (resolveLayers is not null)
+            if (resolvedLayers is not null)
             {
-                var layers = resolveLayers((long)position.TotalMilliseconds);
-                var layeredFrame = ComposeMultipleLayers(viewModel, layers);
+                var layeredFrame = ComposeMultipleLayers(viewModel, resolvedLayers);
                 return layeredFrame ?? ComposeBlackFrame(viewModel);
             }
 
@@ -517,6 +524,7 @@ public partial class PreviewPanelView : UserControl
         var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
         var sourceWidthForTarget = 0;
         var sourceHeightForTarget = 0;
+        var selectedFrameLayerIndex = -1;
 
         for (var i = 0; i < layers.Count; i++)
         {
@@ -565,6 +573,11 @@ public partial class PreviewPanelView : UserControl
                     0f,
                     0f,
                     layer.DrawBlurredBackground));
+
+                if (layer.IsSelected)
+                {
+                    selectedFrameLayerIndex = frameLayers.Count - 1;
+                }
             }
         }
 
@@ -583,24 +596,63 @@ public partial class PreviewPanelView : UserControl
         var renderOffsetX = (float)(viewModel.TransformX * ((double)targetW / currentPreviewFrameWidth));
         var renderOffsetY = (float)(viewModel.TransformY * ((double)targetH / currentPreviewFrameHeight));
 
-        var topLayerIndex = frameLayers.Count - 1;
+        var transformLayerIndex = selectedFrameLayerIndex;
+
+        if (transformLayerIndex < 0)
+        {
+            transformLayerIndex = frameLayers.Count - 1;
+        }
+
         for (var i = 0; i < frameLayers.Count; i++)
         {
             var layer = frameLayers[i];
-            var isTopLayer = i == topLayerIndex;
+            var isTransformLayer = i == transformLayerIndex;
             frameLayers[i] = layer with
             {
-                OffsetX = isTopLayer ? renderOffsetX : 0f,
-                OffsetY = isTopLayer ? renderOffsetY : 0f,
-                Scale = isTopLayer ? (float)viewModel.TransformScale : 1f,
-                CropLeft = isTopLayer ? (float)viewModel.CropLeft : 0f,
-                CropTop = isTopLayer ? (float)viewModel.CropTop : 0f,
-                CropRight = isTopLayer ? (float)viewModel.CropRight : 0f,
-                CropBottom = isTopLayer ? (float)viewModel.CropBottom : 0f
+                OffsetX = isTransformLayer ? renderOffsetX : 0f,
+                OffsetY = isTransformLayer ? renderOffsetY : 0f,
+                Scale = isTransformLayer ? (float)viewModel.TransformScale : 1f,
+                CropLeft = isTransformLayer ? (float)viewModel.CropLeft : 0f,
+                CropTop = isTransformLayer ? (float)viewModel.CropTop : 0f,
+                CropRight = isTransformLayer ? (float)viewModel.CropRight : 0f,
+                CropBottom = isTransformLayer ? (float)viewModel.CropBottom : 0f
             };
         }
 
         return compositor.ComposeLayers(frameLayers, targetW, targetH);
+    }
+
+    private void UpdateVideoForegroundBoundsForLayers(
+        PreviewViewModel viewModel,
+        IReadOnlyList<global::ReelsVideoEditor.App.ViewModels.Timeline.PreviewVideoLayer> layers)
+    {
+        if (previewFrame is null || layers.Count == 0)
+        {
+            return;
+        }
+
+        var transformLayer = layers.LastOrDefault(layer => layer.IsSelected) ?? layers[^1];
+        var transformDecoder = ResolveDecoderForPath(transformLayer.Path);
+        if (transformDecoder is null || !transformDecoder.IsOpen)
+        {
+            return;
+        }
+
+        var sourceW = transformDecoder.FrameWidth;
+        var sourceH = transformDecoder.FrameHeight;
+        if (sourceW <= 0 || sourceH <= 0)
+        {
+            return;
+        }
+
+        var targetW = previewFrame.Width;
+        var targetH = previewFrame.Height;
+        var scaleX = targetW / sourceW;
+        var scaleY = targetH / sourceH;
+        var scale = Math.Min(scaleX, scaleY);
+
+        viewModel.ForegroundWidth = sourceW * scale;
+        viewModel.ForegroundHeight = sourceH * scale;
     }
 
     private VideoFrameDecoder? ResolveDecoderForPath(string path)
