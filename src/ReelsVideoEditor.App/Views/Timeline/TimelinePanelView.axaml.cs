@@ -7,7 +7,6 @@ using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using System;
-using System.Linq;
 
 namespace ReelsVideoEditor.App.Views.Timeline;
 
@@ -208,7 +207,7 @@ public partial class TimelinePanelView : UserControl
         var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
         if (timelineCanvas == null) return;
 
-        if (TryResolveClipFromPointer(seekSurface, timelineCanvas, viewModel, eventArgs, out var clipUnderPointer))
+        if (TryResolveClipFromSource(eventArgs.Source, out var clipUnderPointer))
         {
             StartVideoClipDrag(viewModel, timelineCanvas, clipUnderPointer, eventArgs);
             eventArgs.Handled = true;
@@ -524,40 +523,6 @@ public partial class TimelinePanelView : UserControl
         }
 
         return false;
-    }
-
-    private static bool TryResolveClipFromPointer(
-        Control seekSurface,
-        Control timelineCanvas,
-        TimelineViewModel viewModel,
-        PointerPressedEventArgs eventArgs,
-        out TimelineClipItem clip)
-    {
-        if (TryResolveClipFromSource(eventArgs.Source, out clip))
-        {
-            return true;
-        }
-
-        var pointerXInCanvas = eventArgs.GetPosition(timelineCanvas).X - ClipLeftInset;
-        if (!double.IsFinite(pointerXInCanvas))
-        {
-            clip = null!;
-            return false;
-        }
-
-        var pointerYInSurface = eventArgs.GetPosition(seekSurface).Y;
-        var laneTop = 6.0;
-        var laneBottom = laneTop + viewModel.ClipVisualHeight;
-        if (pointerYInSurface < laneTop || pointerYInSurface > laneBottom)
-        {
-            clip = null!;
-            return false;
-        }
-
-        clip = viewModel.VideoClips
-            .FirstOrDefault(candidate => pointerXInCanvas >= candidate.Left && pointerXInCanvas <= candidate.Left + candidate.Width)!;
-
-        return clip is not null;
     }
 
     private static bool IsPointerOnAudioLevelLine(TimelineClipItem clip, double localY)
