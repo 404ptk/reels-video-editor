@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using ReelsVideoEditor.App.Services.Composition;
+using ReelsVideoEditor.App.Services.Export;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -69,6 +70,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public ObservableCollection<VideoLaneItem> VideoLanes { get; } = [new("VIDEO", true, false, false)];
 
+    public ObservableCollection<AudioLaneItem> AudioLanes { get; } = [];
+
     public ObservableCollection<TimelineClipItem> Clips => VideoClips;
 
     public double TickWidth => BaseTickWidth * ZoomPercent / 100.0;
@@ -81,6 +84,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public int VideoLaneCount => VideoLanes.Count;
 
+    public int AudioLaneCount => AudioLanes.Count;
+
     public bool CanAddNewLine => VideoLaneCount < MaxVideoLines;
 
     // Compatibility surface used by preview/export; maps to primary lane state.
@@ -88,7 +93,12 @@ public partial class TimelineViewModel : ViewModelBase
 
     public bool IsVideoHidden => VideoLanes.FirstOrDefault()?.IsHidden ?? false;
 
-    public double TimelineCanvasHeight => TickSectionHeight + TrackTopSpacing + (VideoLaneCount * LaneContainerHeight) + (VideoLaneCount * TrackGap) + LaneContainerHeight;
+    public double TimelineCanvasHeight => TickSectionHeight
+        + TrackTopSpacing
+        + (VideoLaneCount * LaneContainerHeight)
+        + (VideoLaneCount * TrackGap)
+        + (AudioLaneCount * LaneContainerHeight)
+        + (Math.Max(0, AudioLaneCount - 1) * TrackGap);
 
     public double PlayheadHeight => TimelineCanvasHeight;
 
@@ -106,10 +116,12 @@ public partial class TimelineViewModel : ViewModelBase
     {
         VideoClips.CollectionChanged += OnVideoClipsChanged;
         VideoLanes.CollectionChanged += OnVideoLanesChanged;
+        AudioLanes.CollectionChanged += OnAudioLanesChanged;
         foreach (var lane in VideoLanes)
         {
             lane.PropertyChanged += OnVideoLanePropertyChanged;
         }
+        RebuildAudioLaneCollections();
         BuildMinorTicks();
         RebuildMajorTicks();
     }
@@ -170,12 +182,15 @@ public partial class TimelineViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(VideoLaneCount));
+        OnPropertyChanged(nameof(AudioLaneCount));
         OnPropertyChanged(nameof(CanAddNewLine));
         OnPropertyChanged(nameof(TimelineCanvasHeight));
         OnPropertyChanged(nameof(PlayheadHeight));
         OnPropertyChanged(nameof(IsVideoSolo));
         OnPropertyChanged(nameof(IsVideoHidden));
+        RebuildAudioLaneCollections();
         RebuildLaneClipCollections();
+        RebuildAudioLaneClipCollections();
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
     }
@@ -210,6 +225,42 @@ public partial class TimelineViewModel : ViewModelBase
         }
     }
 
+    private void OnAudioLanesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (var item in e.OldItems)
+            {
+                if (item is AudioLaneItem lane)
+                {
+                    lane.PropertyChanged -= OnAudioLanePropertyChanged;
+                }
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (var item in e.NewItems)
+            {
+                if (item is AudioLaneItem lane)
+                {
+                    lane.PropertyChanged += OnAudioLanePropertyChanged;
+                }
+            }
+        }
+    }
+
+    private void OnAudioLanePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(AudioLaneItem.IsMuted) && e.PropertyName != nameof(AudioLaneItem.IsSolo))
+        {
+            return;
+        }
+
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
+    }
+
     partial void OnIsPlaybackActiveChanged(bool value)
     {
     }
@@ -223,6 +274,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
         AudioClips.Add(linkedAudio);
+        RebuildAudioLaneClipCollections();
         _ = LoadAudioWaveformAsync(linkedAudio);
 
         if (VideoClips.Count == 1)
@@ -281,7 +333,12 @@ public partial class TimelineViewModel : ViewModelBase
     public PreviewAudioState ResolvePreviewAudioState(long playbackMilliseconds)
     {
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
-        return compositionPlanner.ResolvePreviewAudioState(AudioClips, IsAudioMuted, timelineSeconds);
+        return compositionPlanner.ResolvePreviewAudioState(ResolveActiveAudioClips(), IsAudioMuted, timelineSeconds);
+    }
+
+    public IReadOnlyList<ExportAudioClipInput> ResolveExportAudioInputs()
+    {
+        return compositionPlanner.BuildExportAudioInputs(ResolveActiveAudioClips());
     }
 
     public long ResolvePlaybackDurationMilliseconds()
@@ -414,7 +471,13 @@ public partial class TimelineViewModel : ViewModelBase
             }
 
             clip.VideoLaneLabel = targetLane!.Label;
+            var laneOnlyLinkedAudio = AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
+            if (laneOnlyLinkedAudio is not null)
+            {
+                laneOnlyLinkedAudio.VideoLaneLabel = targetLane.Label;
+            }
             RebuildLaneClipCollections();
+            RebuildAudioLaneClipCollections();
             NotifyPreviewClipIfChanged();
             return;
         }
@@ -431,12 +494,17 @@ public partial class TimelineViewModel : ViewModelBase
         if (linkedAudio is not null)
         {
             linkedAudio.StartSeconds = clampedStartSeconds;
+            if (laneChanged)
+            {
+                linkedAudio.VideoLaneLabel = targetLane!.Label;
+            }
             TimelineClipArrangementService.RebuildLayouts([linkedAudio], TickWidth);
         }
 
         if (laneChanged)
         {
             RebuildLaneClipCollections();
+            RebuildAudioLaneClipCollections();
         }
 
         NotifyPreviewClipIfChanged();
@@ -574,6 +642,7 @@ public partial class TimelineViewModel : ViewModelBase
         if (VideoClips.Count == 0)
         {
             AudioClips.Clear();
+            RebuildAudioLaneClipCollections();
             PlayheadSeconds = 0;
             RefreshClipLevelLines();
             UpdatePreviewLevels();
@@ -582,6 +651,7 @@ public partial class TimelineViewModel : ViewModelBase
 
         if (eventArgs.Action == NotifyCollectionChangedAction.Add && eventArgs.NewItems is { Count: > 0 })
         {
+            RebuildAudioLaneClipCollections();
             RefreshClipLevelLines();
             UpdatePreviewLevels();
             return;
@@ -597,7 +667,7 @@ public partial class TimelineViewModel : ViewModelBase
     private void RebuildAudioFromVideo()
     {
         var volumeByKey = AudioClips.ToDictionary(
-            clip => $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.Name}",
+            clip => BuildAudioClipKey(clip),
             clip => clip.VolumeLevel);
 
         AudioClips.Clear();
@@ -606,7 +676,7 @@ public partial class TimelineViewModel : ViewModelBase
         {
             var audioClip = TimelineClipArrangementService.BuildLinkedAudioClip(videoClip);
 
-            var key = $"{audioClip.Path}|{audioClip.StartSeconds:F3}|{audioClip.DurationSeconds:F3}|{audioClip.Name}";
+            var key = BuildAudioClipKey(audioClip);
             if (volumeByKey.TryGetValue(key, out var volumeLevel))
             {
                 audioClip.VolumeLevel = volumeLevel;
@@ -616,6 +686,7 @@ public partial class TimelineViewModel : ViewModelBase
             _ = LoadAudioWaveformAsync(audioClip);
         }
 
+        RebuildAudioLaneClipCollections();
         RefreshClipLevelLines();
     }
 
@@ -709,7 +780,7 @@ public partial class TimelineViewModel : ViewModelBase
     private double ResolvePlaybackDurationSeconds()
     {
         var plan = BuildCompositionPlan();
-        return compositionPlanner.ResolvePlaybackDurationSeconds(plan, AudioClips, IsAudioMuted, TimelineDurationSeconds);
+        return compositionPlanner.ResolvePlaybackDurationSeconds(plan, ResolveActiveAudioClips(), IsAudioMuted, TimelineDurationSeconds);
     }
 
     private TimelineCompositionPlan BuildCompositionPlan()
@@ -887,7 +958,9 @@ public partial class TimelineViewModel : ViewModelBase
 
     private double ResolveAudioVolumeAt(double seconds)
     {
-        var activeClip = AudioClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
+        var activeAudioClips = ResolveActiveAudioClips();
+
+        var activeClip = activeAudioClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
         if (activeClip is not null)
         {
             return activeClip.VolumeLevel;
@@ -899,7 +972,7 @@ public partial class TimelineViewModel : ViewModelBase
             return 1.0;
         }
 
-        var linkedAudio = AudioClips.FirstOrDefault(clip =>
+        var linkedAudio = activeAudioClips.FirstOrDefault(clip =>
             string.Equals(clip.Path, previewClip.Path, StringComparison.OrdinalIgnoreCase) &&
             Math.Abs(clip.StartSeconds - previewClip.StartSeconds) < 0.001);
 
@@ -919,6 +992,137 @@ public partial class TimelineViewModel : ViewModelBase
         }
 
         return VideoLanes.FirstOrDefault(lane => string.Equals(lane.Label, laneLabel, StringComparison.Ordinal));
+    }
+
+    private AudioLaneItem? ResolveAudioLaneByVideoLabel(string? videoLaneLabel)
+    {
+        var audioLaneLabel = MapVideoLaneLabelToAudioLaneLabel(videoLaneLabel);
+        if (string.IsNullOrWhiteSpace(audioLaneLabel))
+        {
+            return AudioLanes.FirstOrDefault();
+        }
+
+        return AudioLanes.FirstOrDefault(lane => string.Equals(lane.Label, audioLaneLabel, StringComparison.Ordinal))
+            ?? AudioLanes.FirstOrDefault();
+    }
+
+    private void RebuildAudioLaneCollections()
+    {
+        var laneStateByLabel = AudioLanes.ToDictionary(
+            lane => lane.Label,
+            lane => (lane.IsSolo, lane.IsMuted),
+            StringComparer.Ordinal);
+
+        AudioLanes.Clear();
+
+        var projectedAudioLanes = VideoLanes
+            .Select(lane => new { Label = MapVideoLaneLabelToAudioLaneLabel(lane.Label), lane.IsPrimary })
+            .DistinctBy(x => x.Label)
+            .ToList();
+
+        var primaryAudioLane = projectedAudioLanes.FirstOrDefault(lane => lane.IsPrimary);
+        if (primaryAudioLane is not null)
+        {
+            var primaryState = laneStateByLabel.TryGetValue(primaryAudioLane.Label, out var existingPrimaryState)
+                ? existingPrimaryState
+                : (false, false);
+            AudioLanes.Add(new AudioLaneItem(primaryAudioLane.Label, true, primaryState.Item1, primaryState.Item2));
+        }
+
+        foreach (var projectedLane in projectedAudioLanes
+                     .Where(lane => !lane.IsPrimary)
+                     .OrderBy(lane => ResolveAudioLaneOrdinal(lane.Label))
+                     .ThenBy(lane => lane.Label, StringComparer.Ordinal))
+        {
+            var state = laneStateByLabel.TryGetValue(projectedLane.Label, out var existingState)
+                ? existingState
+                : (false, false);
+            AudioLanes.Add(new AudioLaneItem(projectedLane.Label, false, state.Item1, state.Item2));
+        }
+
+        if (AudioLanes.Count == 0)
+        {
+            AudioLanes.Add(new AudioLaneItem("AUDIO", true, false, false));
+        }
+
+        OnPropertyChanged(nameof(AudioLaneCount));
+        OnPropertyChanged(nameof(TimelineCanvasHeight));
+        OnPropertyChanged(nameof(PlayheadHeight));
+    }
+
+    private void RebuildAudioLaneClipCollections()
+    {
+        foreach (var lane in AudioLanes)
+        {
+            lane.Clips.Clear();
+        }
+
+        foreach (var clip in AudioClips)
+        {
+            var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
+            lane?.Clips.Add(clip);
+        }
+    }
+
+    private static string MapVideoLaneLabelToAudioLaneLabel(string? videoLaneLabel)
+    {
+        if (string.IsNullOrWhiteSpace(videoLaneLabel))
+        {
+            return "AUDIO";
+        }
+
+        return videoLaneLabel.StartsWith("VIDEO", StringComparison.Ordinal)
+            ? $"AUDIO{videoLaneLabel[5..]}"
+            : $"AUDIO {videoLaneLabel}";
+    }
+
+    private static string BuildAudioClipKey(TimelineClipItem clip)
+    {
+        return $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.Name}|{clip.VideoLaneLabel}";
+    }
+
+    private IReadOnlyList<TimelineClipItem> ResolveActiveAudioClips()
+    {
+        if (AudioClips.Count == 0)
+        {
+            return [];
+        }
+
+        var hasSoloLane = AudioLanes.Any(lane => lane.IsSolo);
+
+        return AudioClips
+            .Where(clip =>
+            {
+                var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
+                if (lane is null)
+                {
+                    return false;
+                }
+
+                if (lane.IsMuted)
+                {
+                    return false;
+                }
+
+                if (hasSoloLane && !lane.IsSolo)
+                {
+                    return false;
+                }
+
+                return true;
+            })
+            .ToList();
+    }
+
+    private static int ResolveAudioLaneOrdinal(string laneLabel)
+    {
+        if (string.Equals(laneLabel, "AUDIO", StringComparison.Ordinal))
+        {
+            return 1;
+        }
+
+        var suffix = laneLabel.Replace("AUDIO", string.Empty, StringComparison.Ordinal).Trim();
+        return int.TryParse(suffix, out var parsed) && parsed > 0 ? parsed : int.MaxValue;
     }
 
     private void RebuildLaneClipCollections()
@@ -973,6 +1177,29 @@ public sealed partial class VideoLaneItem : ObservableObject
 
     [ObservableProperty]
     private bool isHidden;
+}
+
+public sealed partial class AudioLaneItem : ObservableObject
+{
+    public AudioLaneItem(string label, bool isPrimary, bool isSolo, bool isMuted)
+    {
+        Label = label;
+        IsPrimary = isPrimary;
+        IsSolo = isSolo;
+        IsMuted = isMuted;
+    }
+
+    public string Label { get; }
+
+    public bool IsPrimary { get; }
+
+    public ObservableCollection<TimelineClipItem> Clips { get; } = [];
+
+    [ObservableProperty]
+    private bool isSolo;
+
+    [ObservableProperty]
+    private bool isMuted;
 }
 
 public sealed record PreviewVideoLayer(

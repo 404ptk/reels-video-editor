@@ -201,61 +201,98 @@
 
             <Border Height="8" Background="Transparent" />
 
-            <Border Height="{Binding LaneContainerHeight}"
-                    Background="{DynamicResource AccentSubtle}"
-                    BorderBrush="{DynamicResource AccentSubtle}"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                <Grid RowDefinitions="18,*">
-                    <TextBlock Grid.Row="0"
-                               Text="AUDIO"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Top"
-                               Foreground="{DynamicResource AccentMuted}"
-                               FontSize="10"
-                               FontWeight="SemiBold" />
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
-                        <ToggleButton IsChecked="{Binding IsAudioMuted}"
-                                      Focusable="False"
-                                      Width="28"
-                                      Height="24"
-                                      CornerRadius="4"
-                                      Padding="0">
-                            <ToggleButton.Styles>
-                                <Style Selector="ToggleButton">
-                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                    <Setter Property="VerticalContentAlignment" Value="Center" />
-                                    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
-                                    <Setter Property="Background" Value="{DynamicResource BaseBg}" />
-                                    <Setter Property="BorderThickness" Value="0" />
-                                </Style>
-                                <Style Selector="ToggleButton:checked">
-                                    <Setter Property="Foreground" Value="#FFF" />
-                                    <Setter Property="Background" Value="#A04040" />
-                                </Style>
-                            </ToggleButton.Styles>
-                            <Viewbox Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Canvas Width="24" Height="24">
-                                    <Path Data="M15 8a5 5 0 0 1 0 8 M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5"
-                                          Fill="Transparent"
-                                          Stroke="{Binding $parent[ToggleButton].Foreground}"
-                                          StrokeThickness="2"
-                                          StrokeLineCap="Round"
-                                          StrokeJoin="Round"
-                                          IsVisible="{Binding !IsAudioMuted}" />
-                                    <Path Data="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5 M16 10l4 4m0 -4l-4 4"
-                                          Fill="Transparent"
-                                          Stroke="{Binding $parent[ToggleButton].Foreground}"
-                                          StrokeThickness="2"
-                                          StrokeLineCap="Round"
-                                          StrokeJoin="Round"
-                                          IsVisible="{Binding IsAudioMuted}" />
-                                </Canvas>
-                            </Viewbox>
-                        </ToggleButton>
-                    </StackPanel>
-                </Grid>
-            </Border>
+            <ItemsControl ItemsSource="{Binding AudioLanes}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="8" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AudioLaneItem">
+                        <Border Height="{Binding $parent[UserControl].DataContext.LaneContainerHeight}"
+                                Background="{DynamicResource AccentSubtle}"
+                                BorderBrush="{DynamicResource AccentSubtle}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid RowDefinitions="18,*">
+                                <TextBlock Grid.Row="0"
+                                           Text="{Binding Label}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Top"
+                                           Foreground="{DynamicResource AccentMuted}"
+                                           FontSize="10"
+                                           FontWeight="SemiBold" />
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
+                                    <ToggleButton IsChecked="{Binding IsSolo}"
+                                                  Focusable="False"
+                                                  Width="28"
+                                                  Height="24"
+                                                  CornerRadius="4"
+                                                  Padding="0">
+                                        <ToggleButton.Styles>
+                                            <Style Selector="ToggleButton">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </Style>
+                                            <Style Selector="ToggleButton:checked">
+                                                <Setter Property="Foreground" Value="{DynamicResource BaseBg}" />
+                                                <Setter Property="Background" Value="{DynamicResource Accent}" />
+                                            </Style>
+                                        </ToggleButton.Styles>
+                                        <TextBlock Text="S"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </ToggleButton>
+
+                                    <ToggleButton IsChecked="{Binding IsMuted}"
+                                                  Focusable="False"
+                                                  Width="28"
+                                                  Height="24"
+                                                  CornerRadius="4"
+                                                  Padding="0">
+                                        <ToggleButton.Styles>
+                                            <Style Selector="ToggleButton">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+                                                <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+                                                <Setter Property="BorderThickness" Value="0" />
+                                            </Style>
+                                            <Style Selector="ToggleButton:checked">
+                                                <Setter Property="Foreground" Value="#FFF" />
+                                                <Setter Property="Background" Value="#A04040" />
+                                            </Style>
+                                        </ToggleButton.Styles>
+                                        <Viewbox Width="15" Height="15" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Data="M15 8a5 5 0 0 1 0 8 M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5"
+                                                      Fill="Transparent"
+                                                      Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                                      StrokeThickness="2"
+                                                      StrokeLineCap="Round"
+                                                      StrokeJoin="Round"
+                                                      IsVisible="{Binding !IsMuted}" />
+                                                <Path Data="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5 M16 10l4 4m0 -4l-4 4"
+                                                      Fill="Transparent"
+                                                      Stroke="{Binding $parent[ToggleButton].Foreground}"
+                                                      StrokeThickness="2"
+                                                      StrokeLineCap="Round"
+                                                      StrokeJoin="Round"
+                                                      IsVisible="{Binding IsMuted}" />
+                                            </Canvas>
+                                        </Viewbox>
+                                    </ToggleButton>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
 
         <ScrollViewer Grid.Column="2"
@@ -413,76 +450,87 @@
 
                     <Border Height="8" Background="Transparent" />
 
-                    <Border Height="{Binding LaneContainerHeight}"
-                            Background="{DynamicResource BaseBg}"
-                            BorderBrush="{DynamicResource AccentSubtle}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            PointerPressed="TimelineSeekSurface_OnPointerPressed"
-                            DragDrop.AllowDrop="True"
-                            DragDrop.DragOver="TimelineTrack_OnDragOver"
-                            DragDrop.Drop="TimelineTrack_OnDrop">
-                        <Grid ClipToBounds="True">
-                            <ItemsControl ItemsSource="{Binding AudioClips}"
-                                          Width="{Binding TimelineCanvasWidth}"
-                                          Height="{Binding LaneContainerHeight}"
-                                          HorizontalAlignment="Left"
-                                          Classes.muted="{Binding IsAudioMuted}">
-                                <ItemsControl.Styles>
-                                    <Style Selector="ItemsControl.muted">
-                                        <Setter Property="Opacity" Value="0.3" />
-                                    </Style>
-                                </ItemsControl.Styles>
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <Canvas />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
-                                        <Border Canvas.Left="0"
-                                                Width="{Binding Width}"
-                                                Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
-                                                Margin="10,6,0,6"
-                                                CornerRadius="6"
-                                                Background="{DynamicResource AccentSubtle}"
-                                                BorderBrush="{DynamicResource AccentSubtle}"
-                                                BorderThickness="1"
-                                                PointerPressed="AudioClipLevel_OnPointerPressed"
-                                                PointerMoved="AudioClipLevel_OnPointerMoved"
-                                                PointerReleased="ClipLevel_OnPointerReleased">
-                                            <Border.RenderTransform>
-                                                <TranslateTransform X="{Binding Left}" />
-                                            </Border.RenderTransform>
-                                            <Grid ClipToBounds="True">
-                                                <Border HorizontalAlignment="Stretch"
-                                                        VerticalAlignment="Top"
-                                                        Height="{Binding AudioWaveformVisualHeight}"
-                                                        ClipToBounds="True">
-                                                    <Border.RenderTransform>
-                                                        <TranslateTransform Y="{Binding AudioWaveformVisualTop}" />
-                                                    </Border.RenderTransform>
-                                                    <Image Source="{Binding WaveformImage}"
-                                                           Stretch="Fill"
-                                                           HorizontalAlignment="Stretch"
-                                                           VerticalAlignment="Stretch" />
-                                                </Border>
-                                                <Border Height="2"
-                                                        HorizontalAlignment="Stretch"
-                                                        VerticalAlignment="Top"
-                                                        Background="#D6E6D8"
-                                                        IsVisible="{Binding IsAudioLevelLineVisible}">
-                                                    <Border.RenderTransform>
-                                                        <TranslateTransform Y="{Binding AudioLevelLineTop}" />
-                                                    </Border.RenderTransform>
-                                                </Border>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Grid>
-                    </Border>
+                    <ItemsControl ItemsSource="{Binding AudioLanes}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="8" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:AudioLaneItem">
+                                <Border Height="{Binding $parent[UserControl].DataContext.LaneContainerHeight}"
+                                        Background="{DynamicResource BaseBg}"
+                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        PointerPressed="TimelineSeekSurface_OnPointerPressed"
+                                        DragDrop.AllowDrop="True"
+                                        DragDrop.DragOver="TimelineTrack_OnDragOver"
+                                        DragDrop.Drop="TimelineTrack_OnDrop">
+                                    <Grid ClipToBounds="True">
+                                        <ItemsControl ItemsSource="{Binding Clips}"
+                                                      Width="{Binding $parent[UserControl].DataContext.TimelineCanvasWidth}"
+                                                      Height="{Binding $parent[UserControl].DataContext.LaneContainerHeight}"
+                                                      HorizontalAlignment="Left"
+                                                      Classes.muted="{Binding IsMuted}">
+                                            <ItemsControl.Styles>
+                                                <Style Selector="ItemsControl.muted">
+                                                    <Setter Property="Opacity" Value="0.3" />
+                                                </Style>
+                                            </ItemsControl.Styles>
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <Canvas />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="arrangementVm:TimelineClipItem">
+                                                    <Border Canvas.Left="0"
+                                                            Width="{Binding Width}"
+                                                            Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
+                                                            Margin="10,6,0,6"
+                                                            CornerRadius="6"
+                                                            Background="{DynamicResource AccentSubtle}"
+                                                            BorderBrush="{DynamicResource AccentSubtle}"
+                                                            BorderThickness="1"
+                                                            PointerPressed="AudioClipLevel_OnPointerPressed"
+                                                            PointerMoved="AudioClipLevel_OnPointerMoved"
+                                                            PointerReleased="ClipLevel_OnPointerReleased">
+                                                        <Border.RenderTransform>
+                                                            <TranslateTransform X="{Binding Left}" />
+                                                        </Border.RenderTransform>
+                                                        <Grid ClipToBounds="True">
+                                                            <Border HorizontalAlignment="Stretch"
+                                                                    VerticalAlignment="Top"
+                                                                    Height="{Binding AudioWaveformVisualHeight}"
+                                                                    ClipToBounds="True">
+                                                                <Border.RenderTransform>
+                                                                    <TranslateTransform Y="{Binding AudioWaveformVisualTop}" />
+                                                                </Border.RenderTransform>
+                                                                <Image Source="{Binding WaveformImage}"
+                                                                       Stretch="Fill"
+                                                                       HorizontalAlignment="Stretch"
+                                                                       VerticalAlignment="Stretch" />
+                                                            </Border>
+                                                            <Border Height="2"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    VerticalAlignment="Top"
+                                                                    Background="#D6E6D8"
+                                                                    IsVisible="{Binding IsAudioLevelLineVisible}">
+                                                                <Border.RenderTransform>
+                                                                    <TranslateTransform Y="{Binding AudioLevelLineTop}" />
+                                                                </Border.RenderTransform>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
 
                 <Border Width="2"

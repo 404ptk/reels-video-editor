@@ -43,6 +43,7 @@ public sealed class TimelineClipArrangementService
         audioClip.Left = sourceVideoClip.Left;
         audioClip.Width = sourceVideoClip.Width;
         audioClip.VolumeLevel = sourceVideoClip.VolumeLevel;
+        audioClip.VideoLaneLabel = sourceVideoClip.VideoLaneLabel;
         return audioClip;
     }
 

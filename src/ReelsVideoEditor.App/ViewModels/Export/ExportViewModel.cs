@@ -95,7 +95,7 @@ public sealed partial class ExportViewModel : ViewModelBase
         {
             var plan = compositionPlanner.BuildPlan(TimelineContext.VideoClips, TimelineContext.VideoLanes);
             var exportVideos = compositionPlanner.BuildExportVideoInputs(plan);
-            var exportAudios = compositionPlanner.BuildExportAudioInputs(TimelineContext.AudioClips);
+            var exportAudios = TimelineContext.ResolveExportAudioInputs();
 
             var previewFrameWidth = Math.Max(1, PreviewContext?.PreviewFrameWidth ?? 1);
             var previewFrameHeight = Math.Max(1, PreviewContext?.PreviewFrameHeight ?? 1);
