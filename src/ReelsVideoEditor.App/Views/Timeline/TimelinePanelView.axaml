@@ -39,11 +39,34 @@
             <Setter Property="Foreground" Value="{DynamicResource Accent}" />
             <Setter Property="BorderBrush" Value="#2AFFFFFF" />
         </Style>
+
+        <Style Selector="ScrollBar#TimelineVerticalScrollBar">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="MinWidth" Value="4" />
+            <Setter Property="MaxWidth" Value="4" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="ScrollBar#TimelineVerticalScrollBar:pointerover">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="MinWidth" Value="4" />
+            <Setter Property="MaxWidth" Value="4" />
+        </Style>
+        <Style Selector="ScrollBar#TimelineVerticalScrollBar:pressed">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="MinWidth" Value="4" />
+            <Setter Property="MaxWidth" Value="4" />
+        </Style>
     </UserControl.Styles>
 
-    <Grid ColumnDefinitions="96,8,*">
-        <StackPanel Grid.Column="0"
-                    Height="{Binding TimelineCanvasHeight}">
+    <Grid ColumnDefinitions="4,96,8,*">
+        <ScrollViewer x:Name="LaneHeaderScrollViewer"
+                      Grid.Column="1"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Hidden"
+                      PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged"
+                      ScrollChanged="LaneHeaderScrollViewer_OnScrollChanged">
+        <StackPanel Height="{Binding TimelineCanvasHeight}">
             <Border Height="52"
                     BorderBrush="{DynamicResource AccentSubtle}"
                     BorderThickness="1"
@@ -294,11 +317,20 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
+        </ScrollViewer>
 
-        <ScrollViewer Grid.Column="2"
+        <ScrollBar x:Name="TimelineVerticalScrollBar"
+                         Grid.Column="0"
+                   Orientation="Vertical"
+                   HorizontalAlignment="Left"
+                   IsVisible="False" />
+
+        <ScrollViewer x:Name="TimelineScrollViewer"
+                             Grid.Column="3"
                       HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollBarVisibility="Disabled"
-                      PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged">
+                      VerticalScrollBarVisibility="Hidden"
+                      PointerWheelChanged="TimelineScrollViewer_OnPointerWheelChanged"
+                      ScrollChanged="TimelineScrollViewer_OnScrollChanged">
             <Grid x:Name="TimelineCanvas"
                   Width="{Binding TimelineCanvasWidth}"
                   Height="{Binding TimelineCanvasHeight}"
