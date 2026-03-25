@@ -127,8 +127,13 @@ public sealed class TimelineCompositionPlanner
         var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
         var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
         var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
+        var trackKey = activeAudio.LinkId == Guid.Empty
+            ? activeAudio.Path
+            : activeAudio.LinkId.ToString("N");
 
-        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
+        return new PreviewAudioState(
+            [new PreviewAudioTrackState(trackKey, activeAudio.Path, localMilliseconds, volume)],
+            ShouldPlay: true);
     }
 
     public double ResolvePlaybackDurationSeconds(

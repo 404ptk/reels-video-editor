@@ -85,7 +85,6 @@ public partial class TimelineViewModel : ViewModelBase
 
     public bool CanAddNewLine => VideoLaneCount < MaxVideoLines;
 
-    // Compatibility surface used by preview/export; maps to primary lane state.
     public bool IsVideoSolo => VideoLanes.FirstOrDefault()?.IsSolo ?? false;
 
     public bool IsVideoHidden => VideoLanes.FirstOrDefault()?.IsHidden ?? false;

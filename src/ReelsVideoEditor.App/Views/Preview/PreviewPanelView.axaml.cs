@@ -51,7 +51,7 @@ public partial class PreviewPanelView : UserControl
     private byte[]? tempFrameCopyBuffer;
     private CancellationTokenSource? playbackCts;
     private readonly Dictionary<string, VideoFrameDecoder> overlayDecoders = new(StringComparer.OrdinalIgnoreCase);
-    private string? activeAudioPath;
+    private readonly Dictionary<string, ActiveAudioTrackContext> activeAudioTracks = new(StringComparer.Ordinal);
 
     private double currentZoom = 1.0;
     private double panX = 0.0;
@@ -83,6 +83,13 @@ public partial class PreviewPanelView : UserControl
         BottomLeft,
         Bottom,
         BottomRight
+    }
+
+    private sealed class ActiveAudioTrackContext
+    {
+        public required string Path { get; init; }
+
+        public required AudioPlaybackService Service { get; init; }
     }
 
     public PreviewPanelView()
@@ -202,6 +209,7 @@ public partial class PreviewPanelView : UserControl
         {
             handledStopRequestVersion = viewModel.StopRequestVersion;
             audioService.Stop();
+            StopAllActiveAudioTracks();
             playbackStopwatch.Stop();
             viewModel.UpdatePlaybackTime(0);
             _ = RenderSeekFrameAsync(TimeSpan.Zero, viewModel);
@@ -209,6 +217,7 @@ public partial class PreviewPanelView : UserControl
         }
 
         audioService.Pause();
+        PauseAllActiveAudioTracks();
         playbackStopwatch.Stop();
     }
 
@@ -246,6 +255,7 @@ public partial class PreviewPanelView : UserControl
         {
             playbackStopwatch.Reset();
             audioService.Pause();
+            PauseAllActiveAudioTracks();
         }
 
         pendingSeekPosition = targetTime;
@@ -271,6 +281,10 @@ public partial class PreviewPanelView : UserControl
     {
         audioService.Volume = (float)Math.Clamp(viewModel.CurrentAudioVolume, 0.0, 1.0);
         audioService.IsMuted = viewModel.IsAudioMuted;
+        foreach (var track in activeAudioTracks.Values)
+        {
+            track.Service.IsMuted = viewModel.IsAudioMuted;
+        }
     }
 
     private void SyncAudioToTimeline(PreviewViewModel viewModel, long timelineMilliseconds, bool forceSeek = false)
@@ -278,6 +292,7 @@ public partial class PreviewPanelView : UserControl
         var resolvedAudioState = viewModel.ResolveAudioState?.Invoke(timelineMilliseconds);
         if (resolvedAudioState is null)
         {
+            DisposeAllActiveAudioTracks();
             var fallbackMilliseconds = Math.Clamp(timelineMilliseconds, 0, (long)decoder.Duration.TotalMilliseconds);
             var currentAudioMilliseconds = (long)audioService.CurrentPosition.TotalMilliseconds;
             var shouldResyncFallback = forceSeek
@@ -300,47 +315,81 @@ public partial class PreviewPanelView : UserControl
             return;
         }
 
-        if (!resolvedAudioState.ShouldPlay || string.IsNullOrWhiteSpace(resolvedAudioState.Path))
+        audioService.Pause();
+
+        if (!resolvedAudioState.ShouldPlay || resolvedAudioState.Tracks.Count == 0)
         {
-            audioService.Pause();
-            activeAudioPath = null;
+            PauseAllActiveAudioTracks();
             return;
         }
 
-        if (!string.Equals(activeAudioPath, resolvedAudioState.Path, StringComparison.OrdinalIgnoreCase))
+        var activeTrackKeys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var trackState in resolvedAudioState.Tracks)
         {
-            audioService.Open(resolvedAudioState.Path);
-            activeAudioPath = resolvedAudioState.Path;
-            forceSeek = true;
+            if (string.IsNullOrWhiteSpace(trackState.TrackKey)
+                || string.IsNullOrWhiteSpace(trackState.Path))
+            {
+                continue;
+            }
+
+            activeTrackKeys.Add(trackState.TrackKey);
+
+            if (!activeAudioTracks.TryGetValue(trackState.TrackKey, out var trackContext)
+                || !string.Equals(trackContext.Path, trackState.Path, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trackContext is not null)
+                {
+                    trackContext.Service.Dispose();
+                }
+
+                var service = new AudioPlaybackService();
+                service.Open(trackState.Path);
+                trackContext = new ActiveAudioTrackContext
+                {
+                    Path = trackState.Path,
+                    Service = service
+                };
+                activeAudioTracks[trackState.TrackKey] = trackContext;
+                forceSeek = true;
+            }
+
+            trackContext.Service.Volume = (float)Math.Clamp(trackState.VolumeLevel, 0.0, 1.0);
+            trackContext.Service.IsMuted = viewModel.IsAudioMuted;
+
+            var localMilliseconds = Math.Max(0, trackState.PlaybackMilliseconds);
+            var currentMilliseconds = (long)trackContext.Service.CurrentPosition.TotalMilliseconds;
+            var shouldResync = forceSeek
+                || !viewModel.IsPlaying
+                || Math.Abs(localMilliseconds - currentMilliseconds) > AudioPlaybackResyncToleranceMs;
+            if (shouldResync)
+            {
+                trackContext.Service.Seek(TimeSpan.FromMilliseconds(localMilliseconds));
+            }
+
+            if (viewModel.IsPlaying)
+            {
+                trackContext.Service.Play();
+            }
+            else
+            {
+                trackContext.Service.Pause();
+            }
         }
 
-        audioService.Volume = (float)Math.Clamp(resolvedAudioState.VolumeLevel, 0.0, 1.0);
-        audioService.IsMuted = viewModel.IsAudioMuted;
-
-        var localMilliseconds = Math.Max(0, resolvedAudioState.PlaybackMilliseconds);
-        var currentMilliseconds = (long)audioService.CurrentPosition.TotalMilliseconds;
-        var shouldResync = forceSeek
-            || !viewModel.IsPlaying
-            || Math.Abs(localMilliseconds - currentMilliseconds) > AudioPlaybackResyncToleranceMs;
-        if (shouldResync)
+        var keysToRemove = activeAudioTracks.Keys
+            .Where(existingKey => !activeTrackKeys.Contains(existingKey))
+            .ToList();
+        foreach (var key in keysToRemove)
         {
-            audioService.Seek(TimeSpan.FromMilliseconds(localMilliseconds));
-        }
-
-        if (viewModel.IsPlaying)
-        {
-            audioService.Play();
-        }
-        else
-        {
-            audioService.Pause();
+            activeAudioTracks[key].Service.Dispose();
+            activeAudioTracks.Remove(key);
         }
     }
 
     private void LoadMedia(string path)
     {
         audioService.Stop();
-        activeAudioPath = null;
+        DisposeAllActiveAudioTracks();
 
         try
         {
@@ -801,9 +850,35 @@ public partial class PreviewPanelView : UserControl
         }
         overlayDecoders.Clear();
         audioService.Dispose();
-        activeAudioPath = null;
+        DisposeAllActiveAudioTracks();
         compositor.Dispose();
         renderTarget = null;
+    }
+
+    private void PauseAllActiveAudioTracks()
+    {
+        foreach (var track in activeAudioTracks.Values)
+        {
+            track.Service.Pause();
+        }
+    }
+
+    private void StopAllActiveAudioTracks()
+    {
+        foreach (var track in activeAudioTracks.Values)
+        {
+            track.Service.Stop();
+        }
+    }
+
+    private void DisposeAllActiveAudioTracks()
+    {
+        foreach (var track in activeAudioTracks.Values)
+        {
+            track.Service.Dispose();
+        }
+
+        activeAudioTracks.Clear();
     }
 
     private void OnPreviewPointerWheelChanged(object? sender, Avalonia.Input.PointerWheelEventArgs e)

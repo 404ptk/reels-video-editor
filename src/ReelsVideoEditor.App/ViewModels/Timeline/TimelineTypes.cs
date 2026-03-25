@@ -1,4 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
@@ -80,7 +82,9 @@ public sealed record PreviewClipTransform(
     public static PreviewClipTransform Default { get; } = new(0, 0, 1, 0, 0, 0, 0);
 }
 
-public sealed record PreviewAudioState(string? Path, long PlaybackMilliseconds, double VolumeLevel, bool ShouldPlay)
+public sealed record PreviewAudioTrackState(string TrackKey, string Path, long PlaybackMilliseconds, double VolumeLevel);
+
+public sealed record PreviewAudioState(IReadOnlyList<PreviewAudioTrackState> Tracks, bool ShouldPlay)
 {
-    public static PreviewAudioState Silent { get; } = new(null, 0, 1.0, false);
+    public static PreviewAudioState Silent { get; } = new(Array.Empty<PreviewAudioTrackState>(), false);
 }

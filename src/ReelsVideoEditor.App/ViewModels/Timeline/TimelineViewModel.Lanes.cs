@@ -157,44 +157,43 @@ public partial class TimelineViewModel
 
     private TimelineClipItem? ResolveActiveAudioClipAt(double seconds)
     {
+        return ResolveActiveAudioClipsAt(seconds)
+            .OrderByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault();
+    }
+
+    private IReadOnlyList<TimelineClipItem> ResolveActiveAudioClipsAt(double seconds)
+    {
         if (AudioClips.Count == 0)
         {
-            return null;
+            return [];
         }
 
         var hasSoloLane = AudioLanes.Any(lane => lane.IsSolo);
-        TimelineClipItem? activeClip = null;
 
-        foreach (var clip in AudioClips)
-        {
-            var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
-            if (lane is null)
+        return AudioClips
+            .Where(clip =>
             {
-                continue;
-            }
+                var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
+                if (lane is null)
+                {
+                    return false;
+                }
 
-            if (lane.IsMuted)
-            {
-                continue;
-            }
+                if (lane.IsMuted)
+                {
+                    return false;
+                }
 
-            if (hasSoloLane && !lane.IsSolo)
-            {
-                continue;
-            }
+                if (hasSoloLane && !lane.IsSolo)
+                {
+                    return false;
+                }
 
-            if (seconds < clip.StartSeconds || seconds > clip.StartSeconds + clip.DurationSeconds)
-            {
-                continue;
-            }
-
-            if (activeClip is null || clip.StartSeconds > activeClip.StartSeconds)
-            {
-                activeClip = clip;
-            }
-        }
-
-        return activeClip;
+                return seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds;
+            })
+            .OrderBy(clip => clip.StartSeconds)
+            .ToList();
     }
 
     private static int ResolveAudioLaneOrdinal(string laneLabel)

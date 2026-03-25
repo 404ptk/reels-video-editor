@@ -69,17 +69,29 @@ public partial class TimelineViewModel
         }
 
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
-        var activeAudio = ResolveActiveAudioClipAt(timelineSeconds);
-        if (activeAudio is null)
+        var activeAudio = ResolveActiveAudioClipsAt(timelineSeconds);
+        if (activeAudio.Count == 0)
         {
             return PreviewAudioState.Silent;
         }
 
-        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
-        var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
-        var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
+        var tracks = activeAudio
+            .Where(clip => !string.IsNullOrWhiteSpace(clip.Path))
+            .Select(clip =>
+            {
+                var localSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, clip.DurationSeconds);
+                var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+                var volume = Math.Clamp(clip.VolumeLevel, 0.0, 1.0);
+                var trackKey = clip.LinkId == Guid.Empty
+                    ? BuildAudioClipKey(clip)
+                    : clip.LinkId.ToString("N");
+                return new PreviewAudioTrackState(trackKey, clip.Path, localMilliseconds, volume);
+            })
+            .ToList();
 
-        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
+        return tracks.Count == 0
+            ? PreviewAudioState.Silent
+            : new PreviewAudioState(tracks, ShouldPlay: true);
     }
 
     public IReadOnlyList<ExportAudioClipInput> ResolveExportAudioInputs()
@@ -284,10 +296,11 @@ public partial class TimelineViewModel
 
     private double ResolveAudioVolumeAt(double seconds)
     {
-        var activeClip = ResolveActiveAudioClipAt(seconds);
-        if (activeClip is not null)
+        var activeClips = ResolveActiveAudioClipsAt(seconds);
+        if (activeClips.Count > 0)
         {
-            return activeClip.VolumeLevel;
+            var mixedVolume = activeClips.Sum(clip => Math.Clamp(clip.VolumeLevel, 0.0, 1.0));
+            return Math.Clamp(mixedVolume, 0.0, 1.0);
         }
 
         var previewClip = ResolvePreviewClip();
