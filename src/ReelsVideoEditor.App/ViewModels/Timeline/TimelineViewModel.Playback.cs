@@ -1,0 +1,305 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ReelsVideoEditor.App.Services.Composition;
+using ReelsVideoEditor.App.Services.Export;
+using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
+
+namespace ReelsVideoEditor.App.ViewModels.Timeline;
+
+public partial class TimelineViewModel
+{
+    partial void OnPlayheadSecondsChanged(double value)
+    {
+        OnPropertyChanged(nameof(PlayheadLeft));
+        OnPropertyChanged(nameof(PlayheadVisualLeft));
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
+    }
+
+    partial void OnIsPlaybackActiveChanged(bool value)
+    {
+    }
+
+    public string? ResolvePreviewClipPath()
+    {
+        return ResolvePreviewClip()?.Path;
+    }
+
+    public IReadOnlyList<PreviewVideoLayer> ResolvePreviewVideoLayers(long playbackMilliseconds)
+    {
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        var hasAnySelectedVideoClip = VideoClips.Any(clip => clip.IsSelected);
+        var plan = BuildCompositionPlan();
+        var activeLayers = compositionPlanner.ResolveActiveVideoLayers(plan, timelineSeconds);
+        if (activeLayers.Count == 0)
+        {
+            return [];
+        }
+
+        var result = new List<PreviewVideoLayer>(activeLayers.Count);
+        for (var i = 0; i < activeLayers.Count; i++)
+        {
+            var layer = activeLayers[i];
+            var clip = layer.Clip;
+
+            result.Add(new PreviewVideoLayer(
+                clip.Path,
+                layer.PlaybackMilliseconds,
+                layer.DrawBlurredBackground,
+                IsSelected: clip.IsSelected,
+                HasAnySelectedVideoClip: hasAnySelectedVideoClip,
+                TransformX: clip.TransformX,
+                TransformY: clip.TransformY,
+                TransformScale: clip.TransformScale,
+                CropLeft: clip.CropLeft,
+                CropTop: clip.CropTop,
+                CropRight: clip.CropRight,
+                CropBottom: clip.CropBottom));
+        }
+
+        return result;
+    }
+
+    public PreviewAudioState ResolvePreviewAudioState(long playbackMilliseconds)
+    {
+        if (IsAudioMuted)
+        {
+            return PreviewAudioState.Silent;
+        }
+
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        var activeAudio = ResolveActiveAudioClipAt(timelineSeconds);
+        if (activeAudio is null)
+        {
+            return PreviewAudioState.Silent;
+        }
+
+        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
+        var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+        var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
+
+        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
+    }
+
+    public IReadOnlyList<ExportAudioClipInput> ResolveExportAudioInputs()
+    {
+        return compositionPlanner.BuildExportAudioInputs(ResolveActiveAudioClips());
+    }
+
+    public long ResolvePlaybackDurationMilliseconds()
+    {
+        var durationSeconds = ResolvePlaybackDurationSeconds();
+        return (long)Math.Round(durationSeconds * 1000, MidpointRounding.AwayFromZero);
+    }
+
+    public bool ShouldPreviewClipUseBlurredBackground()
+    {
+        var previewClip = ResolvePreviewClip();
+        if (previewClip is null)
+        {
+            return true;
+        }
+
+        var lane = ResolveLaneByLabel(previewClip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+        if (lane is null)
+        {
+            return true;
+        }
+
+        // Foreground overlays on upper lanes should not generate their own blurred fill.
+        return lane.IsPrimary;
+    }
+
+    public bool HasSelectedVideoClip()
+    {
+        return VideoClips.Any(clip => clip.IsSelected);
+    }
+
+    public PreviewClipTransform ResolveTransformTargetState()
+    {
+        var targetClip = ResolveTransformTargetClip();
+        if (targetClip is null)
+        {
+            return PreviewClipTransform.Default;
+        }
+
+        return new PreviewClipTransform(
+            targetClip.TransformX,
+            targetClip.TransformY,
+            targetClip.TransformScale,
+            targetClip.CropLeft,
+            targetClip.CropTop,
+            targetClip.CropRight,
+            targetClip.CropBottom);
+    }
+
+    public void ApplyTransformToTarget(
+        double transformX,
+        double transformY,
+        double transformScale,
+        double cropLeft,
+        double cropTop,
+        double cropRight,
+        double cropBottom)
+    {
+        var targetClip = ResolveTransformTargetClip();
+        if (targetClip is null)
+        {
+            return;
+        }
+
+        targetClip.TransformX = transformX;
+        targetClip.TransformY = transformY;
+        targetClip.TransformScale = Math.Max(0.1, transformScale);
+        targetClip.CropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
+        targetClip.CropTop = Math.Clamp(cropTop, 0.0, 0.95);
+        targetClip.CropRight = Math.Clamp(cropRight, 0.0, 0.95);
+        targetClip.CropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
+    }
+
+    public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
+    {
+        if (!IsPlaybackActive)
+        {
+            return;
+        }
+
+        var safePlaybackMilliseconds = Math.Max(0, playbackMilliseconds);
+
+        if (lastPlaybackMilliseconds >= 0)
+        {
+            safePlaybackMilliseconds = Math.Max(safePlaybackMilliseconds, lastPlaybackMilliseconds);
+        }
+
+        lastPlaybackMilliseconds = safePlaybackMilliseconds;
+
+        var playbackSeconds = safePlaybackMilliseconds / 1000.0;
+        var clampedSeconds = Math.Clamp(playbackSeconds, 0, playbackMaxSeconds);
+        PlayheadSeconds = clampedSeconds;
+    }
+
+    public void SeekToPosition(double pointerX)
+    {
+        var playheadSeconds = Math.Max(0, (pointerX - 10) / TickWidth);
+        var clampedSeconds = Math.Clamp(playheadSeconds, 0, TimelineDurationSeconds);
+
+        PlayheadSeconds = clampedSeconds;
+        lastPlaybackMilliseconds = -1;
+        PlaybackSeekRequested?.Invoke(ResolvePlaybackSeekMilliseconds(clampedSeconds));
+    }
+
+    public void SetPlaybackActive(bool isPlaying)
+    {
+        IsPlaybackActive = isPlaying;
+        lastPlaybackMilliseconds = -1;
+
+        if (!isPlaying)
+        {
+            return;
+        }
+
+        playbackMaxSeconds = ResolvePlaybackDurationSeconds();
+    }
+
+    public void RefreshPreviewLevels()
+    {
+        UpdatePreviewLevels();
+    }
+
+    private TimelineClipItem? ResolvePreviewClip()
+    {
+        if (VideoClips.Count == 0)
+        {
+            return null;
+        }
+
+        var plan = BuildCompositionPlan();
+        return compositionPlanner.ResolvePreviewClip(plan, PlayheadSeconds);
+    }
+
+    private TimelineClipItem? ResolveTransformTargetClip()
+    {
+        var selectedClip = ResolveSelectedVideoClip();
+        if (selectedClip is not null)
+        {
+            return selectedClip;
+        }
+
+        return ResolvePreviewClip();
+    }
+
+    private IEnumerable<TimelineClipItem> ResolveVisibleVideoClips()
+    {
+        var plan = BuildCompositionPlan();
+        foreach (var item in plan.VisibleVideoClips)
+        {
+            yield return item.Clip;
+        }
+    }
+
+    private int ResolveLaneLayerIndex(string laneLabel)
+    {
+        return compositionPlanner.ResolveLaneLayerIndex(BuildCompositionPlan(), laneLabel);
+    }
+
+    private long ResolvePlaybackSeekMilliseconds(double timelineSeconds)
+    {
+        return (long)Math.Round(Math.Clamp(timelineSeconds, 0, TimelineDurationSeconds) * 1000, MidpointRounding.AwayFromZero);
+    }
+
+    private double ResolveTimelineSecondsForLayerPlayback(long playbackMilliseconds)
+    {
+        return Math.Clamp(playbackMilliseconds / 1000.0, 0, TimelineDurationSeconds);
+    }
+
+    private double ResolvePlaybackDurationSeconds()
+    {
+        var plan = BuildCompositionPlan();
+        return compositionPlanner.ResolvePlaybackDurationSeconds(plan, ResolveActiveAudioClips(), IsAudioMuted, TimelineDurationSeconds);
+    }
+
+    private TimelineCompositionPlan BuildCompositionPlan()
+    {
+        return compositionPlanner.BuildPlan(VideoClips, VideoLanes);
+    }
+
+    private void NotifyPreviewClipIfChanged()
+    {
+        var previewClip = ResolvePreviewClip();
+        if (ReferenceEquals(previewClip, lastPreviewClip))
+        {
+            return;
+        }
+
+        lastPreviewClip = previewClip;
+        PreviewClipChanged?.Invoke();
+    }
+
+    private void UpdatePreviewLevels()
+    {
+        var audioVolume = ResolveAudioVolumeAt(PlayheadSeconds);
+        PreviewLevelsChanged?.Invoke(audioVolume);
+    }
+
+    private double ResolveAudioVolumeAt(double seconds)
+    {
+        var activeClip = ResolveActiveAudioClipAt(seconds);
+        if (activeClip is not null)
+        {
+            return activeClip.VolumeLevel;
+        }
+
+        var previewClip = ResolvePreviewClip();
+        if (previewClip is null)
+        {
+            return 1.0;
+        }
+
+        var linkedAudio = ResolveActiveAudioClips().FirstOrDefault(clip =>
+            string.Equals(clip.Path, previewClip.Path, StringComparison.OrdinalIgnoreCase) &&
+            Math.Abs(clip.StartSeconds - previewClip.StartSeconds) < 0.001);
+
+        return linkedAudio?.VolumeLevel ?? 1.0;
+    }
+}
