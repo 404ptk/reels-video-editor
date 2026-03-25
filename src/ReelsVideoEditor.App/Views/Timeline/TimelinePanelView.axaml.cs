@@ -474,7 +474,7 @@ public partial class TimelinePanelView : UserControl
             selectionBox.Height = height;
         }
 
-        viewModel.SelectClipsInBox(minX, maxX);
+        viewModel.SelectClipsInBox(minX, maxX, minY, maxY);
     }
 
     private void TimelineSeekSurface_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
