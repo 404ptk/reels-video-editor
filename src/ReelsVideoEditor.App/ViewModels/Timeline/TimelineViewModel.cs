@@ -272,10 +272,14 @@ public partial class TimelineViewModel : ViewModelBase
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
         VideoClips.Add(clip);
 
-        var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
-        AudioClips.Add(linkedAudio);
+        if (!IsStillImagePath(path))
+        {
+            var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
+            AudioClips.Add(linkedAudio);
+            _ = LoadAudioWaveformAsync(linkedAudio);
+        }
+
         RebuildAudioLaneClipCollections();
-        _ = LoadAudioWaveformAsync(linkedAudio);
 
         if (VideoClips.Count == 1)
         {
@@ -689,6 +693,11 @@ public partial class TimelineViewModel : ViewModelBase
 
         foreach (var videoClip in VideoClips)
         {
+            if (IsStillImagePath(videoClip.Path))
+            {
+                continue;
+            }
+
             var audioClip = TimelineClipArrangementService.BuildLinkedAudioClip(videoClip);
 
             var key = BuildAudioClipKey(audioClip);
@@ -1092,6 +1101,19 @@ public partial class TimelineViewModel : ViewModelBase
     private static string BuildAudioClipKey(TimelineClipItem clip)
     {
         return $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.Name}|{clip.VideoLaneLabel}";
+    }
+
+    private static bool IsStillImagePath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var extension = System.IO.Path.GetExtension(path);
+        return extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
     }
 
     private IReadOnlyList<TimelineClipItem> ResolveActiveAudioClips()

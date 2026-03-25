@@ -19,14 +19,14 @@ public sealed class VideoFilesViewModel : ViewModelBase
 
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"
+        ".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v", ".png", ".jpg", ".jpeg"
     };
 
     public string Title { get; } = "Explorer";
 
     public string DropHintTitle { get; } = "Drop files here";
 
-    public string DropHintSubtitle { get; } = "Video files will appear in the explorer list";
+    public string DropHintSubtitle { get; } = "Video and image files will appear in the explorer list";
 
     public ObservableCollection<VideoFileItem> Files { get; } = [];
 
@@ -67,8 +67,15 @@ public sealed class VideoFilesViewModel : ViewModelBase
             var fileItem = new VideoFileItem(Path.GetFileName(filePath), filePath);
             Files.Add(fileItem);
 
-            var durationSeconds = await TryReadDurationSecondsAsync(filePath);
-            fileItem.DurationSeconds = durationSeconds > 0 ? durationSeconds : 5;
+            if (IsSupportedImageExtension(extension))
+            {
+                fileItem.DurationSeconds = 5;
+            }
+            else
+            {
+                var durationSeconds = await TryReadDurationSecondsAsync(filePath);
+                fileItem.DurationSeconds = durationSeconds > 0 ? durationSeconds : 5;
+            }
 
             var thumbnailResult = await TryCreateThumbnailAsync(filePath);
             var thumbnail = thumbnailResult.Bitmap;
@@ -117,6 +124,13 @@ public sealed class VideoFilesViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(NoFiles));
+    }
+
+    public static bool IsSupportedImageExtension(string extension)
+    {
+        return extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task<ThumbnailResult> TryCreateThumbnailAsync(string videoPath)

@@ -56,6 +56,11 @@ public class TimelineExportService
 
         foreach (var v in videos)
         {
+            if (IsStillImagePath(v.Path))
+            {
+                ffmpegCommand.Append("-loop 1 -framerate 30 ");
+            }
+
             ffmpegCommand.Append($"-i \"{v.Path}\" ");
         }
         
@@ -173,6 +178,14 @@ public class TimelineExportService
         ffmpegCommand.Append($"\"{outputPath}\"");
 
         await ExecuteFFmpegAsync(ffmpegCommand.ToString(), progress, totalDuration);
+    }
+
+    private static bool IsStillImagePath(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+               || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string BuildAnyPreviousLayerActiveExpression(IReadOnlyList<ExportVideoClipInput> videos, int currentIndex)

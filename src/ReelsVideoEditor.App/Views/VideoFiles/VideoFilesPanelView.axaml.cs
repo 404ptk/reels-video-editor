@@ -55,7 +55,7 @@ public partial class VideoFilesPanelView : UserControl
 
     private void DropZone_OnDragOver(object? sender, DragEventArgs eventArgs)
     {
-        eventArgs.DragEffects = ContainsSupportedVideo(eventArgs)
+        eventArgs.DragEffects = ContainsSupportedMedia(eventArgs)
             ? DragDropEffects.Copy
             : DragDropEffects.None;
         eventArgs.Handled = true;
@@ -72,12 +72,12 @@ public partial class VideoFilesPanelView : UserControl
         eventArgs.Handled = true;
     }
 
-    private static bool ContainsSupportedVideo(DragEventArgs eventArgs)
+    private static bool ContainsSupportedMedia(DragEventArgs eventArgs)
     {
         foreach (var filePath in ResolveDroppedPaths(eventArgs))
         {
             var extension = System.IO.Path.GetExtension(filePath);
-            if (IsSupportedVideoExtension(extension))
+            if (IsSupportedVideoExtension(extension) || VideoFilesViewModel.IsSupportedImageExtension(extension))
             {
                 return true;
             }
