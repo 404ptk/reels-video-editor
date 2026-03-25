@@ -76,6 +76,13 @@ public partial class TimelinePanelView : UserControl
     {
         if (DataContext is TimelineViewModel viewModel)
         {
+            if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                viewModel.ChangeLaneHeightFromWheel(eventArgs.Delta.Y);
+                eventArgs.Handled = true;
+                return;
+            }
+
             if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
                 var viewportWidth = _timelineScrollViewer?.Bounds.Width ?? (sender as ScrollViewer)?.Bounds.Width ?? Bounds.Width;
