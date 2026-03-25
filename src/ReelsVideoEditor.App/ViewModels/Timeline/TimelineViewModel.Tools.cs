@@ -67,18 +67,7 @@ public partial class TimelineViewModel
         }
 
         var nextIndex = VideoLanes.Count + 1;
-        var insertIndex = VideoLanes
-            .Select((lane, index) => new { lane, index })
-            .Where(x => x.lane.IsPrimary)
-            .Select(x => x.index)
-            .DefaultIfEmpty(-1)
-            .First();
-        if (insertIndex < 0)
-        {
-            insertIndex = VideoLanes.Count;
-        }
-
-        VideoLanes.Insert(insertIndex, new VideoLaneItem($"VIDEO {nextIndex}", false, false, false));
+        VideoLanes.Insert(0, new VideoLaneItem($"VIDEO {nextIndex}", false, false, false));
     }
 
     [RelayCommand]
