@@ -26,6 +26,7 @@ public partial class PreviewPanelView : UserControl
 {
     private const double PreviewAspectRatio = 9.0 / 16.0;
     private const double PreviewPadding = 8;
+    private const int AudioPlaybackResyncToleranceMs = 280;
 
     private readonly VideoFrameDecoder decoder = new();
     private readonly AudioPlaybackService audioService = new();
@@ -51,7 +52,6 @@ public partial class PreviewPanelView : UserControl
     private CancellationTokenSource? playbackCts;
     private readonly Dictionary<string, VideoFrameDecoder> overlayDecoders = new(StringComparer.OrdinalIgnoreCase);
     private string? activeAudioPath;
-    private long lastAudioSeekMilliseconds = -1;
 
     private double currentZoom = 1.0;
     private double panX = 0.0;
@@ -279,7 +279,14 @@ public partial class PreviewPanelView : UserControl
         if (resolvedAudioState is null)
         {
             var fallbackMilliseconds = Math.Clamp(timelineMilliseconds, 0, (long)decoder.Duration.TotalMilliseconds);
-            audioService.Seek(TimeSpan.FromMilliseconds(fallbackMilliseconds));
+            var currentAudioMilliseconds = (long)audioService.CurrentPosition.TotalMilliseconds;
+            var shouldResyncFallback = forceSeek
+                || !viewModel.IsPlaying
+                || Math.Abs(fallbackMilliseconds - currentAudioMilliseconds) > AudioPlaybackResyncToleranceMs;
+            if (shouldResyncFallback)
+            {
+                audioService.Seek(TimeSpan.FromMilliseconds(fallbackMilliseconds));
+            }
 
             if (viewModel.IsPlaying)
             {
@@ -297,7 +304,6 @@ public partial class PreviewPanelView : UserControl
         {
             audioService.Pause();
             activeAudioPath = null;
-            lastAudioSeekMilliseconds = -1;
             return;
         }
 
@@ -305,7 +311,6 @@ public partial class PreviewPanelView : UserControl
         {
             audioService.Open(resolvedAudioState.Path);
             activeAudioPath = resolvedAudioState.Path;
-            lastAudioSeekMilliseconds = -1;
             forceSeek = true;
         }
 
@@ -313,10 +318,13 @@ public partial class PreviewPanelView : UserControl
         audioService.IsMuted = viewModel.IsAudioMuted;
 
         var localMilliseconds = Math.Max(0, resolvedAudioState.PlaybackMilliseconds);
-        if (forceSeek || lastAudioSeekMilliseconds < 0 || Math.Abs(localMilliseconds - lastAudioSeekMilliseconds) > 100)
+        var currentMilliseconds = (long)audioService.CurrentPosition.TotalMilliseconds;
+        var shouldResync = forceSeek
+            || !viewModel.IsPlaying
+            || Math.Abs(localMilliseconds - currentMilliseconds) > AudioPlaybackResyncToleranceMs;
+        if (shouldResync)
         {
             audioService.Seek(TimeSpan.FromMilliseconds(localMilliseconds));
-            lastAudioSeekMilliseconds = localMilliseconds;
         }
 
         if (viewModel.IsPlaying)
@@ -333,7 +341,6 @@ public partial class PreviewPanelView : UserControl
     {
         audioService.Stop();
         activeAudioPath = null;
-        lastAudioSeekMilliseconds = -1;
 
         try
         {
@@ -795,7 +802,6 @@ public partial class PreviewPanelView : UserControl
         overlayDecoders.Clear();
         audioService.Dispose();
         activeAudioPath = null;
-        lastAudioSeekMilliseconds = -1;
         compositor.Dispose();
         renderTarget = null;
     }

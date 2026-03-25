@@ -332,8 +332,23 @@ public partial class TimelineViewModel : ViewModelBase
 
     public PreviewAudioState ResolvePreviewAudioState(long playbackMilliseconds)
     {
+        if (IsAudioMuted)
+        {
+            return PreviewAudioState.Silent;
+        }
+
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
-        return compositionPlanner.ResolvePreviewAudioState(ResolveActiveAudioClips(), IsAudioMuted, timelineSeconds);
+        var activeAudio = ResolveActiveAudioClipAt(timelineSeconds);
+        if (activeAudio is null)
+        {
+            return PreviewAudioState.Silent;
+        }
+
+        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
+        var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+        var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
+
+        return new PreviewAudioState(activeAudio.Path, localMilliseconds, volume, ShouldPlay: true);
     }
 
     public IReadOnlyList<ExportAudioClipInput> ResolveExportAudioInputs()
@@ -958,9 +973,7 @@ public partial class TimelineViewModel : ViewModelBase
 
     private double ResolveAudioVolumeAt(double seconds)
     {
-        var activeAudioClips = ResolveActiveAudioClips();
-
-        var activeClip = activeAudioClips.FirstOrDefault(clip => seconds >= clip.StartSeconds && seconds <= clip.StartSeconds + clip.DurationSeconds);
+        var activeClip = ResolveActiveAudioClipAt(seconds);
         if (activeClip is not null)
         {
             return activeClip.VolumeLevel;
@@ -972,7 +985,7 @@ public partial class TimelineViewModel : ViewModelBase
             return 1.0;
         }
 
-        var linkedAudio = activeAudioClips.FirstOrDefault(clip =>
+        var linkedAudio = ResolveActiveAudioClips().FirstOrDefault(clip =>
             string.Equals(clip.Path, previewClip.Path, StringComparison.OrdinalIgnoreCase) &&
             Math.Abs(clip.StartSeconds - previewClip.StartSeconds) < 0.001);
 
@@ -1112,6 +1125,48 @@ public partial class TimelineViewModel : ViewModelBase
                 return true;
             })
             .ToList();
+    }
+
+    private TimelineClipItem? ResolveActiveAudioClipAt(double seconds)
+    {
+        if (AudioClips.Count == 0)
+        {
+            return null;
+        }
+
+        var hasSoloLane = AudioLanes.Any(lane => lane.IsSolo);
+        TimelineClipItem? activeClip = null;
+
+        foreach (var clip in AudioClips)
+        {
+            var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
+            if (lane is null)
+            {
+                continue;
+            }
+
+            if (lane.IsMuted)
+            {
+                continue;
+            }
+
+            if (hasSoloLane && !lane.IsSolo)
+            {
+                continue;
+            }
+
+            if (seconds < clip.StartSeconds || seconds > clip.StartSeconds + clip.DurationSeconds)
+            {
+                continue;
+            }
+
+            if (activeClip is null || clip.StartSeconds > activeClip.StartSeconds)
+            {
+                activeClip = clip;
+            }
+        }
+
+        return activeClip;
     }
 
     private static int ResolveAudioLaneOrdinal(string laneLabel)
