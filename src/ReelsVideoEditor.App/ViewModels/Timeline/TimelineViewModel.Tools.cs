@@ -127,13 +127,47 @@ public partial class TimelineViewModel
     }
 
     [RelayCommand]
-    private static void Placeholder2()
+    private static void ToggleVideoSolo(VideoLaneItem? lane)
     {
+        if (lane is null)
+        {
+            return;
+        }
+
+        lane.IsSolo = !lane.IsSolo;
     }
 
     [RelayCommand]
-    private static void Placeholder3()
+    private static void ToggleVideoHidden(VideoLaneItem? lane)
     {
+        if (lane is null)
+        {
+            return;
+        }
+
+        lane.IsHidden = !lane.IsHidden;
+    }
+
+    [RelayCommand]
+    private static void ToggleAudioSolo(AudioLaneItem? lane)
+    {
+        if (lane is null)
+        {
+            return;
+        }
+
+        lane.IsSolo = !lane.IsSolo;
+    }
+
+    [RelayCommand]
+    private static void ToggleAudioMuted(AudioLaneItem? lane)
+    {
+        if (lane is null)
+        {
+            return;
+        }
+
+        lane.IsMuted = !lane.IsMuted;
     }
 
     public bool TryCutAtPlayhead()
