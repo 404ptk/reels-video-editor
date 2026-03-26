@@ -290,9 +290,10 @@ public partial class TimelinePanelView : UserControl
         var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
         var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, viewModel.TickWidth);
         var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
+        var snappingEnabled = !eventArgs.KeyModifiers.HasFlag(KeyModifiers.Shift);
 
         var targetLaneLabel = ResolveLaneLabelFromPointer(viewModel, eventArgs);
-        viewModel.MoveClipToStart(clip, nextStartSeconds, targetLaneLabel);
+        viewModel.MoveClipToStart(clip, nextStartSeconds, targetLaneLabel, snappingEnabled);
         eventArgs.Handled = true;
     }
 
@@ -408,8 +409,9 @@ public partial class TimelinePanelView : UserControl
                         var pointerCanvasX = eventArgs.GetPosition(timelineCanvasForDrag).X;
                         var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, dragViewModel.TickWidth);
                         var nextStartSeconds = pointerSeconds - _draggingClipPointerOffsetSeconds;
+                        var snappingEnabled = !eventArgs.KeyModifiers.HasFlag(KeyModifiers.Shift);
                         var targetLaneLabel = ResolveLaneLabelFromPointer(dragViewModel, eventArgs);
-                        dragViewModel.MoveClipToStart(draggingClip, nextStartSeconds, targetLaneLabel);
+                        dragViewModel.MoveClipToStart(draggingClip, nextStartSeconds, targetLaneLabel, snappingEnabled);
                     }
                 }
             }

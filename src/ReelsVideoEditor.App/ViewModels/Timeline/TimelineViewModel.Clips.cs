@@ -9,6 +9,8 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline;
 
 public partial class TimelineViewModel
 {
+    private const double ClipSnapThresholdPixels = 12;
+
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
     {
         var clip = TimelineClipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
@@ -38,12 +40,22 @@ public partial class TimelineViewModel
         });
     }
 
-    public void MoveClipToStart(TimelineClipItem clip, double requestedStartSeconds, string? targetLaneLabel = null)
+    public void MoveClipToStart(
+        TimelineClipItem clip,
+        double requestedStartSeconds,
+        string? targetLaneLabel = null,
+        bool enableSnapping = true)
     {
         var maxStartSeconds = Math.Max(0, TimelineDurationSeconds - clip.DurationSeconds);
         var clampedStartSeconds = Math.Clamp(requestedStartSeconds, 0, maxStartSeconds);
         var targetLane = ResolveLaneByLabel(targetLaneLabel);
         var laneChanged = targetLane is not null && !string.Equals(clip.VideoLaneLabel, targetLane.Label, StringComparison.Ordinal);
+        var effectiveLaneLabel = laneChanged ? targetLane!.Label : clip.VideoLaneLabel;
+
+        if (enableSnapping)
+        {
+            clampedStartSeconds = ResolveSnappedStartSeconds(clip, clampedStartSeconds, effectiveLaneLabel);
+        }
 
         if (Math.Abs(clampedStartSeconds - clip.StartSeconds) < 0.0001)
         {
@@ -106,8 +118,58 @@ public partial class TimelineViewModel
 
         undoStack.Push(() =>
         {
-            MoveClipToStart(clip, previousStartSeconds, previousLaneLabel);
+            MoveClipToStart(clip, previousStartSeconds, previousLaneLabel, enableSnapping: false);
         });
+    }
+
+    private double ResolveSnappedStartSeconds(TimelineClipItem movingClip, double requestedStartSeconds, string laneLabel)
+    {
+        if (VideoClips.Count <= 1 || TickWidth <= 0.0001)
+        {
+            return requestedStartSeconds;
+        }
+
+        var thresholdSeconds = ClipSnapThresholdPixels / TickWidth;
+        var maxStartSeconds = Math.Max(0, TimelineDurationSeconds - movingClip.DurationSeconds);
+
+        var best = requestedStartSeconds;
+        var bestDistance = double.MaxValue;
+
+        void Consider(double candidateStart)
+        {
+            var clamped = Math.Clamp(candidateStart, 0, maxStartSeconds);
+            var distance = Math.Abs(requestedStartSeconds - clamped);
+            if (distance <= thresholdSeconds && distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = clamped;
+            }
+        }
+
+        Consider(0);
+
+        foreach (var other in VideoClips)
+        {
+            if (ReferenceEquals(other, movingClip))
+            {
+                continue;
+            }
+
+            if (!string.Equals(other.VideoLaneLabel, laneLabel, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var otherStart = other.StartSeconds;
+            var otherEnd = other.StartSeconds + other.DurationSeconds;
+
+            Consider(otherStart);
+            Consider(otherEnd);
+            Consider(otherStart - movingClip.DurationSeconds);
+            Consider(otherEnd - movingClip.DurationSeconds);
+        }
+
+        return best;
     }
 
     public void SetAudioClipVolume(TimelineClipItem clip, double volumeLevel)
