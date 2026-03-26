@@ -68,7 +68,11 @@ public sealed class TimelineCompositionPlanner
         for (var i = 0; i < active.Count; i++)
         {
             var item = active[i];
-            var localSeconds = Math.Clamp(timelineSeconds - item.Clip.StartSeconds, 0, item.Clip.DurationSeconds);
+            var clipLocalSeconds = Math.Clamp(timelineSeconds - item.Clip.StartSeconds, 0, item.Clip.DurationSeconds);
+            var localSeconds = Math.Clamp(
+                item.Clip.SourceStartSeconds + clipLocalSeconds,
+                item.Clip.SourceStartSeconds,
+                item.Clip.SourceStartSeconds + item.Clip.DurationSeconds);
             var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
 
             result.Add(new CompositionActiveLayer(
@@ -124,7 +128,11 @@ public sealed class TimelineCompositionPlanner
             return PreviewAudioState.Silent;
         }
 
-        var localSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
+        var clipLocalSeconds = Math.Clamp(timelineSeconds - activeAudio.StartSeconds, 0, activeAudio.DurationSeconds);
+        var localSeconds = Math.Clamp(
+            activeAudio.SourceStartSeconds + clipLocalSeconds,
+            activeAudio.SourceStartSeconds,
+            activeAudio.SourceStartSeconds + activeAudio.DurationSeconds);
         var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
         var volume = Math.Clamp(activeAudio.VolumeLevel, 0.0, 1.0);
         var trackKey = activeAudio.LinkId == Guid.Empty
@@ -166,6 +174,7 @@ public sealed class TimelineCompositionPlanner
                 item.Clip.Path,
                 item.Clip.StartSeconds,
                 item.Clip.DurationSeconds,
+                item.Clip.SourceStartSeconds,
                 item.LaneIndex,
                 item.Clip.TransformX,
                 item.Clip.TransformY,
@@ -185,6 +194,7 @@ public sealed class TimelineCompositionPlanner
                 clip.Path,
                 clip.StartSeconds,
                 clip.DurationSeconds,
+                clip.SourceStartSeconds,
                 clip.VolumeLevel))
             .ToList();
     }

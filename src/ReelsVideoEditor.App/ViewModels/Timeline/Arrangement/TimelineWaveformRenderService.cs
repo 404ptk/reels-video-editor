@@ -1,23 +1,74 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using PixelRect = Avalonia.PixelRect;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 public sealed class TimelineWaveformRenderService
 {
     private const int FfmpegTimeoutMs = 12000;
+    private static readonly ConcurrentDictionary<string, Task<Bitmap?>> WaveformCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public static async Task<Bitmap?> TryRenderWaveformAsync(string mediaPath)
+    public static async Task<IImage?> TryRenderWaveformSegmentAsync(
+        string mediaPath,
+        double sourceStartSeconds,
+        double clipDurationSeconds,
+        double sourceDurationSeconds)
+    {
+        var baseWaveform = await TryRenderWaveformAsync(mediaPath);
+        if (baseWaveform is null)
+        {
+            return null;
+        }
+
+        var totalSeconds = Math.Max(clipDurationSeconds, sourceDurationSeconds);
+        if (!double.IsFinite(totalSeconds) || totalSeconds <= 0.0001)
+        {
+            return baseWaveform;
+        }
+
+        var pixelSize = baseWaveform.PixelSize;
+        if (pixelSize.Width <= 1 || pixelSize.Height <= 0)
+        {
+            return baseWaveform;
+        }
+
+        var normalizedStart = Math.Clamp(sourceStartSeconds / totalSeconds, 0, 1);
+        var normalizedDuration = Math.Clamp(clipDurationSeconds / totalSeconds, 0, 1 - normalizedStart);
+
+        var x = (int)Math.Floor(normalizedStart * pixelSize.Width);
+        var width = (int)Math.Round(normalizedDuration * pixelSize.Width);
+
+        width = Math.Max(1, width);
+        if (x + width > pixelSize.Width)
+        {
+            x = Math.Max(0, pixelSize.Width - width);
+        }
+
+        var cropRect = new PixelRect(x, 0, width, pixelSize.Height);
+        return new CroppedBitmap(baseWaveform, cropRect);
+    }
+
+    private static async Task<Bitmap?> TryRenderWaveformAsync(string mediaPath)
     {
         if (string.IsNullOrWhiteSpace(mediaPath) || !File.Exists(mediaPath))
         {
             return null;
         }
+
+        var waveformTask = WaveformCache.GetOrAdd(mediaPath, path => TryRenderWaveformCoreAsync(path));
+        return await waveformTask;
+    }
+
+    private static async Task<Bitmap?> TryRenderWaveformCoreAsync(string mediaPath)
+    {
 
         var outputPath = Path.Combine(
             Path.GetTempPath(),

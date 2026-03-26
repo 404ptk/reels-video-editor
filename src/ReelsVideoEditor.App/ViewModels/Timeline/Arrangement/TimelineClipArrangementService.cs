@@ -18,7 +18,14 @@ public sealed class TimelineClipArrangementService
         var maxDuration = Math.Max(0.25, timelineDurationSeconds - startSeconds);
         var effectiveDuration = Math.Min(safeDuration, maxDuration);
 
-        var clip = new TimelineClipItem(name, path, startSeconds, effectiveDuration);
+        var clip = new TimelineClipItem(
+            name,
+            path,
+            startSeconds,
+            effectiveDuration,
+            null,
+            0,
+            safeDuration);
         ApplyLayout(clip, tickWidth);
         return clip;
     }
@@ -38,7 +45,9 @@ public sealed class TimelineClipArrangementService
             sourceVideoClip.Path,
             sourceVideoClip.StartSeconds,
             sourceVideoClip.DurationSeconds,
-            sourceVideoClip.LinkId);
+            sourceVideoClip.LinkId,
+            sourceVideoClip.SourceStartSeconds,
+            sourceVideoClip.SourceDurationSeconds);
 
         audioClip.Left = sourceVideoClip.Left;
         audioClip.Width = sourceVideoClip.Width;

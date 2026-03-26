@@ -79,7 +79,11 @@ public partial class TimelineViewModel
             .Where(clip => !string.IsNullOrWhiteSpace(clip.Path))
             .Select(clip =>
             {
-                var localSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, clip.DurationSeconds);
+                var clipLocalSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, clip.DurationSeconds);
+                var localSeconds = Math.Clamp(
+                    clip.SourceStartSeconds + clipLocalSeconds,
+                    clip.SourceStartSeconds,
+                    clip.SourceStartSeconds + clip.DurationSeconds);
                 var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
                 var volume = Math.Clamp(clip.VolumeLevel, 0.0, 1.0);
                 var trackKey = clip.LinkId == Guid.Empty

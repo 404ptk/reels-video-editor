@@ -278,17 +278,39 @@ public partial class TimelineViewModel
             return;
         }
 
-        var leftClip = BuildClipFragment(targetClip, targetClip.StartSeconds, leftDuration);
-        var rightClip = BuildClipFragment(targetClip, cutSeconds, rightDuration);
+        var leftClip = BuildClipFragment(
+            targetClip,
+            targetClip.StartSeconds,
+            leftDuration,
+            targetClip.SourceStartSeconds,
+            targetClip.SourceDurationSeconds);
+        var rightClip = BuildClipFragment(
+            targetClip,
+            cutSeconds,
+            rightDuration,
+            targetClip.SourceStartSeconds + leftDuration,
+            targetClip.SourceDurationSeconds);
 
         VideoClips.RemoveAt(clipIndex);
         VideoClips.Insert(clipIndex, leftClip);
         VideoClips.Insert(clipIndex + 1, rightClip);
     }
 
-    private TimelineClipItem BuildClipFragment(TimelineClipItem source, double startSeconds, double durationSeconds)
+    private TimelineClipItem BuildClipFragment(
+        TimelineClipItem source,
+        double startSeconds,
+        double durationSeconds,
+        double sourceStartSeconds,
+        double sourceDurationSeconds)
     {
-        var clip = new TimelineClipItem(source.Name, source.Path, startSeconds, durationSeconds)
+        var clip = new TimelineClipItem(
+            source.Name,
+            source.Path,
+            startSeconds,
+            durationSeconds,
+            null,
+            sourceStartSeconds,
+            sourceDurationSeconds)
         {
             IsSelected = source.IsSelected,
             VolumeLevel = source.VolumeLevel,
@@ -346,6 +368,8 @@ public partial class TimelineViewModel
             clip.Path,
             clip.StartSeconds,
             clip.DurationSeconds,
+            clip.SourceStartSeconds,
+            clip.SourceDurationSeconds,
             clip.VolumeLevel,
             clip.IsSelected,
             clip.VideoLaneLabel,
@@ -376,7 +400,14 @@ public partial class TimelineViewModel
 
     private TimelineClipItem BuildClipFromSnapshot(ClipSnapshot snapshot)
     {
-        var clip = new TimelineClipItem(snapshot.Name, snapshot.Path, snapshot.StartSeconds, snapshot.DurationSeconds)
+        var clip = new TimelineClipItem(
+            snapshot.Name,
+            snapshot.Path,
+            snapshot.StartSeconds,
+            snapshot.DurationSeconds,
+            null,
+            snapshot.SourceStartSeconds,
+            snapshot.SourceDurationSeconds)
         {
             VolumeLevel = snapshot.VolumeLevel,
             IsSelected = snapshot.IsSelected,
@@ -400,7 +431,13 @@ public partial class TimelineViewModel
         var volumeByKey = audioSnapshots.ToDictionary(BuildClipKey, snapshot => snapshot.VolumeLevel);
         foreach (var audioClip in AudioClips)
         {
-            var clipKey = BuildClipKey(audioClip.Name, audioClip.Path, audioClip.StartSeconds, audioClip.DurationSeconds);
+            var clipKey = BuildClipKey(
+                audioClip.Name,
+                audioClip.Path,
+                audioClip.StartSeconds,
+                audioClip.DurationSeconds,
+                audioClip.SourceStartSeconds,
+                audioClip.SourceDurationSeconds);
             if (volumeByKey.TryGetValue(clipKey, out var volumeLevel))
             {
                 audioClip.VolumeLevel = volumeLevel;
@@ -410,12 +447,24 @@ public partial class TimelineViewModel
 
     private static string BuildClipKey(ClipSnapshot snapshot)
     {
-        return BuildClipKey(snapshot.Name, snapshot.Path, snapshot.StartSeconds, snapshot.DurationSeconds);
+        return BuildClipKey(
+            snapshot.Name,
+            snapshot.Path,
+            snapshot.StartSeconds,
+            snapshot.DurationSeconds,
+            snapshot.SourceStartSeconds,
+            snapshot.SourceDurationSeconds);
     }
 
-    private static string BuildClipKey(string name, string path, double startSeconds, double durationSeconds)
+    private static string BuildClipKey(
+        string name,
+        string path,
+        double startSeconds,
+        double durationSeconds,
+        double sourceStartSeconds,
+        double sourceDurationSeconds)
     {
-        return $"{path}|{startSeconds:F3}|{durationSeconds:F3}|{name}";
+        return $"{path}|{startSeconds:F3}|{durationSeconds:F3}|{sourceStartSeconds:F3}|{sourceDurationSeconds:F3}|{name}";
     }
 
     private readonly record struct ClipSnapshot(
@@ -423,6 +472,8 @@ public partial class TimelineViewModel
         string Path,
         double StartSeconds,
         double DurationSeconds,
+        double SourceStartSeconds,
+        double SourceDurationSeconds,
         double VolumeLevel,
         bool IsSelected,
         string VideoLaneLabel,

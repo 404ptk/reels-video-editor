@@ -342,10 +342,7 @@ public partial class TimelinePanelView : UserControl
         {
             viewModel.SeekCutterToCanvasPosition(pointerOnCanvas.X);
 
-            if (IsPointerOverClip(eventArgs.Source))
-            {
-                viewModel.TryCutAtPlayhead();
-            }
+            viewModel.TryCutAtPlayhead();
 
             eventArgs.Handled = true;
             return;
@@ -355,29 +352,6 @@ public partial class TimelinePanelView : UserControl
 
         viewModel.ClearSelection();
         eventArgs.Handled = true;
-    }
-
-    private static bool IsPointerOverClip(object? source)
-    {
-        if (source is not Visual sourceVisual)
-        {
-            return false;
-        }
-
-        if (sourceVisual is StyledElement sourceElement && sourceElement.DataContext is TimelineClipItem)
-        {
-            return true;
-        }
-
-        foreach (var ancestor in sourceVisual.GetVisualAncestors())
-        {
-            if (ancestor is StyledElement styledElement && styledElement.DataContext is TimelineClipItem)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void TimelineCanvas_OnPointerMoved(object? sender, PointerEventArgs eventArgs)

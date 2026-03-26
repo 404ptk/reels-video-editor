@@ -196,7 +196,11 @@ public partial class TimelineViewModel
 
     private async Task LoadAudioWaveformAsync(TimelineClipItem audioClip)
     {
-        var waveform = await TimelineWaveformRenderService.TryRenderWaveformAsync(audioClip.Path);
+        var waveform = await TimelineWaveformRenderService.TryRenderWaveformSegmentAsync(
+            audioClip.Path,
+            audioClip.SourceStartSeconds,
+            audioClip.DurationSeconds,
+            audioClip.SourceDurationSeconds);
         if (waveform is null)
         {
             return;

@@ -81,6 +81,8 @@ public class TimelineExportService
         {
             var v = videos[i];
             var ptsStart = v.StartSeconds.ToString(CultureInfo.InvariantCulture);
+            var sourceStart = Math.Max(0, v.SourceStartSeconds).ToString(CultureInfo.InvariantCulture);
+            var sourceDuration = Math.Max(0.001, v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
 
             int extWidth = (int)(width * 1.3);
             extWidth = extWidth % 2 == 0 ? extWidth : extWidth + 1;
@@ -114,10 +116,16 @@ public class TimelineExportService
             var cropHeightExpr = visibleCropHeight.ToString(CultureInfo.InvariantCulture);
 
             ffmpegCommand.Append($"[{currentInputIndex}:v]split[v{i}_input_bg][v{i}_input_fg];");
-
-            ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
-
-            ffmpegCommand.Append($"[v{i}_input_fg]crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            if (IsStillImagePath(v.Path))
+            {
+                ffmpegCommand.Append($"[v{i}_input_bg]scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
+                ffmpegCommand.Append($"[v{i}_input_fg]crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            }
+            else
+            {
+                ffmpegCommand.Append($"[v{i}_input_bg]trim=start={sourceStart}:duration={sourceDuration},setpts=PTS-STARTPTS,scale={extWidth}:{extHeight}:force_original_aspect_ratio=increase,crop={width}:{height},boxblur=20:5,colorchannelmixer=rr=0.6:gg=0.6:bb=0.6,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_bg];");
+                ffmpegCommand.Append($"[v{i}_input_fg]trim=start={sourceStart}:duration={sourceDuration},setpts=PTS-STARTPTS,crop=iw*{cropWidthExpr}:ih*{cropHeightExpr}:iw*{cropLeftExpr}:ih*{cropTopExpr},scale={scaledWidth}:{scaledHeight}:force_original_aspect_ratio=decrease,setpts=PTS-STARTPTS+{ptsStart}/TB[v{i}_fg];");
+            }
 
             currentInputIndex++;
         }
@@ -153,9 +161,11 @@ public class TimelineExportService
         {
             var a = audios[i];
             var delayMs = (int)(a.StartSeconds * 1000);
+            var sourceStart = Math.Max(0, a.SourceStartSeconds).ToString(CultureInfo.InvariantCulture);
+            var sourceDuration = Math.Max(0.001, a.DurationSeconds).ToString(CultureInfo.InvariantCulture);
             var volume = Math.Clamp(a.VolumeLevel, 0.0, 1.0).ToString(CultureInfo.InvariantCulture);
 
-            ffmpegCommand.Append($"[{currentInputIndex}:a]volume={volume},adelay={delayMs}|{delayMs}[a{i}];");
+            ffmpegCommand.Append($"[{currentInputIndex}:a]atrim=start={sourceStart}:duration={sourceDuration},asetpts=PTS-STARTPTS,volume={volume},adelay={delayMs}|{delayMs}[a{i}];");
             audioOutputs.Add($"[a{i}]");
             currentInputIndex++;
         }        if (audios.Count > 0)
@@ -292,6 +302,7 @@ public readonly record struct ExportVideoClipInput(
     string Path,
     double StartSeconds,
     double DurationSeconds,
+    double SourceStartSeconds,
     int LaneOrder,
     double TransformX,
     double TransformY,
@@ -305,4 +316,5 @@ public readonly record struct ExportAudioClipInput(
     string Path,
     double StartSeconds,
     double DurationSeconds,
+    double SourceStartSeconds,
     double VolumeLevel);

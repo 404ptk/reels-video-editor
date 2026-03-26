@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media.Imaging;
+using Avalonia.Media;
 using System;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
@@ -19,13 +20,19 @@ public sealed partial class TimelineClipItem : ObservableObject
     private double durationSeconds;
 
     [ObservableProperty]
+    private double sourceStartSeconds;
+
+    [ObservableProperty]
+    private double sourceDurationSeconds;
+
+    [ObservableProperty]
     private double left;
 
     [ObservableProperty]
     private double width;
 
     [ObservableProperty]
-    private Bitmap? waveformImage;
+    private IImage? waveformImage;
 
     [ObservableProperty]
     private bool isSelected;
@@ -69,12 +76,21 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private double cropBottom;
 
-    public TimelineClipItem(string name, string path, double startSeconds, double durationSeconds, Guid? linkId = null)
+    public TimelineClipItem(
+        string name,
+        string path,
+        double startSeconds,
+        double durationSeconds,
+        Guid? linkId = null,
+        double sourceStartSeconds = 0,
+        double sourceDurationSeconds = 0)
     {
         LinkId = linkId ?? Guid.NewGuid();
         Name = name;
         Path = path;
         StartSeconds = startSeconds;
         DurationSeconds = durationSeconds;
+        SourceStartSeconds = Math.Max(0, sourceStartSeconds);
+        SourceDurationSeconds = Math.Max(DurationSeconds, sourceDurationSeconds);
     }
 }

@@ -106,7 +106,7 @@ public partial class TimelineViewModel
 
     private static string BuildAudioClipKey(TimelineClipItem clip)
     {
-        return $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.Name}|{clip.VideoLaneLabel}";
+        return $"{clip.Path}|{clip.StartSeconds:F3}|{clip.DurationSeconds:F3}|{clip.SourceStartSeconds:F3}|{clip.SourceDurationSeconds:F3}|{clip.Name}|{clip.VideoLaneLabel}";
     }
 
     private static bool IsStillImagePath(string? path)
