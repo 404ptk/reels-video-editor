@@ -134,6 +134,7 @@
                                               IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
                                     <MenuItem Header="Remove line"
                                               Command="{Binding $parent[UserControl].DataContext.RemoveLineCommand}"
+                                              IsEnabled="{Binding $parent[UserControl].DataContext.CanRemoveLineFromMenu}"
                                               CommandParameter="{Binding}" />
                                     <MenuItem Header="Placeholder 2"
                                               Command="{Binding $parent[UserControl].DataContext.Placeholder2Command}" />
@@ -419,6 +420,7 @@
                                                       IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
                                             <MenuItem Header="Remove line"
                                                       Command="{Binding $parent[UserControl].DataContext.RemoveLineCommand}"
+                                                      IsEnabled="{Binding $parent[UserControl].DataContext.CanRemoveLineFromMenu}"
                                                       CommandParameter="{Binding}" />
                                             <MenuItem Header="Placeholder 2"
                                                       Command="{Binding $parent[UserControl].DataContext.Placeholder2Command}" />

@@ -85,6 +85,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public bool CanAddNewLine => VideoLaneCount < MaxVideoLines;
 
+    public bool CanRemoveLineFromMenu => VideoLaneCount > 1;
+
     public bool IsVideoSolo => VideoLanes.FirstOrDefault()?.IsSolo ?? false;
 
     public bool IsVideoHidden => VideoLanes.FirstOrDefault()?.IsHidden ?? false;
@@ -150,6 +152,7 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(VideoLaneCount));
         OnPropertyChanged(nameof(AudioLaneCount));
         OnPropertyChanged(nameof(CanAddNewLine));
+        OnPropertyChanged(nameof(CanRemoveLineFromMenu));
         OnPropertyChanged(nameof(TimelineCanvasHeight));
         OnPropertyChanged(nameof(PlayheadHeight));
         OnPropertyChanged(nameof(IsVideoSolo));
