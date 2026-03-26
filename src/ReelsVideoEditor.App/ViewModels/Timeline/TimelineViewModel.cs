@@ -154,6 +154,7 @@ public partial class TimelineViewModel : ViewModelBase
         OnPropertyChanged(nameof(PlayheadHeight));
         OnPropertyChanged(nameof(IsVideoSolo));
         OnPropertyChanged(nameof(IsVideoHidden));
+        RemoveLineCommand.NotifyCanExecuteChanged();
         RebuildAudioLaneCollections();
         RebuildLaneClipCollections();
         RebuildAudioLaneClipCollections();

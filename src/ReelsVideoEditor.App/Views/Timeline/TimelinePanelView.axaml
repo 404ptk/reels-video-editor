@@ -125,18 +125,20 @@
                                 Background="{DynamicResource AccentSubtle}"
                                 BorderBrush="{DynamicResource AccentSubtle}"
                                 BorderThickness="1"
-                                CornerRadius="8">
+                            CornerRadius="8"
+                            Tag="{Binding}">
                             <Border.ContextMenu>
-                                <ContextMenu DataContext="{Binding $parent[UserControl].DataContext}">
+                                <ContextMenu>
                                     <MenuItem Header="Add new line"
-                                              Command="{Binding AddNewLineCommand}"
-                                              IsEnabled="{Binding CanAddNewLine}" />
-                                    <MenuItem Header="Placeholder 1"
-                                              Command="{Binding Placeholder1Command}" />
+                                              Command="{Binding $parent[UserControl].DataContext.AddNewLineCommand}"
+                                              IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
+                                    <MenuItem Header="Remove line"
+                                              Command="{Binding $parent[UserControl].DataContext.RemoveLineCommand}"
+                                              CommandParameter="{Binding}" />
                                     <MenuItem Header="Placeholder 2"
-                                              Command="{Binding Placeholder2Command}" />
+                                              Command="{Binding $parent[UserControl].DataContext.Placeholder2Command}" />
                                     <MenuItem Header="Placeholder 3"
-                                              Command="{Binding Placeholder3Command}" />
+                                              Command="{Binding $parent[UserControl].DataContext.Placeholder3Command}" />
                                 </ContextMenu>
                             </Border.ContextMenu>
 
@@ -405,21 +407,23 @@
                                         BorderBrush="{DynamicResource AccentSubtle}"
                                         BorderThickness="1"
                                         CornerRadius="8"
+                                    Tag="{Binding}"
                                         PointerPressed="TimelineSeekSurface_OnPointerPressed"
                                         DragDrop.AllowDrop="True"
                                         DragDrop.DragOver="TimelineTrack_OnDragOver"
                                         DragDrop.Drop="TimelineTrack_OnDrop">
                                     <Border.ContextMenu>
-                                        <ContextMenu DataContext="{Binding $parent[UserControl].DataContext}">
+                                        <ContextMenu>
                                             <MenuItem Header="Add new line"
-                                                      Command="{Binding AddNewLineCommand}"
-                                                      IsEnabled="{Binding CanAddNewLine}" />
-                                            <MenuItem Header="Placeholder 1"
-                                                      Command="{Binding Placeholder1Command}" />
+                                                      Command="{Binding $parent[UserControl].DataContext.AddNewLineCommand}"
+                                                      IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
+                                            <MenuItem Header="Remove line"
+                                                      Command="{Binding $parent[UserControl].DataContext.RemoveLineCommand}"
+                                                      CommandParameter="{Binding}" />
                                             <MenuItem Header="Placeholder 2"
-                                                      Command="{Binding Placeholder2Command}" />
+                                                      Command="{Binding $parent[UserControl].DataContext.Placeholder2Command}" />
                                             <MenuItem Header="Placeholder 3"
-                                                      Command="{Binding Placeholder3Command}" />
+                                                      Command="{Binding $parent[UserControl].DataContext.Placeholder3Command}" />
                                         </ContextMenu>
                                     </Border.ContextMenu>
 

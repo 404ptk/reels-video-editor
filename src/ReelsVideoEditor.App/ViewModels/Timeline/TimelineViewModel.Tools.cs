@@ -66,13 +66,64 @@ public partial class TimelineViewModel
             return;
         }
 
-        var nextIndex = VideoLanes.Count + 1;
+        var usedIndexes = new HashSet<int>(VideoLanes
+            .Select(ResolveVideoLaneOrdinal)
+            .Where(index => index > 1));
+
+        var nextIndex = 2;
+        while (usedIndexes.Contains(nextIndex))
+        {
+            nextIndex++;
+        }
+
         VideoLanes.Insert(0, new VideoLaneItem($"VIDEO {nextIndex}", false, false, false));
     }
 
     [RelayCommand]
-    private static void Placeholder1()
+    private void RemoveLine(VideoLaneItem? lane)
     {
+        if (lane is null || !CanRemoveLine(lane))
+        {
+            return;
+        }
+
+        var fallbackLane = ResolvePrimaryVideoLane();
+        if (fallbackLane is null)
+        {
+            return;
+        }
+
+        var movedVideo = 0;
+        foreach (var clip in VideoClips.Where(clip => string.Equals(clip.VideoLaneLabel, lane.Label, StringComparison.Ordinal)))
+        {
+            clip.VideoLaneLabel = fallbackLane.Label;
+            movedVideo++;
+        }
+
+        var movedAudio = 0;
+        foreach (var audioClip in AudioClips.Where(clip => string.Equals(clip.VideoLaneLabel, lane.Label, StringComparison.Ordinal)))
+        {
+            audioClip.VideoLaneLabel = fallbackLane.Label;
+            movedAudio++;
+        }
+
+        VideoLanes.Remove(lane);
+    }
+
+    private bool CanRemoveLine(VideoLaneItem? lane)
+    {
+        return lane is { IsPrimary: false } && VideoLanes.Count > 1;
+    }
+
+    private static int ResolveVideoLaneOrdinal(VideoLaneItem lane)
+    {
+        if (lane.IsPrimary || string.Equals(lane.Label, "VIDEO", StringComparison.Ordinal))
+        {
+            return 1;
+        }
+
+        var suffix = lane.Label.Replace("VIDEO", string.Empty, StringComparison.Ordinal).Trim();
+        return int.TryParse(suffix, out var parsed) && parsed > 1 ? parsed : int.MaxValue;
     }
 
     [RelayCommand]

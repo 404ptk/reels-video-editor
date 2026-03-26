@@ -38,7 +38,6 @@ public partial class ExportPanelView : UserControl
 
             vm.ShowMessage = async (title, message) =>
             {
-                // Simple implementation, might be replaced by a dialog service if available
                 var msgBox = new Window
                 {
                     Title = title,
