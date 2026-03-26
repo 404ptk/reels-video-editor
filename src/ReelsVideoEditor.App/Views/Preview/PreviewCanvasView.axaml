@@ -97,10 +97,10 @@
                                FontSize="14"
                                FontWeight="SemiBold"
                                HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding PlaceholderSubtitle}"
+                    <!-- <TextBlock Text="{Binding PlaceholderSubtitle}"
                                Foreground="{DynamicResource AccentMuted}"
                                FontSize="11"
-                               HorizontalAlignment="Center" />
+                               HorizontalAlignment="Center" /> -->
                 </StackPanel>
             </Grid>
         </Border>

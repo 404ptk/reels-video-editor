@@ -57,6 +57,23 @@
             <Setter Property="MinWidth" Value="4" />
             <Setter Property="MaxWidth" Value="4" />
         </Style>
+
+        <Style Selector="ContextMenu.timeline-context-menu">
+            <Setter Property="Background" Value="{DynamicResource BaseBg}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+
+        <Style Selector="ContextMenu.timeline-context-menu MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="Padding" Value="10,6,10,6" />
+            <Setter Property="Margin" Value="0" />
+        </Style>
+
+        <Style Selector="ContextMenu.timeline-context-menu MenuItem:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+        </Style>
     </UserControl.Styles>
 
     <Grid ColumnDefinitions="4,96,8,*">
@@ -128,7 +145,7 @@
                             CornerRadius="8"
                             Tag="{Binding}">
                             <Border.ContextMenu>
-                                <ContextMenu>
+                                <ContextMenu Classes="timeline-context-menu">
                                     <MenuItem Header="Add new line"
                                               Command="{Binding $parent[UserControl].DataContext.AddNewLineCommand}"
                                               IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
@@ -247,7 +264,7 @@
                                 BorderThickness="1"
                                 CornerRadius="8">
                             <Border.ContextMenu>
-                                <ContextMenu>
+                                <ContextMenu Classes="timeline-context-menu">
                                     <MenuItem Header="Solo this track"
                                               Command="{Binding $parent[UserControl].DataContext.ToggleAudioSoloCommand}"
                                               CommandParameter="{Binding}"
@@ -434,7 +451,7 @@
                                         DragDrop.DragOver="TimelineTrack_OnDragOver"
                                         DragDrop.Drop="TimelineTrack_OnDrop">
                                     <Border.ContextMenu>
-                                        <ContextMenu>
+                                        <ContextMenu Classes="timeline-context-menu">
                                             <MenuItem Header="Add new line"
                                                       Command="{Binding $parent[UserControl].DataContext.AddNewLineCommand}"
                                                       IsEnabled="{Binding $parent[UserControl].DataContext.CanAddNewLine}" />
@@ -532,7 +549,7 @@
                                         DragDrop.DragOver="TimelineTrack_OnDragOver"
                                         DragDrop.Drop="TimelineTrack_OnDrop">
                                     <Border.ContextMenu>
-                                        <ContextMenu>
+                                        <ContextMenu Classes="timeline-context-menu">
                                             <MenuItem Header="Solo this track"
                                                       Command="{Binding $parent[UserControl].DataContext.ToggleAudioSoloCommand}"
                                                       CommandParameter="{Binding}"
