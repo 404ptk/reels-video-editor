@@ -123,7 +123,7 @@ public partial class TimelineViewModel
             }
         }
 
-        if (changed)
+        if (changed || string.IsNullOrWhiteSpace(selectedClip.Path))
         {
             PreviewSelectionChanged?.Invoke();
         }

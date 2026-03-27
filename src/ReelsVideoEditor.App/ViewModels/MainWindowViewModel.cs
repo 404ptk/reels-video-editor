@@ -113,14 +113,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.CurrentAudioVolume = audioVolume;
         };
 
-        Timeline.TextPresetApplied = preset =>
+        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize) =>
         {
-            Preview.ApplyTextPreset(preset);
+            Timeline.UpdateSelectedTextClipSettings(text, colorHex, fontSize);
+            Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         };
 
         Timeline.TextOverlayStateChanged = state =>
         {
-            Preview.UpdateTextOverlayState(state.Text, state.IsVisible);
+            Preview.UpdateTextOverlayState(state.Text, state.FontFamily, state.FontSize, state.ColorHex, state.IsVisible);
         };
 
         Timeline.PreviewClipChanged = () =>
@@ -142,6 +143,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.PreviewSelectionChanged = () =>
         {
             SyncPreviewTransformFromTimelineTarget();
+            var selectedTextState = Timeline.ResolveSelectedTextClipState();
+            Text.SyncSelectedTextClip(selectedTextState);
+            if (selectedTextState.HasSelection)
+            {
+                SelectedSection = SidebarSection.Text;
+            }
             if (!Preview.IsPlaying)
             {
                 Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
@@ -151,6 +158,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SyncPreviewTransformFromTimelineTarget();
         Timeline.RefreshPreviewLevels();
         Timeline.RefreshTextOverlayState();
+        Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
     }
 
     private void SyncPreviewTransformFromTimelineTarget()

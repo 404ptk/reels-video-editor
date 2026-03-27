@@ -89,4 +89,16 @@ public sealed record PreviewAudioState(IReadOnlyList<PreviewAudioTrackState> Tra
     public static PreviewAudioState Silent { get; } = new(Array.Empty<PreviewAudioTrackState>(), false);
 }
 
-public sealed record TimelineTextOverlayState(bool IsVisible, string Text);
+public sealed record TimelineTextOverlayState(
+    bool IsVisible,
+    string Text,
+    string FontFamily,
+    double FontSize,
+    string ColorHex);
+
+public sealed record TimelineSelectedTextClipState(
+    bool HasSelection,
+    string Text,
+    string FontFamily,
+    double FontSize,
+    string ColorHex);

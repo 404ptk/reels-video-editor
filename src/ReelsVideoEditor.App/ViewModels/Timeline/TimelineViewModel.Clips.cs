@@ -3,6 +3,8 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using Avalonia.Media;
+using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -42,17 +44,21 @@ public partial class TimelineViewModel
         });
     }
 
-    public void AddTextPresetClip(string clipName, double dropX, string? targetLaneLabel = null)
+    public void AddTextPresetClip(TextPresetDefinition preset, double dropX, string? targetLaneLabel = null)
     {
         var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
         var clip = TimelineClipArrangementService.BuildClip(
-            clipName,
+            preset.DisplayText,
             string.Empty,
             TextClipDefaultDurationSeconds,
             dropX,
             TickWidth,
             TimelineDurationSeconds);
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
+        clip.TextContent = preset.DisplayText;
+        clip.TextColorHex = preset.ColorHex;
+        clip.TextFontFamily = preset.FontFamily;
+        clip.TextFontSize = preset.FontSize;
         VideoClips.Add(clip);
 
         if (VideoClips.Count == 1)
@@ -64,6 +70,38 @@ public partial class TimelineViewModel
         {
             VideoClips.Remove(clip);
         });
+    }
+
+    public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize)
+    {
+        var selectedTextClip = ResolveSelectedTextClip();
+        if (selectedTextClip is null)
+        {
+            return;
+        }
+
+        var normalizedText = string.IsNullOrWhiteSpace(text) ? "Text" : text.Trim();
+        var normalizedFontSize = Math.Clamp(fontSize, 10, 180);
+        var normalizedColorHex = selectedTextClip.TextColorHex;
+        if (!string.IsNullOrWhiteSpace(colorHex) && Color.TryParse(colorHex.Trim(), out var parsedColor))
+        {
+            normalizedColorHex = parsedColor.ToString();
+        }
+
+        if (string.Equals(selectedTextClip.Name, normalizedText, StringComparison.Ordinal)
+            && string.Equals(selectedTextClip.TextContent, normalizedText, StringComparison.Ordinal)
+            && string.Equals(selectedTextClip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
+            && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001)
+        {
+            return;
+        }
+
+        selectedTextClip.Name = normalizedText;
+        selectedTextClip.TextContent = normalizedText;
+        selectedTextClip.TextColorHex = normalizedColorHex;
+        selectedTextClip.TextFontSize = normalizedFontSize;
+
+        NotifyTextOverlayStateChanged();
     }
 
     public void MoveClipToStart(

@@ -239,6 +239,22 @@ public partial class TimelineViewModel
         NotifyTextOverlayStateChanged();
     }
 
+    public TimelineSelectedTextClipState ResolveSelectedTextClipState()
+    {
+        var selectedTextClip = ResolveSelectedTextClip();
+        if (selectedTextClip is null)
+        {
+            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 56, "#FFFFFF");
+        }
+
+        return new TimelineSelectedTextClipState(
+            true,
+            selectedTextClip.TextContent,
+            selectedTextClip.TextFontFamily,
+            selectedTextClip.TextFontSize,
+            selectedTextClip.TextColorHex);
+    }
+
     private TimelineClipItem? ResolvePreviewClip()
     {
         if (VideoClips.Count == 0)
@@ -395,10 +411,24 @@ public partial class TimelineViewModel
 
         if (activeTextClip is null)
         {
-            return new TimelineTextOverlayState(false, string.Empty);
+            return new TimelineTextOverlayState(false, string.Empty, "Inter", 56, "#FFFFFF");
         }
 
-        return new TimelineTextOverlayState(true, activeTextClip.Name);
+        return new TimelineTextOverlayState(
+            true,
+            activeTextClip.TextContent,
+            activeTextClip.TextFontFamily,
+            activeTextClip.TextFontSize,
+            activeTextClip.TextColorHex);
+    }
+
+    private TimelineClipItem? ResolveSelectedTextClip()
+    {
+        return VideoClips
+            .Where(clip => clip.IsSelected && IsTextTimelineClip(clip))
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault();
     }
 
     private static bool IsTextTimelineClip(TimelineClipItem clip)

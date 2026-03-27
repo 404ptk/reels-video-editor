@@ -9,7 +9,8 @@ public sealed partial class TimelineClipItem : ObservableObject
 {
     public Guid LinkId { get; }
 
-    public string Name { get; }
+    [ObservableProperty]
+    private string name;
 
     public string Path { get; }
 
@@ -66,6 +67,18 @@ public sealed partial class TimelineClipItem : ObservableObject
 
     [ObservableProperty]
     private bool isRightTrimMarkerVisible;
+
+    [ObservableProperty]
+    private string textContent = "Preview";
+
+    [ObservableProperty]
+    private string textColorHex = "#FFFFFF";
+
+    [ObservableProperty]
+    private double textFontSize = 56;
+
+    [ObservableProperty]
+    private string textFontFamily = "Inter";
 
     [ObservableProperty]
     private double transformX;

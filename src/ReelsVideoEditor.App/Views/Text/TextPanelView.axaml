@@ -6,60 +6,168 @@
              x:DataType="vm:TextViewModel">
 
     <StackPanel Spacing="12">
-        <TextBlock Text="{Binding Title}"
-                   Foreground="{DynamicResource Accent}"
-                   FontSize="20"
-                   FontWeight="SemiBold"
-                   HorizontalAlignment="Left" />
-        <TextBlock Text="{Binding Description}"
-                   Foreground="{DynamicResource AccentMuted}"
-                   FontSize="13"
-                   HorizontalAlignment="Left" />
+        <StackPanel Spacing="12"
+                IsVisible="{Binding IsPresetVisible}">
+            <TextBlock Text="{Binding Title}"
+                       Foreground="{DynamicResource Accent}"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Left" />
+            <TextBlock Text="{Binding Description}"
+                       Foreground="{DynamicResource AccentMuted}"
+                       FontSize="13"
+                       HorizontalAlignment="Left" />
 
-        <ItemsControl ItemsSource="{Binding Presets}">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+            <ItemsControl ItemsSource="{Binding Presets}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
 
-            <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="models:TextPresetDefinition">
-                    <Border Width="154"
-                            Height="108"
-                            Margin="0,0,10,10"
-                            Padding="10"
-                            CornerRadius="10"
-                            Background="#AA222222"
-                            BorderBrush="{DynamicResource AccentSubtle}"
-                            BorderThickness="1"
-                            Cursor="Hand"
-                            PointerPressed="PresetTile_OnPointerPressed">
-                        <Grid RowDefinitions="Auto,*,Auto"
-                              RowSpacing="4">
-                            <TextBlock Text="{Binding Name}"
-                                       Foreground="{DynamicResource AccentMuted}"
-                                       FontSize="11"
-                                       FontWeight="SemiBold" />
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:TextPresetDefinition">
+                        <Border Width="154"
+                                Height="108"
+                                Margin="0,0,10,10"
+                                Padding="10"
+                                CornerRadius="10"
+                                Background="#AA222222"
+                                BorderBrush="{DynamicResource AccentSubtle}"
+                                BorderThickness="1"
+                                Cursor="Hand"
+                                PointerPressed="PresetTile_OnPointerPressed">
+                            <Grid RowDefinitions="Auto,*,Auto"
+                                  RowSpacing="4">
+                                <TextBlock Text="{Binding Name}"
+                                           Foreground="{DynamicResource AccentMuted}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold" />
 
-                            <TextBlock Grid.Row="1"
-                                       Text="{Binding DisplayText}"
-                                       FontFamily="{Binding FontFamily}"
-                                       FontSize="{Binding FontSize}"
-                                       Foreground="{Binding ColorBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding DisplayText}"
+                                           FontFamily="{Binding FontFamily}"
+                                           FontSize="{Binding FontSize}"
+                                           Foreground="{Binding ColorBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
 
-                            <Border Grid.Row="2"
-                                    Height="8"
-                                    CornerRadius="4"
-                                    Background="{Binding ColorBrush}" />
+                                <Border Grid.Row="2"
+                                        Height="8"
+                                        CornerRadius="4"
+                                        Background="{Binding ColorBrush}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Spacing="12"
+                    IsVisible="{Binding IsEditorVisible}">
+            <Grid ColumnDefinitions="Auto,*"
+                  ColumnSpacing="10">
+                <Button Content="Back"
+                        Width="72"
+                        Height="32"
+                        Command="{Binding BackToPresetsCommand}" />
+                <StackPanel Grid.Column="1"
+                            Spacing="2">
+                    <TextBlock Text="{Binding EditorTitle}"
+                               Foreground="{DynamicResource Accent}"
+                               FontSize="18"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding EditorDescription}"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontSize="12" />
+                </StackPanel>
+            </Grid>
+
+            <Border Padding="12"
+                    CornerRadius="10"
+                    Background="#AA222222"
+                    BorderBrush="{DynamicResource AccentSubtle}"
+                    BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Text"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <TextBox Text="{Binding SelectedClipText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Color"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+
+                        <Grid ColumnDefinitions="64,*"
+                              ColumnSpacing="10">
+                            <Border Width="64"
+                                    Height="64"
+                                    CornerRadius="8"
+                                    BorderBrush="{DynamicResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Background="{Binding SelectedColorPreviewBrush}" />
+                            <StackPanel Grid.Column="1"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SelectedColorHex}"
+                                           Foreground="{DynamicResource Accent}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+
+                                <ItemsControl ItemsSource="{Binding BasicColors}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TextColorPreset">
+                                            <Button Width="34"
+                                                    Height="34"
+                                                    Margin="0,0,8,8"
+                                                    Command="{Binding $parent[UserControl].DataContext.SelectBasicColorCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Border Width="24"
+                                                        Height="24"
+                                                        CornerRadius="6"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                                        BorderThickness="1"
+                                                        Background="#2B2B2B">
+                                                    <Border Width="14"
+                                                            Height="14"
+                                                            CornerRadius="3"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Background="{Binding ColorBrush}" />
+                                                </Border>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
                         </Grid>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Size"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <Slider Minimum="10"
+                                Maximum="180"
+                                Value="{Binding SelectedClipFontSize, Mode=TwoWay}" />
+                        <TextBlock Text="{Binding SelectedClipFontSize, StringFormat='{}{0:F0}px'}"
+                                   Foreground="{DynamicResource Accent}"
+                                   FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
     </StackPanel>
 
 </UserControl>

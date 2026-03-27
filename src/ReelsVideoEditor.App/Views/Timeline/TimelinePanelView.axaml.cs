@@ -262,8 +262,7 @@ public partial class TimelinePanelView : UserControl
 
             var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
             var targetLaneLabel = ResolveLaneLabel(trackControl);
-            viewModel.AddTextPresetClip(preset.DisplayText, dropPositionX, targetLaneLabel);
-            viewModel.ApplyTextPreset(preset);
+            viewModel.AddTextPresetClip(preset, dropPositionX, targetLaneLabel);
             _lastDragOverCanvasX = null;
             eventArgs.Handled = true;
         }
