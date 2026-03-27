@@ -60,6 +60,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action<TextPresetDefinition>? TextPresetApplied { get; set; }
 
+    public Action<TimelineTextOverlayState>? TextOverlayStateChanged { get; set; }
+
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];
@@ -171,6 +173,7 @@ public partial class TimelineViewModel : ViewModelBase
         RebuildAudioLaneClipCollections();
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
     }
 
     private void OnVideoLanePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -184,6 +187,7 @@ public partial class TimelineViewModel : ViewModelBase
         {
             NotifyPreviewClipIfChanged();
             UpdatePreviewLevels();
+            NotifyTextOverlayStateChanged();
         }
 
         if (!lane.IsPrimary)

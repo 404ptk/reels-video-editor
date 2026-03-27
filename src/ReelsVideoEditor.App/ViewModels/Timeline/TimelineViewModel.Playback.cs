@@ -15,6 +15,7 @@ public partial class TimelineViewModel
         OnPropertyChanged(nameof(PlayheadVisualLeft));
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
     }
 
     partial void OnIsPlaybackActiveChanged(bool value)
@@ -233,6 +234,11 @@ public partial class TimelineViewModel
         UpdatePreviewLevels();
     }
 
+    public void RefreshTextOverlayState()
+    {
+        NotifyTextOverlayStateChanged();
+    }
+
     private TimelineClipItem? ResolvePreviewClip()
     {
         if (VideoClips.Count == 0)
@@ -306,6 +312,55 @@ public partial class TimelineViewModel
     {
         var audioVolume = ResolveAudioVolumeAt(PlayheadSeconds);
         PreviewLevelsChanged?.Invoke(audioVolume);
+    }
+
+    private void NotifyTextOverlayStateChanged()
+    {
+        TextOverlayStateChanged?.Invoke(ResolveTextOverlayState());
+    }
+
+    private TimelineTextOverlayState ResolveTextOverlayState()
+    {
+        var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
+        var activeTextClip = VideoClips
+            .Where(clip => IsTextTimelineClip(clip)
+                && PlayheadSeconds >= clip.StartSeconds
+                && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds)
+            .Where(clip =>
+            {
+                var lane = ResolveLaneByLabel(clip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+                if (lane is null)
+                {
+                    return false;
+                }
+
+                if (lane.IsHidden)
+                {
+                    return false;
+                }
+
+                if (hasSoloLanes && !lane.IsSolo)
+                {
+                    return false;
+                }
+
+                return true;
+            })
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault();
+
+        if (activeTextClip is null)
+        {
+            return new TimelineTextOverlayState(false, string.Empty);
+        }
+
+        return new TimelineTextOverlayState(true, activeTextClip.Name);
+    }
+
+    private static bool IsTextTimelineClip(TimelineClipItem clip)
+    {
+        return string.IsNullOrWhiteSpace(clip.Path);
     }
 
     private double ResolveAudioVolumeAt(double seconds)

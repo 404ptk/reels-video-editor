@@ -118,6 +118,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.ApplyTextPreset(preset);
         };
 
+        Timeline.TextOverlayStateChanged = state =>
+        {
+            Preview.UpdateTextOverlayState(state.Text, state.IsVisible);
+        };
+
         Timeline.PreviewClipChanged = () =>
         {
             var resolvedPath = Timeline.ResolvePreviewClipPath();
@@ -145,6 +150,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         SyncPreviewTransformFromTimelineTarget();
         Timeline.RefreshPreviewLevels();
+        Timeline.RefreshTextOverlayState();
     }
 
     private void SyncPreviewTransformFromTimelineTarget()

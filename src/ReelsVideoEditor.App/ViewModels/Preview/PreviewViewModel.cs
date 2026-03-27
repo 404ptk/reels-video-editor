@@ -285,7 +285,16 @@ public sealed partial class PreviewViewModel : ViewModelBase
         TextOverlayFontFamily = preset.FontFamily;
         TextOverlayFontSize = preset.FontSize;
         TextOverlayColor = preset.ColorHex;
-        IsTextOverlayVisible = true;
+    }
+
+    public void UpdateTextOverlayState(string? text, bool isVisible)
+    {
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            TextOverlayValue = text;
+        }
+
+        IsTextOverlayVisible = isVisible;
     }
 
     [ObservableProperty]

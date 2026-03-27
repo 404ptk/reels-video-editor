@@ -99,6 +99,7 @@ public partial class TimelineViewModel
             RebuildLaneClipCollections();
             RebuildAudioLaneClipCollections();
             NotifyPreviewClipIfChanged();
+            NotifyTextOverlayStateChanged();
             return;
         }
 
@@ -130,6 +131,7 @@ public partial class TimelineViewModel
 
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
     }
 
     public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds, string previousLaneLabel)
@@ -232,6 +234,7 @@ public partial class TimelineViewModel
             PlayheadSeconds = 0;
             RefreshClipLevelLines();
             UpdatePreviewLevels();
+            NotifyTextOverlayStateChanged();
             return;
         }
 
@@ -240,6 +243,7 @@ public partial class TimelineViewModel
             RebuildAudioLaneClipCollections();
             RefreshClipLevelLines();
             UpdatePreviewLevels();
+            NotifyTextOverlayStateChanged();
             return;
         }
 
@@ -248,6 +252,7 @@ public partial class TimelineViewModel
         PlayheadSeconds = ResolvePreviewClipStartSeconds();
         RefreshClipLevelLines();
         UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
     }
 
     private void RebuildAudioFromVideo()
