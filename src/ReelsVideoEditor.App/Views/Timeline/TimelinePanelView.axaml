@@ -595,8 +595,9 @@
                                                             <TranslateTransform X="{Binding Left}" />
                                                         </Border.RenderTransform>
                                                         <Grid ClipToBounds="True">
-                                                            <Border HorizontalAlignment="Stretch"
+                                                                <Border HorizontalAlignment="Left"
                                                                     VerticalAlignment="Top"
+                                                                    Width="{Binding AudioWaveformVisualWidth}"
                                                                     Height="{Binding AudioWaveformVisualHeight}"
                                                                     ClipToBounds="True">
                                                                 <Border.RenderTransform>
@@ -605,7 +606,11 @@
                                                                 <Image Source="{Binding WaveformImage}"
                                                                        Stretch="Fill"
                                                                        HorizontalAlignment="Stretch"
-                                                                       VerticalAlignment="Stretch" />
+                                                                       VerticalAlignment="Stretch">
+                                                                    <Image.RenderTransform>
+                                                                        <TranslateTransform X="{Binding AudioWaveformVisualOffsetX}" />
+                                                                    </Image.RenderTransform>
+                                                                </Image>
                                                             </Border>
                                                             <Border Height="2"
                                                                     HorizontalAlignment="Stretch"

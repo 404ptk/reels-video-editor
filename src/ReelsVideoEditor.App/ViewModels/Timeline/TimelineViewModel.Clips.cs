@@ -11,6 +11,7 @@ public partial class TimelineViewModel
 {
     private const double ClipSnapThresholdPixels = 12;
     private const double TextClipDefaultDurationSeconds = 5;
+    private const double MinClipDurationSeconds = 0.25;
 
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
     {
@@ -132,6 +133,52 @@ public partial class TimelineViewModel
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
         NotifyTextOverlayStateChanged();
+    }
+
+    public void ResizeClipFromLeft(TimelineClipItem clip, double requestedStartSeconds)
+    {
+        var clipEndSeconds = clip.StartSeconds + clip.DurationSeconds;
+        var minStartBySource = clip.StartSeconds - Math.Max(0, clip.SourceStartSeconds);
+        var maxStartByDuration = clipEndSeconds - MinClipDurationSeconds;
+        var clampedStartSeconds = Math.Clamp(requestedStartSeconds, minStartBySource, maxStartByDuration);
+        clampedStartSeconds = Math.Max(0, clampedStartSeconds);
+
+        var nextDurationSeconds = clipEndSeconds - clampedStartSeconds;
+        var consumedFromSourceDelta = clip.StartSeconds - clampedStartSeconds;
+        var nextSourceStartSeconds = Math.Max(0, clip.SourceStartSeconds - consumedFromSourceDelta);
+
+        ApplyClipResize(clip, clampedStartSeconds, nextDurationSeconds, nextSourceStartSeconds);
+    }
+
+    public void ResizeClipFromRight(TimelineClipItem clip, double requestedEndSeconds)
+    {
+        var minEndByDuration = clip.StartSeconds + MinClipDurationSeconds;
+        var maxEndBySource = clip.StartSeconds + Math.Max(MinClipDurationSeconds, clip.SourceDurationSeconds - clip.SourceStartSeconds);
+        var maxEndSeconds = Math.Min(TimelineDurationSeconds, maxEndBySource);
+        var clampedEndSeconds = Math.Clamp(requestedEndSeconds, minEndByDuration, maxEndSeconds);
+
+        var nextDurationSeconds = clampedEndSeconds - clip.StartSeconds;
+        ApplyClipResize(clip, clip.StartSeconds, nextDurationSeconds, clip.SourceStartSeconds);
+    }
+
+    public void CommitClipResize(
+        TimelineClipItem clip,
+        double previousStartSeconds,
+        double previousDurationSeconds,
+        double previousSourceStartSeconds)
+    {
+        var changedStart = Math.Abs(clip.StartSeconds - previousStartSeconds) >= 0.0001;
+        var changedDuration = Math.Abs(clip.DurationSeconds - previousDurationSeconds) >= 0.0001;
+        var changedSourceStart = Math.Abs(clip.SourceStartSeconds - previousSourceStartSeconds) >= 0.0001;
+        if (!changedStart && !changedDuration && !changedSourceStart)
+        {
+            return;
+        }
+
+        undoStack.Push(() =>
+        {
+            ApplyClipResize(clip, previousStartSeconds, previousDurationSeconds, previousSourceStartSeconds);
+        });
     }
 
     public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds, string previousLaneLabel)
@@ -301,6 +348,45 @@ public partial class TimelineViewModel
         await Dispatcher.UIThread.InvokeAsync(() => audioClip.WaveformImage = waveform);
     }
 
+    private void ApplyClipResize(
+        TimelineClipItem clip,
+        double startSeconds,
+        double durationSeconds,
+        double sourceStartSeconds)
+    {
+        var boundedStartSeconds = Math.Clamp(startSeconds, 0, TimelineDurationSeconds);
+        var boundedDurationSeconds = Math.Max(MinClipDurationSeconds, durationSeconds);
+        var maxDurationOnTimeline = Math.Max(MinClipDurationSeconds, TimelineDurationSeconds - boundedStartSeconds);
+        boundedDurationSeconds = Math.Min(boundedDurationSeconds, maxDurationOnTimeline);
+        var boundedSourceStartSeconds = Math.Max(0, sourceStartSeconds);
+
+        if (Math.Abs(clip.StartSeconds - boundedStartSeconds) < 0.0001
+            && Math.Abs(clip.DurationSeconds - boundedDurationSeconds) < 0.0001
+            && Math.Abs(clip.SourceStartSeconds - boundedSourceStartSeconds) < 0.0001)
+        {
+            return;
+        }
+
+        clip.StartSeconds = boundedStartSeconds;
+        clip.DurationSeconds = boundedDurationSeconds;
+        clip.SourceStartSeconds = boundedSourceStartSeconds;
+        TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
+
+        var linkedAudio = AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
+        if (linkedAudio is not null)
+        {
+            linkedAudio.StartSeconds = boundedStartSeconds;
+            linkedAudio.DurationSeconds = boundedDurationSeconds;
+            linkedAudio.SourceStartSeconds = boundedSourceStartSeconds;
+            TimelineClipArrangementService.RebuildLayouts([linkedAudio], TickWidth);
+            UpdateAudioClipLevelLine(linkedAudio);
+        }
+
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
+    }
+
     private double ResolvePreviewClipStartSeconds()
     {
         return ResolvePreviewClip()?.StartSeconds ?? 0;
@@ -350,5 +436,14 @@ public partial class TimelineViewModel
         var waveformHeight = Math.Max(1.0, drawableHeight * volumeLevel);
         clip.AudioWaveformVisualHeight = waveformHeight;
         clip.AudioWaveformVisualTop = (drawableHeight - waveformHeight) / 2.0;
+
+        var sourceDuration = Math.Max(0.0001, clip.SourceDurationSeconds);
+        var normalizedDuration = Math.Clamp(clip.DurationSeconds / sourceDuration, 0.0001, 1.0);
+        var normalizedStart = Math.Clamp(clip.SourceStartSeconds / sourceDuration, 0.0, 1.0 - normalizedDuration);
+        var clipVisualWidth = Math.Max(1.0, clip.Width);
+        var waveformVisualWidth = clipVisualWidth / normalizedDuration;
+
+        clip.AudioWaveformVisualWidth = waveformVisualWidth;
+        clip.AudioWaveformVisualOffsetX = -(normalizedStart * waveformVisualWidth);
     }
 }

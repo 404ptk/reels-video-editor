@@ -14,6 +14,13 @@ namespace ReelsVideoEditor.App.Views.Timeline;
 
 public partial class TimelinePanelView : UserControl
 {
+    private enum ClipResizeEdge
+    {
+        None,
+        Left,
+        Right
+    }
+
     private readonly Border? _timelineRuler;
     private readonly ScrollViewer? _laneHeaderScrollViewer;
     private readonly ScrollViewer? _timelineScrollViewer;
@@ -21,14 +28,21 @@ public partial class TimelinePanelView : UserControl
     private Point? _dragStartPoint;
     private TimelineClipItem? _activeLevelClip;
     private TimelineClipItem? _draggingVideoClip;
+    private TimelineClipItem? _resizingVideoClip;
     private bool _isAdjustingAudioLevel;
     private bool _isDraggingVideoClip;
+    private bool _isResizingVideoClip;
+    private ClipResizeEdge _activeResizeEdge;
     private double _draggingClipInitialStartSeconds;
     private string _draggingClipInitialLaneLabel = string.Empty;
     private double _draggingClipPointerOffsetSeconds;
+    private double _resizingClipInitialStartSeconds;
+    private double _resizingClipInitialDurationSeconds;
+    private double _resizingClipInitialSourceStartSeconds;
     private double? _lastDragOverCanvasX;
     private const double ClipTopEdgeThreshold = 6;
     private const double LevelHandleHitThreshold = 5;
+    private const double ClipHorizontalResizeEdgeThreshold = 8;
     private const double ClipLeftInset = 10;
     private const double MouseWheelVerticalStep = 48;
     private bool _isSyncingVerticalScroll;
@@ -279,18 +293,37 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
+        var localPosition = eventArgs.GetPosition(control);
+        var resizeEdge = ResolveClipResizeEdge(control, localPosition.X);
+        if (resizeEdge is not ClipResizeEdge.None)
+        {
+            StartVideoClipResize(viewModel, clip, resizeEdge);
+            eventArgs.Handled = true;
+            return;
+        }
+
         StartVideoClipDrag(viewModel, timelineCanvas, clip, eventArgs);
         eventArgs.Handled = true;
     }
 
     private void VideoClip_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
     {
+        if (_isResizingVideoClip)
+        {
+            return;
+        }
+
         if (!_isDraggingVideoClip
             || DataContext is not TimelineViewModel viewModel
             || sender is not Control control
             || control.DataContext is not TimelineClipItem clip
             || !ReferenceEquals(_draggingVideoClip, clip))
         {
+            if (sender is Control hoverControl)
+            {
+                UpdateVideoClipResizeCursor(hoverControl, eventArgs);
+            }
+
             return;
         }
 
@@ -318,6 +351,15 @@ public partial class TimelinePanelView : UserControl
 
     private void VideoClip_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
     {
+        if (_isResizingVideoClip
+            && DataContext is TimelineViewModel resizeViewModel
+            && _resizingVideoClip is TimelineClipItem resizingClip)
+        {
+            EndVideoClipResize(resizingClip, resizeViewModel, commit: true);
+            eventArgs.Handled = true;
+            return;
+        }
+
         if (!_isDraggingVideoClip
             || DataContext is not TimelineViewModel viewModel
             || sender is not Control control
@@ -411,6 +453,36 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
+        if (_isResizingVideoClip)
+        {
+            if (DataContext is TimelineViewModel resizeViewModel && _resizingVideoClip is TimelineClipItem resizingClip)
+            {
+                var timelineCanvasForResize = this.FindControl<Grid>("TimelineCanvas");
+                if (timelineCanvasForResize is not null)
+                {
+                    var resizePointerPoint = eventArgs.GetCurrentPoint(sender as Visual ?? this);
+                    if (!resizePointerPoint.Properties.IsLeftButtonPressed)
+                    {
+                        return;
+                    }
+
+                    var pointerCanvasX = eventArgs.GetPosition(timelineCanvasForResize).X;
+                    var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, resizeViewModel.TickWidth);
+
+                    if (_activeResizeEdge == ClipResizeEdge.Left)
+                    {
+                        resizeViewModel.ResizeClipFromLeft(resizingClip, pointerSeconds);
+                    }
+                    else if (_activeResizeEdge == ClipResizeEdge.Right)
+                    {
+                        resizeViewModel.ResizeClipFromRight(resizingClip, pointerSeconds);
+                    }
+                }
+            }
+
+            return;
+        }
+
         if (_isDraggingVideoClip)
         {
             if (DataContext is TimelineViewModel dragViewModel && _draggingVideoClip is TimelineClipItem draggingClip)
@@ -474,6 +546,13 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineSeekSurface_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
     {
+        if (_isResizingVideoClip
+            && DataContext is TimelineViewModel resizeViewModel
+            && _resizingVideoClip is TimelineClipItem resizingClip)
+        {
+            EndVideoClipResize(resizingClip, resizeViewModel, commit: true);
+        }
+
         if (_isDraggingVideoClip
             && DataContext is TimelineViewModel viewModel
             && _draggingVideoClip is TimelineClipItem clip)
@@ -600,6 +679,39 @@ public partial class TimelinePanelView : UserControl
         _draggingClipInitialLaneLabel = string.Empty;
     }
 
+    private void StartVideoClipResize(TimelineViewModel viewModel, TimelineClipItem clip, ClipResizeEdge resizeEdge)
+    {
+        _resizingVideoClip = clip;
+        _activeResizeEdge = resizeEdge;
+        _isResizingVideoClip = true;
+        _dragStartPoint = null;
+
+        _resizingClipInitialStartSeconds = clip.StartSeconds;
+        _resizingClipInitialDurationSeconds = clip.DurationSeconds;
+        _resizingClipInitialSourceStartSeconds = clip.SourceStartSeconds;
+
+        viewModel.SelectSingleVideoClip(clip);
+    }
+
+    private void EndVideoClipResize(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
+    {
+        var previousStartSeconds = _resizingClipInitialStartSeconds;
+        var previousDurationSeconds = _resizingClipInitialDurationSeconds;
+        var previousSourceStartSeconds = _resizingClipInitialSourceStartSeconds;
+
+        if (commit)
+        {
+            viewModel.CommitClipResize(clip, previousStartSeconds, previousDurationSeconds, previousSourceStartSeconds);
+        }
+
+        _isResizingVideoClip = false;
+        _resizingVideoClip = null;
+        _activeResizeEdge = ClipResizeEdge.None;
+        _resizingClipInitialStartSeconds = 0;
+        _resizingClipInitialDurationSeconds = 0;
+        _resizingClipInitialSourceStartSeconds = 0;
+    }
+
     private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
     {
         var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
@@ -626,6 +738,36 @@ public partial class TimelinePanelView : UserControl
         }
 
         return Math.Abs(localY - clip.AudioLevelLineTop) <= LevelHandleHitThreshold;
+    }
+
+    private static ClipResizeEdge ResolveClipResizeEdge(Control control, double localX)
+    {
+        var threshold = Math.Min(ClipHorizontalResizeEdgeThreshold, Math.Max(2, control.Bounds.Width / 3));
+        if (localX <= threshold)
+        {
+            return ClipResizeEdge.Left;
+        }
+
+        if (localX >= control.Bounds.Width - threshold)
+        {
+            return ClipResizeEdge.Right;
+        }
+
+        return ClipResizeEdge.None;
+    }
+
+    private void UpdateVideoClipResizeCursor(Control control, PointerEventArgs eventArgs)
+    {
+        if (_isDraggingVideoClip || _isResizingVideoClip)
+        {
+            return;
+        }
+
+        var localPosition = eventArgs.GetPosition(control);
+        var resizeEdge = ResolveClipResizeEdge(control, localPosition.X);
+        control.Cursor = resizeEdge is ClipResizeEdge.None
+            ? null
+            : new Cursor(StandardCursorType.SizeWestEast);
     }
 
     private static bool TryGetClipPayload(DragEventArgs eventArgs, out string name, out double durationSeconds, out string path)

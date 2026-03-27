@@ -56,6 +56,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     private double audioWaveformVisualTop;
 
     [ObservableProperty]
+    private double audioWaveformVisualWidth = 1;
+
+    [ObservableProperty]
+    private double audioWaveformVisualOffsetX;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]
