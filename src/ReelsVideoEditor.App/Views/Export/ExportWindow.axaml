@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Export"
         xmlns:exportViews="using:ReelsVideoEditor.App.Views.Export"
+    xmlns:commonViews="using:ReelsVideoEditor.App.Views.Common"
         x:Class="ReelsVideoEditor.App.Views.Export.ExportWindow"
         x:DataType="vm:ExportViewModel"
         Title="Export Video"
@@ -35,15 +36,7 @@
                     HorizontalAlignment="Right"
                     Spacing="12"
                     Margin="16">
-            <Button Width="120"
-                    Height="40"
-                    Background="{StaticResource AccentSubtle}"
-                    BorderBrush="{StaticResource AccentSubtle}"
-                    BorderThickness="1"
-                    Foreground="{StaticResource Accent}"
-                    FontWeight="SemiBold"
-                    Content="Back"
-                    Click="OnBackButtonClicked" />
+            <commonViews:BackButton Click="OnBackButtonClicked" />
         </StackPanel>
     </Grid>
 
