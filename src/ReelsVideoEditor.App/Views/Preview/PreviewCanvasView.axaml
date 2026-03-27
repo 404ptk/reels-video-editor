@@ -32,6 +32,16 @@
                                    VerticalAlignment="Stretch" />
                         </Border>
 
+                        <TextBlock Text="{Binding TextOverlayValue}"
+                                   IsVisible="{Binding IsTextOverlayVisible}"
+                                   Foreground="{Binding TextOverlayColor}"
+                                   FontFamily="{Binding TextOverlayFontFamily}"
+                                   FontSize="{Binding TextOverlayFontSize}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,72" />
+
                         <Grid Width="{Binding ScaledForegroundWidth}"
                               Height="{Binding ScaledForegroundHeight}"
                               HorizontalAlignment="Center"

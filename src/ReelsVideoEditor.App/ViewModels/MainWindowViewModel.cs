@@ -113,6 +113,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.CurrentAudioVolume = audioVolume;
         };
 
+        Timeline.TextPresetApplied = preset =>
+        {
+            Preview.ApplyTextPreset(preset);
+        };
+
         Timeline.PreviewClipChanged = () =>
         {
             var resolvedPath = Timeline.ResolvePreviewClipPath();

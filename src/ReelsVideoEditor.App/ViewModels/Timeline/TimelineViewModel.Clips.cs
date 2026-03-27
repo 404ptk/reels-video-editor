@@ -10,6 +10,7 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline;
 public partial class TimelineViewModel
 {
     private const double ClipSnapThresholdPixels = 12;
+    private const double TextClipDefaultDurationSeconds = 5;
 
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
     {
@@ -33,6 +34,30 @@ public partial class TimelineViewModel
         }
 
         RefreshClipLevelLines();
+
+        undoStack.Push(() =>
+        {
+            VideoClips.Remove(clip);
+        });
+    }
+
+    public void AddTextPresetClip(string clipName, double dropX, string? targetLaneLabel = null)
+    {
+        var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
+        var clip = TimelineClipArrangementService.BuildClip(
+            clipName,
+            string.Empty,
+            TextClipDefaultDurationSeconds,
+            dropX,
+            TickWidth,
+            TimelineDurationSeconds);
+        clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
+        VideoClips.Add(clip);
+
+        if (VideoClips.Count == 1)
+        {
+            PlayheadSeconds = clip.StartSeconds;
+        }
 
         undoStack.Push(() =>
         {

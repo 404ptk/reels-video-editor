@@ -23,7 +23,13 @@ public partial class TimelineViewModel
 
     public string? ResolvePreviewClipPath()
     {
-        return ResolvePreviewClip()?.Path;
+        var previewClip = ResolvePreviewClip();
+        if (previewClip is null || string.IsNullOrWhiteSpace(previewClip.Path))
+        {
+            return null;
+        }
+
+        return previewClip.Path;
     }
 
     public IReadOnlyList<PreviewVideoLayer> ResolvePreviewVideoLayers(long playbackMilliseconds)
@@ -42,6 +48,10 @@ public partial class TimelineViewModel
         {
             var layer = activeLayers[i];
             var clip = layer.Clip;
+            if (string.IsNullOrWhiteSpace(clip.Path))
+            {
+                continue;
+            }
 
             result.Add(new PreviewVideoLayer(
                 clip.Path,

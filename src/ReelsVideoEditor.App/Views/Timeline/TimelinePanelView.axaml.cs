@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 using ReelsVideoEditor.App.ViewModels.Timeline;
@@ -192,7 +193,8 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineTrack_OnDragOver(object? sender, DragEventArgs eventArgs)
     {
-        var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _);
+        var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _)
+            || TryGetTextPresetPayload(eventArgs, out _);
         eventArgs.DragEffects = hasPayload ? DragDropEffects.Copy : DragDropEffects.None;
 
         if (hasPayload)
@@ -214,24 +216,41 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
-        if (!TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out var path))
+        if (TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out var path))
         {
+            var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+            var referenceControl = timelineCanvas as Control ?? trackControl;
+            var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
+            if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
+            {
+                dropCanvasX = _lastDragOverCanvasX.Value;
+            }
+
+            var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
+            var targetLaneLabel = ResolveLaneLabel(trackControl);
+            viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX, targetLaneLabel);
+            _lastDragOverCanvasX = null;
+            eventArgs.Handled = true;
             return;
         }
 
-        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
-        var referenceControl = timelineCanvas as Control ?? trackControl;
-        var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
-        if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
+        if (TryGetTextPresetPayload(eventArgs, out var preset))
         {
-            dropCanvasX = _lastDragOverCanvasX.Value;
-        }
+            var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+            var referenceControl = timelineCanvas as Control ?? trackControl;
+            var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
+            if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
+            {
+                dropCanvasX = _lastDragOverCanvasX.Value;
+            }
 
-        var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
-        var targetLaneLabel = ResolveLaneLabel(trackControl);
-        viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX, targetLaneLabel);
-        _lastDragOverCanvasX = null;
-        eventArgs.Handled = true;
+            var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
+            var targetLaneLabel = ResolveLaneLabel(trackControl);
+            viewModel.AddTextPresetClip(preset.DisplayText, dropPositionX, targetLaneLabel);
+            viewModel.ApplyTextPreset(preset);
+            _lastDragOverCanvasX = null;
+            eventArgs.Handled = true;
+        }
     }
 
     private void VideoClip_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
@@ -626,6 +645,29 @@ public partial class TimelinePanelView : UserControl
         var rawPayload = data.Get(VideoClipDragPayload.Format);
         var parsed = VideoClipDragPayload.TryParse(rawPayload, out path, out name, out durationSeconds);
         return parsed;
+    }
+
+    private static bool TryGetTextPresetPayload(DragEventArgs eventArgs, out TextPresetDefinition preset)
+    {
+        preset = null!;
+
+#pragma warning disable CS0618
+        var data = eventArgs.Data;
+#pragma warning restore CS0618
+        if (!data.Contains(TextPresetDragPayload.Format))
+        {
+            return false;
+        }
+
+        var rawPayload = data.Get(TextPresetDragPayload.Format);
+        var parsed = TextPresetDragPayload.TryParse(rawPayload, out var parsedPreset);
+        if (!parsed || parsedPreset is null)
+        {
+            return false;
+        }
+
+        preset = parsedPreset;
+        return true;
     }
 
     private static string? ResolveLaneLabel(Control control)

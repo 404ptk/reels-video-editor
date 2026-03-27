@@ -22,6 +22,11 @@ public sealed class TimelineCompositionPlanner
         var visibleClips = new List<VisibleVideoClip>(videoClips.Count);
         foreach (var clip in videoClips)
         {
+            if (string.IsNullOrWhiteSpace(clip.Path))
+            {
+                continue;
+            }
+
             var lane = ResolveLaneForClip(videoLanes, clip.VideoLaneLabel);
             if (lane is null)
             {

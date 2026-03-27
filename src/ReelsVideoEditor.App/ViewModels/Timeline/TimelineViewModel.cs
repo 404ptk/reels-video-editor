@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.Services.Composition;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
@@ -56,6 +57,8 @@ public partial class TimelineViewModel : ViewModelBase
     public Action? PreviewSelectionChanged { get; set; }
 
     public Action<double>? PreviewLevelsChanged { get; set; }
+
+    public Action<TextPresetDefinition>? TextPresetApplied { get; set; }
 
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
@@ -123,6 +126,11 @@ public partial class TimelineViewModel : ViewModelBase
         RebuildAudioLaneCollections();
         BuildMinorTicks();
         RebuildMajorTicks();
+    }
+
+    public void ApplyTextPreset(TextPresetDefinition preset)
+    {
+        TextPresetApplied?.Invoke(preset);
     }
 
     private void OnVideoLanesChanged(object? sender, NotifyCollectionChangedEventArgs e)

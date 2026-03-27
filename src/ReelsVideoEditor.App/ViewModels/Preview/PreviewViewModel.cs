@@ -4,6 +4,7 @@ using Avalonia.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Preview;
@@ -126,6 +127,21 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private int seekRequestVersion;
+
+    [ObservableProperty]
+    private bool isTextOverlayVisible;
+
+    [ObservableProperty]
+    private string textOverlayValue = string.Empty;
+
+    [ObservableProperty]
+    private string textOverlayFontFamily = "Inter";
+
+    [ObservableProperty]
+    private double textOverlayFontSize = 56;
+
+    [ObservableProperty]
+    private string textOverlayColor = "#FFFFFF";
 
     public string Title { get; } = "Preview";
 
@@ -261,6 +277,15 @@ public sealed partial class PreviewViewModel : ViewModelBase
     public void TriggerFrameUpdate()
     {
         OnPropertyChanged(nameof(CurrentFrame));
+    }
+
+    public void ApplyTextPreset(TextPresetDefinition preset)
+    {
+        TextOverlayValue = preset.DisplayText;
+        TextOverlayFontFamily = preset.FontFamily;
+        TextOverlayFontSize = preset.FontSize;
+        TextOverlayColor = preset.ColorHex;
+        IsTextOverlayVisible = true;
     }
 
     [ObservableProperty]
