@@ -500,6 +500,7 @@
                                                             BorderThickness="1"
                                                             PointerPressed="VideoClip_OnPointerPressed"
                                                             PointerMoved="VideoClip_OnPointerMoved"
+                                                            PointerExited="VideoClip_OnPointerExited"
                                                             PointerReleased="VideoClip_OnPointerReleased"
                                                             Classes.selected="{Binding IsSelected}">
                                                         <Border.RenderTransform>
@@ -512,6 +513,22 @@
                                                             </Style>
                                                         </Border.Styles>
                                                         <Grid>
+                                                            <Border Width="2"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Stretch"
+                                                                Margin="2,3,0,3"
+                                                                CornerRadius="1"
+                                                                Background="#D6E6D8"
+                                                                IsHitTestVisible="False"
+                                                                IsVisible="{Binding IsLeftTrimMarkerVisible}" />
+                                                            <Border Width="2"
+                                                                HorizontalAlignment="Right"
+                                                                VerticalAlignment="Stretch"
+                                                                Margin="0,3,2,3"
+                                                                CornerRadius="1"
+                                                                Background="#D6E6D8"
+                                                                IsHitTestVisible="False"
+                                                                IsVisible="{Binding IsRightTrimMarkerVisible}" />
                                                             <TextBlock Margin="8,0"
                                                                        VerticalAlignment="Center"
                                                                        Foreground="#222222"

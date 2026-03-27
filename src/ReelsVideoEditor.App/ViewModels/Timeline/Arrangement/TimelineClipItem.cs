@@ -62,6 +62,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     private double audioWaveformVisualOffsetX;
 
     [ObservableProperty]
+    private bool isLeftTrimMarkerVisible;
+
+    [ObservableProperty]
+    private bool isRightTrimMarkerVisible;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]

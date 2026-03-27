@@ -9,6 +9,7 @@ using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using System;
+using System.Linq;
 
 namespace ReelsVideoEditor.App.Views.Timeline;
 
@@ -29,6 +30,7 @@ public partial class TimelinePanelView : UserControl
     private TimelineClipItem? _activeLevelClip;
     private TimelineClipItem? _draggingVideoClip;
     private TimelineClipItem? _resizingVideoClip;
+    private Guid? _activeTrimMarkerLinkId;
     private bool _isAdjustingAudioLevel;
     private bool _isDraggingVideoClip;
     private bool _isResizingVideoClip;
@@ -308,6 +310,13 @@ public partial class TimelinePanelView : UserControl
 
     private void VideoClip_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
     {
+        if (sender is Control hoverControl
+            && DataContext is TimelineViewModel hoverViewModel
+            && hoverControl.DataContext is TimelineClipItem hoverClip)
+        {
+            UpdateVideoClipResizeCursor(hoverViewModel, hoverControl, hoverClip, eventArgs);
+        }
+
         if (_isResizingVideoClip)
         {
             return;
@@ -319,11 +328,6 @@ public partial class TimelinePanelView : UserControl
             || control.DataContext is not TimelineClipItem clip
             || !ReferenceEquals(_draggingVideoClip, clip))
         {
-            if (sender is Control hoverControl)
-            {
-                UpdateVideoClipResizeCursor(hoverControl, eventArgs);
-            }
-
             return;
         }
 
@@ -371,6 +375,25 @@ public partial class TimelinePanelView : UserControl
 
         EndVideoClipDrag(clip, viewModel, commit: true);
         eventArgs.Handled = true;
+    }
+
+    private void VideoClip_OnPointerExited(object? sender, PointerEventArgs eventArgs)
+    {
+        if (sender is not Control control)
+        {
+            return;
+        }
+
+        control.Cursor = null;
+        if (_isDraggingVideoClip || _isResizingVideoClip)
+        {
+            return;
+        }
+
+        if (DataContext is TimelineViewModel viewModel)
+        {
+            ClearTrimMarker(viewModel);
+        }
     }
 
     private void TimelineSeekSurface_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
@@ -677,6 +700,7 @@ public partial class TimelinePanelView : UserControl
         _draggingClipPointerOffsetSeconds = 0;
         _draggingClipInitialStartSeconds = 0;
         _draggingClipInitialLaneLabel = string.Empty;
+        ClearTrimMarker(viewModel);
     }
 
     private void StartVideoClipResize(TimelineViewModel viewModel, TimelineClipItem clip, ClipResizeEdge resizeEdge)
@@ -689,6 +713,7 @@ public partial class TimelinePanelView : UserControl
         _resizingClipInitialStartSeconds = clip.StartSeconds;
         _resizingClipInitialDurationSeconds = clip.DurationSeconds;
         _resizingClipInitialSourceStartSeconds = clip.SourceStartSeconds;
+        SetTrimMarker(viewModel, clip, resizeEdge);
 
         viewModel.SelectSingleVideoClip(clip);
     }
@@ -710,6 +735,7 @@ public partial class TimelinePanelView : UserControl
         _resizingClipInitialStartSeconds = 0;
         _resizingClipInitialDurationSeconds = 0;
         _resizingClipInitialSourceStartSeconds = 0;
+        ClearTrimMarker(viewModel);
     }
 
     private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
@@ -756,10 +782,17 @@ public partial class TimelinePanelView : UserControl
         return ClipResizeEdge.None;
     }
 
-    private void UpdateVideoClipResizeCursor(Control control, PointerEventArgs eventArgs)
+    private void UpdateVideoClipResizeCursor(TimelineViewModel viewModel, Control control, TimelineClipItem clip, PointerEventArgs eventArgs)
     {
-        if (_isDraggingVideoClip || _isResizingVideoClip)
+        if (_isDraggingVideoClip)
         {
+            return;
+        }
+
+        if (_isResizingVideoClip)
+        {
+            SetTrimMarker(viewModel, clip, _activeResizeEdge);
+            control.Cursor = _activeResizeEdge is ClipResizeEdge.None ? null : new Cursor(StandardCursorType.SizeWestEast);
             return;
         }
 
@@ -768,6 +801,70 @@ public partial class TimelinePanelView : UserControl
         control.Cursor = resizeEdge is ClipResizeEdge.None
             ? null
             : new Cursor(StandardCursorType.SizeWestEast);
+
+        SetTrimMarker(viewModel, clip, resizeEdge);
+    }
+
+    private void SetTrimMarker(TimelineViewModel viewModel, TimelineClipItem clip, ClipResizeEdge edge)
+    {
+        var showLeft = edge == ClipResizeEdge.Left;
+        var showRight = edge == ClipResizeEdge.Right;
+
+        if (!showLeft && !showRight)
+        {
+            ClearTrimMarker(viewModel);
+            return;
+        }
+
+        if (_activeTrimMarkerLinkId.HasValue && _activeTrimMarkerLinkId.Value != clip.LinkId)
+        {
+            ClearTrimMarker(viewModel);
+        }
+
+        clip.IsLeftTrimMarkerVisible = showLeft;
+        clip.IsRightTrimMarkerVisible = showRight;
+
+        var linkedAudio = viewModel.AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
+        if (linkedAudio is not null)
+        {
+            linkedAudio.IsLeftTrimMarkerVisible = showLeft;
+            linkedAudio.IsRightTrimMarkerVisible = showRight;
+        }
+
+        _activeTrimMarkerLinkId = clip.LinkId;
+    }
+
+    private void ClearTrimMarker(TimelineViewModel viewModel)
+    {
+        if (!_activeTrimMarkerLinkId.HasValue)
+        {
+            return;
+        }
+
+        var linkId = _activeTrimMarkerLinkId.Value;
+        foreach (var candidate in viewModel.VideoClips)
+        {
+            if (candidate.LinkId != linkId)
+            {
+                continue;
+            }
+
+            candidate.IsLeftTrimMarkerVisible = false;
+            candidate.IsRightTrimMarkerVisible = false;
+        }
+
+        foreach (var candidate in viewModel.AudioClips)
+        {
+            if (candidate.LinkId != linkId)
+            {
+                continue;
+            }
+
+            candidate.IsLeftTrimMarkerVisible = false;
+            candidate.IsRightTrimMarkerVisible = false;
+        }
+
+        _activeTrimMarkerLinkId = null;
     }
 
     private static bool TryGetClipPayload(DragEventArgs eventArgs, out string name, out double durationSeconds, out string path)
