@@ -288,7 +288,50 @@ public partial class TimelineViewModel
     private double ResolvePlaybackDurationSeconds()
     {
         var plan = BuildCompositionPlan();
-        return compositionPlanner.ResolvePlaybackDurationSeconds(plan, ResolveActiveAudioClips(), IsAudioMuted, TimelineDurationSeconds);
+        var baseDurationSeconds = compositionPlanner.ResolvePlaybackDurationSeconds(
+            plan,
+            ResolveActiveAudioClips(),
+            IsAudioMuted,
+            TimelineDurationSeconds);
+
+        var textOnlyDurationSeconds = ResolveVisibleTextOnlyPlaybackEndSeconds();
+        return Math.Clamp(Math.Max(baseDurationSeconds, textOnlyDurationSeconds), 0.01, TimelineDurationSeconds);
+    }
+
+    private double ResolveVisibleTextOnlyPlaybackEndSeconds()
+    {
+        if (VideoClips.Count == 0)
+        {
+            return 0;
+        }
+
+        var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
+
+        return VideoClips
+            .Where(clip => string.IsNullOrWhiteSpace(clip.Path))
+            .Where(clip =>
+            {
+                var lane = ResolveLaneByLabel(clip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+                if (lane is null)
+                {
+                    return false;
+                }
+
+                if (lane.IsHidden)
+                {
+                    return false;
+                }
+
+                if (hasSoloLanes && !lane.IsSolo)
+                {
+                    return false;
+                }
+
+                return true;
+            })
+            .Select(clip => clip.StartSeconds + clip.DurationSeconds)
+            .DefaultIfEmpty(0)
+            .Max();
     }
 
     private TimelineCompositionPlan BuildCompositionPlan()
