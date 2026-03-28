@@ -139,7 +139,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private string textOverlayFontFamily = "Inter";
 
     [ObservableProperty]
-    private double textOverlayFontSize = 56;
+    private double textOverlayFontSize = 14;
 
     [ObservableProperty]
     private string textOverlayColor = "#FFFFFF";

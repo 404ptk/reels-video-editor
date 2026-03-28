@@ -249,7 +249,7 @@ public partial class TimelineViewModel
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
         {
-            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 56, "#FFFFFF");
+            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, "#FFFFFF");
         }
 
         return new TimelineSelectedTextClipState(
@@ -416,7 +416,7 @@ public partial class TimelineViewModel
 
         if (activeTextClip is null)
         {
-            return new TimelineTextOverlayState(false, string.Empty, "Inter", 56, "#FFFFFF");
+            return new TimelineTextOverlayState(false, string.Empty, "Inter", 14, "#FFFFFF");
         }
 
         return new TimelineTextOverlayState(

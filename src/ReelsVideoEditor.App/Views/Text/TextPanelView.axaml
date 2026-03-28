@@ -153,12 +153,25 @@
                         <TextBlock Text="Size"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
-                        <Slider Minimum="10"
-                                Maximum="180"
-                                Value="{Binding SelectedClipFontSize, Mode=TwoWay}" />
-                        <TextBlock Text="{Binding SelectedClipFontSize, StringFormat='{}{0:F0}px'}"
-                                   Foreground="{DynamicResource Accent}"
-                                   FontSize="12" />
+                        <Border Padding="10,6"
+                                Background="#112EC4B6"
+                                BorderBrush="{DynamicResource AccentSubtle}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                HorizontalAlignment="Left"
+                                Cursor="SizeWestEast"
+                                PointerPressed="SizeValue_OnPointerPressed"
+                                PointerMoved="SizeValue_OnPointerMoved"
+                                PointerReleased="SizeValue_OnPointerReleased"
+                                PointerCaptureLost="SizeValue_OnPointerCaptureLost">
+                            <TextBlock Text="{Binding SelectedClipFontSize, StringFormat='{}{0:F0}px'}"
+                                       Foreground="{DynamicResource Accent}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                        <TextBlock Text="Drag left/right to change size"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="11" />
                     </StackPanel>
                 </StackPanel>
             </Border>

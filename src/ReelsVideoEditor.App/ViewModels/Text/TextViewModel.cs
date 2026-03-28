@@ -21,9 +21,9 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public IReadOnlyList<Models.TextPresetDefinition> Presets { get; } =
     [
-        new("Sunset", "Inter", 56, "#FF6B6B"),
-        new("Ocean", "Inter", 56, "#3A86FF"),
-        new("Mint", "Inter", 56, "#2EC4B6")
+        new("Sunset", "Inter", 14, "#FF6B6B"),
+        new("Ocean", "Inter", 14, "#3A86FF"),
+        new("Mint", "Inter", 14, "#2EC4B6")
     ];
 
     public IReadOnlyList<Models.TextColorPreset> BasicColors { get; } =
@@ -63,7 +63,7 @@ public sealed partial class TextViewModel : ViewModelBase
     private double selectedColorB = 255;
 
     [ObservableProperty]
-    private double selectedClipFontSize = 56;
+    private double selectedClipFontSize = 14;
 
     public IBrush SelectedColorPreviewBrush => new SolidColorBrush(Color.FromRgb(
         NormalizeColorChannel(SelectedColorR),
