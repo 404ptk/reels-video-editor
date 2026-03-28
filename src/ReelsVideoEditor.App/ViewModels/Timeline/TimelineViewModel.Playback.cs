@@ -244,6 +244,12 @@ public partial class TimelineViewModel
         NotifyTextOverlayStateChanged();
     }
 
+    public TimelineTextOverlayState ResolveTextOverlayStateAt(long playbackMilliseconds)
+    {
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        return ResolveTextOverlayState(timelineSeconds);
+    }
+
     public TimelineSelectedTextClipState ResolveSelectedTextClipState()
     {
         var selectedTextClip = ResolveSelectedTextClip();
@@ -385,11 +391,16 @@ public partial class TimelineViewModel
 
     private TimelineTextOverlayState ResolveTextOverlayState()
     {
+        return ResolveTextOverlayState(PlayheadSeconds);
+    }
+
+    private TimelineTextOverlayState ResolveTextOverlayState(double timelineSeconds)
+    {
         var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
         var activeTextClip = VideoClips
             .Where(clip => IsTextTimelineClip(clip)
-                && PlayheadSeconds >= clip.StartSeconds
-                && PlayheadSeconds <= clip.StartSeconds + clip.DurationSeconds)
+                && timelineSeconds >= clip.StartSeconds
+                && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds)
             .Where(clip =>
             {
                 var lane = ResolveLaneByLabel(clip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();

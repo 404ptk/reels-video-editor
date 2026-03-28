@@ -4,13 +4,88 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using ReelsVideoEditor.App.Services.Compositor;
+using ReelsVideoEditor.App.Services.VideoDecoder;
+using ReelsVideoEditor.App.ViewModels.Timeline;
+using SkiaSharp;
 
 namespace ReelsVideoEditor.App.Services.Export;
 
 public class TimelineExportService
 {
+    private const int AccurateExportFps = 30;
+    private const double TextOverlayReferenceHeight = 1280.0;
+
+    public async Task ExportAccurateAsync(
+        IReadOnlyList<ExportAudioClipInput> audioClips,
+        bool isAudioMuted,
+        string outputPath,
+        string resolution,
+        double previewFrameWidth,
+        double previewFrameHeight,
+        long playbackDurationMilliseconds,
+        Func<long, IReadOnlyList<PreviewVideoLayer>> resolveVideoLayers,
+        Func<long, TimelineTextOverlayState> resolveTextOverlayState,
+        IProgress<double> progress)
+    {
+        var parts = resolution.Split('x');
+        var width = int.Parse(parts[0], CultureInfo.InvariantCulture);
+        var height = int.Parse(parts[1], CultureInfo.InvariantCulture);
+        var totalDurationMs = Math.Max(1, playbackDurationMilliseconds);
+        var totalDurationSeconds = totalDurationMs / 1000.0;
+        var totalFrames = Math.Max(1, (int)Math.Ceiling(totalDurationSeconds * AccurateExportFps));
+
+        var tempDir = Path.Combine(Path.GetTempPath(), "ReelsVideoEditor", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var tempVideoPath = Path.Combine(tempDir, "accurate_video.mp4");
+        var tempAudioPath = Path.Combine(tempDir, "mixed_audio.m4a");
+
+        try
+        {
+            await RenderAccurateVideoAsync(
+                tempVideoPath,
+                width,
+                height,
+                previewFrameWidth,
+                previewFrameHeight,
+                totalFrames,
+                resolveVideoLayers,
+                resolveTextOverlayState,
+                progress);
+
+            progress.Report(88);
+
+            var hasAudio = !isAudioMuted && audioClips.Count > 0;
+            if (hasAudio)
+            {
+                progress.Report(90);
+                await RenderMixedAudioAsync(audioClips, tempAudioPath, totalDurationSeconds);
+                progress.Report(95);
+            }
+
+            progress.Report(97);
+            await MuxAccurateOutputAsync(tempVideoPath, hasAudio ? tempAudioPath : null, outputPath, totalDurationSeconds);
+            progress.Report(100);
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+            }
+            catch
+            {
+                // Best-effort cleanup.
+            }
+        }
+    }
+
     public async Task ExportAsync(
         IReadOnlyList<ExportVideoClipInput> videoClips,
         IReadOnlyList<ExportAudioClipInput> audioClips,
@@ -188,6 +263,285 @@ public class TimelineExportService
         ffmpegCommand.Append($"\"{outputPath}\"");
 
         await ExecuteFFmpegAsync(ffmpegCommand.ToString(), progress, totalDuration);
+    }
+
+    private async Task RenderAccurateVideoAsync(
+        string tempVideoPath,
+        int width,
+        int height,
+        double previewFrameWidth,
+        double previewFrameHeight,
+        int totalFrames,
+        Func<long, IReadOnlyList<PreviewVideoLayer>> resolveVideoLayers,
+        Func<long, TimelineTextOverlayState> resolveTextOverlayState,
+        IProgress<double> progress)
+    {
+        var ffmpegPath = ResolveFFmpegPath();
+        if (string.IsNullOrWhiteSpace(ffmpegPath))
+        {
+            throw new FileNotFoundException("Could not find ffmpeg.exe. Ensure FFmpeg is accessible in the PATH or bundled with the App.");
+        }
+
+        var args = string.Join(' ',
+            "-y",
+            "-f rawvideo",
+            "-pix_fmt bgra",
+            $"-s {width}x{height}",
+            $"-r {AccurateExportFps.ToString(CultureInfo.InvariantCulture)}",
+            "-i -",
+            "-an",
+            "-c:v libx264",
+            "-preset fast",
+            "-crf 20",
+            "-pix_fmt yuv420p",
+            "-movflags +faststart",
+            $"\"{tempVideoPath}\"");
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                Arguments = args,
+                RedirectStandardInput = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+
+        process.Start();
+        var stderrLines = new List<string>();
+        var stderrDrain = Task.Run(async () =>
+        {
+            while (!process.StandardError.EndOfStream)
+            {
+                var line = await process.StandardError.ReadLineAsync();
+                if (line is null)
+                {
+                    continue;
+                }
+
+                lock (stderrLines)
+                {
+                    stderrLines.Add(line);
+                    if (stderrLines.Count > 200)
+                    {
+                        stderrLines.RemoveAt(0);
+                    }
+                }
+            }
+        });
+        var stdoutDrain = process.StandardOutput.ReadToEndAsync();
+
+        var decoderByPath = new Dictionary<string, VideoFrameDecoder>(StringComparer.OrdinalIgnoreCase);
+        using var compositor = new FrameCompositor();
+        byte[]? frameBuffer = null;
+        var safePreviewWidth = Math.Max(1.0, previewFrameWidth);
+        var safePreviewHeight = Math.Max(1.0, previewFrameHeight);
+
+        try
+        {
+            for (var frameIndex = 0; frameIndex < totalFrames; frameIndex++)
+            {
+                var playbackMs = (long)Math.Round(frameIndex * (1000.0 / AccurateExportFps), MidpointRounding.AwayFromZero);
+                var layers = resolveVideoLayers(playbackMs);
+
+                var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
+                for (var i = 0; i < layers.Count; i++)
+                {
+                    var layer = layers[i];
+                    if (string.IsNullOrWhiteSpace(layer.Path))
+                    {
+                        continue;
+                    }
+
+                    if (!decoderByPath.TryGetValue(layer.Path, out var decoder))
+                    {
+                        decoder = new VideoFrameDecoder();
+                        decoder.Open(layer.Path);
+                        decoderByPath[layer.Path] = decoder;
+                    }
+
+                    var frameBytes = decoder.SeekAndRead(TimeSpan.FromMilliseconds(Math.Max(0, layer.PlaybackMilliseconds)));
+                    if (frameBytes is null)
+                    {
+                        continue;
+                    }
+
+                    var renderOffsetX = (float)(layer.TransformX * (width / safePreviewWidth));
+                    var renderOffsetY = (float)(layer.TransformY * (height / safePreviewHeight));
+                    frameLayers.Add(new FrameCompositor.FrameLayer(
+                        frameBytes,
+                        decoder.FrameWidth,
+                        decoder.FrameHeight,
+                        renderOffsetX,
+                        renderOffsetY,
+                        (float)layer.TransformScale,
+                        (float)layer.CropLeft,
+                        (float)layer.CropTop,
+                        (float)layer.CropRight,
+                        (float)layer.CropBottom,
+                        layer.DrawBlurredBackground));
+                }
+
+                var composed = compositor.ComposeLayers(frameLayers, width, height);
+                DrawTextOverlay(composed, resolveTextOverlayState(playbackMs), height);
+
+                var byteCount = width * height * 4;
+                if (frameBuffer is null || frameBuffer.Length != byteCount)
+                {
+                    frameBuffer = new byte[byteCount];
+                }
+
+                Marshal.Copy(composed.GetPixels(), frameBuffer, 0, byteCount);
+                await process.StandardInput.BaseStream.WriteAsync(frameBuffer, 0, frameBuffer.Length);
+
+                var pct = ((frameIndex + 1) / (double)totalFrames) * 85.0;
+                progress.Report(pct);
+            }
+
+            process.StandardInput.Close();
+            await process.WaitForExitAsync();
+            await Task.WhenAll(stderrDrain, stdoutDrain);
+            if (process.ExitCode != 0)
+            {
+                var stderrTail = stderrLines.Count > 0
+                    ? string.Join(Environment.NewLine, stderrLines.TakeLast(40))
+                    : "No stderr output captured.";
+                throw new Exception($"Accurate video encoding failed with ffmpeg exit code {process.ExitCode}.\n{stderrTail}");
+            }
+        }
+        finally
+        {
+            foreach (var decoder in decoderByPath.Values)
+            {
+                decoder.Dispose();
+            }
+        }
+    }
+
+    private static void DrawTextOverlay(SKBitmap bitmap, TimelineTextOverlayState state, int targetHeight)
+    {
+        if (!state.IsVisible || string.IsNullOrWhiteSpace(state.Text))
+        {
+            return;
+        }
+
+        var scale = targetHeight / TextOverlayReferenceHeight;
+        var fontSize = Math.Max(1f, (float)(state.FontSize * scale));
+        var yOffset = (float)(72 * scale);
+        var color = ParseTextColor(state.ColorHex);
+
+        using var canvas = new SKCanvas(bitmap);
+        using var paint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = color,
+            Typeface = ResolveTypeface(state.FontFamily),
+            TextSize = fontSize,
+            TextAlign = SKTextAlign.Center
+        };
+
+        var metrics = paint.FontMetrics;
+        var baselineY = (bitmap.Height / 2f) - yOffset - ((metrics.Ascent + metrics.Descent) / 2f);
+        canvas.DrawText(state.Text, bitmap.Width / 2f, baselineY, paint);
+    }
+
+    private static SKTypeface ResolveTypeface(string fontFamily)
+    {
+        if (!string.IsNullOrWhiteSpace(fontFamily))
+        {
+            var byFamily = SKTypeface.FromFamilyName(fontFamily);
+            if (byFamily is not null)
+            {
+                return byFamily;
+            }
+        }
+
+        return SKTypeface.Default;
+    }
+
+    private static SKColor ParseTextColor(string colorHex)
+    {
+        if (!string.IsNullOrWhiteSpace(colorHex))
+        {
+            var value = colorHex.Trim();
+            if (value.StartsWith("#", StringComparison.Ordinal))
+            {
+                value = value[1..];
+            }
+
+            if (value.Length == 8)
+            {
+                value = value[2..];
+            }
+
+            if (value.Length == 6
+                && byte.TryParse(value[0..2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var r)
+                && byte.TryParse(value[2..4], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var g)
+                && byte.TryParse(value[4..6], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var b))
+            {
+                return new SKColor(r, g, b);
+            }
+        }
+
+        return SKColors.White;
+    }
+
+    private async Task RenderMixedAudioAsync(IReadOnlyList<ExportAudioClipInput> audios, string outputAudioPath, double totalDurationSeconds)
+    {
+        var ffmpeg = new StringBuilder();
+        ffmpeg.Append("-y ");
+        foreach (var a in audios)
+        {
+            ffmpeg.Append($"-i \"{a.Path}\" ");
+        }
+
+        ffmpeg.Append("-filter_complex \"");
+        for (var i = 0; i < audios.Count; i++)
+        {
+            var a = audios[i];
+            var delayMs = (int)Math.Round(a.StartSeconds * 1000, MidpointRounding.AwayFromZero);
+            var sourceStart = Math.Max(0, a.SourceStartSeconds).ToString(CultureInfo.InvariantCulture);
+            var sourceDuration = Math.Max(0.001, a.DurationSeconds).ToString(CultureInfo.InvariantCulture);
+            var volume = Math.Clamp(a.VolumeLevel, 0.0, 1.0).ToString(CultureInfo.InvariantCulture);
+            ffmpeg.Append($"[{i}:a]atrim=start={sourceStart}:duration={sourceDuration},asetpts=PTS-STARTPTS,volume={volume},adelay={delayMs}|{delayMs}[a{i}];");
+        }
+
+        for (var i = 0; i < audios.Count; i++)
+        {
+            ffmpeg.Append($"[a{i}]");
+        }
+
+        ffmpeg.Append($"amix=inputs={audios.Count}:duration=longest:dropout_transition=2[outa]\" ");
+        ffmpeg.Append("-map \"[outa]\" -c:a aac -b:a 192k ");
+        ffmpeg.Append($"-t {totalDurationSeconds.ToString(CultureInfo.InvariantCulture)} ");
+        ffmpeg.Append($"\"{outputAudioPath}\"");
+
+        await ExecuteFFmpegAsync(ffmpeg.ToString(), new Progress<double>(), totalDurationSeconds);
+    }
+
+    private async Task MuxAccurateOutputAsync(string videoPath, string? audioPath, string outputPath, double totalDurationSeconds)
+    {
+        var ffmpeg = new StringBuilder();
+        ffmpeg.Append("-y ");
+        ffmpeg.Append($"-i \"{videoPath}\" ");
+
+        if (!string.IsNullOrWhiteSpace(audioPath) && File.Exists(audioPath))
+        {
+            ffmpeg.Append($"-i \"{audioPath}\" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -movflags +faststart -shortest ");
+        }
+        else
+        {
+            ffmpeg.Append("-map 0:v:0 -c copy -movflags +faststart -an ");
+        }
+
+        ffmpeg.Append($"-t {totalDurationSeconds.ToString(CultureInfo.InvariantCulture)} ");
+        ffmpeg.Append($"\"{outputPath}\"");
+
+        await ExecuteFFmpegAsync(ffmpeg.ToString(), new Progress<double>(), totalDurationSeconds);
     }
 
     private static bool IsStillImagePath(string path)

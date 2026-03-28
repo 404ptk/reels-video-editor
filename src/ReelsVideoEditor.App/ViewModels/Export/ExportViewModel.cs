@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using ReelsVideoEditor.App.Services.Composition;
 using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.Services.Export;
@@ -15,8 +14,6 @@ namespace ReelsVideoEditor.App.ViewModels.Export;
 
 public sealed partial class ExportViewModel : ViewModelBase
 {
-    private readonly TimelineCompositionPlanner compositionPlanner = new();
-
     public string Title { get; } = "Export";
 
     public string Description { get; } = "Export your video with custom settings and effects";
@@ -93,22 +90,23 @@ public sealed partial class ExportViewModel : ViewModelBase
 
         try
         {
-            var plan = compositionPlanner.BuildPlan(TimelineContext.VideoClips, TimelineContext.VideoLanes);
-            var exportVideos = compositionPlanner.BuildExportVideoInputs(plan);
             var exportAudios = TimelineContext.ResolveExportAudioInputs();
+            var playbackDurationMilliseconds = TimelineContext.ResolvePlaybackDurationMilliseconds();
 
             var previewFrameWidth = Math.Max(1, PreviewContext?.PreviewFrameWidth ?? 1);
             var previewFrameHeight = Math.Max(1, PreviewContext?.PreviewFrameHeight ?? 1);
 
             var exporter = new Services.Export.TimelineExportService();
-            await exporter.ExportAsync(
-                exportVideos,
+            await exporter.ExportAccurateAsync(
                 exportAudios,
                 TimelineContext.IsAudioMuted,
                 fullPath,
                 SelectedResolution,
                 previewFrameWidth,
                 previewFrameHeight,
+                playbackDurationMilliseconds,
+                playbackMilliseconds => TimelineContext.ResolvePreviewVideoLayers(playbackMilliseconds),
+                playbackMilliseconds => TimelineContext.ResolveTextOverlayStateAt(playbackMilliseconds),
                 new Progress<double>(p => ExportProgress = p));
             
             ShowMessage?.Invoke("Export Complete", $"Video successfully exported to:\n{fullPath}");
