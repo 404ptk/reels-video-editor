@@ -61,9 +61,12 @@ public partial class TimelineViewModel
                 clip.IsSelected = false;
                 VideoClips.Add(clip);
 
-                var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
-                AudioClips.Add(linkedAudio);
-                _ = LoadAudioWaveformAsync(linkedAudio);
+                if (ShouldCreateLinkedAudio(clip.Path))
+                {
+                    var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
+                    AudioClips.Add(linkedAudio);
+                    _ = LoadAudioWaveformAsync(linkedAudio);
+                }
             }
         });
 

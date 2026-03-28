@@ -122,6 +122,11 @@ public partial class TimelineViewModel
                || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool ShouldCreateLinkedAudio(string? path)
+    {
+        return !string.IsNullOrWhiteSpace(path) && !IsStillImagePath(path);
+    }
+
     private IReadOnlyList<TimelineClipItem> ResolveActiveAudioClips()
     {
         if (AudioClips.Count == 0)

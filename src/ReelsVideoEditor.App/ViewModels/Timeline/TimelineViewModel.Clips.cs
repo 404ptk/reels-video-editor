@@ -22,7 +22,7 @@ public partial class TimelineViewModel
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
         VideoClips.Add(clip);
 
-        if (!IsStillImagePath(path))
+        if (ShouldCreateLinkedAudio(path))
         {
             var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
             AudioClips.Add(linkedAudio);
@@ -356,7 +356,7 @@ public partial class TimelineViewModel
 
         foreach (var videoClip in VideoClips)
         {
-            if (IsStillImagePath(videoClip.Path))
+            if (!ShouldCreateLinkedAudio(videoClip.Path))
             {
                 continue;
             }
