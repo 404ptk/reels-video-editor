@@ -27,6 +27,8 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<long, PreviewAudioState>? ResolveAudioState { get; set; }
 
+    public Func<bool>? HasSyntheticVideoContent { get; set; }
+
     public Func<bool>? HasSelectedVideoClip { get; set; }
 
     public Func<long>? ResolvePlaybackMaxMilliseconds { get; set; }
@@ -154,9 +156,11 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public bool HasVideoLoaded => !string.IsNullOrWhiteSpace(SourceVideoPath) && File.Exists(SourceVideoPath);
 
-    public bool ShowPlaceholder => !HasVideoLoaded;
+    public bool HasRenderableTimelineContent => HasVideoLoaded || (HasSyntheticVideoContent?.Invoke() ?? false);
 
-    public bool IsVideoVisible => HasVideoLoaded && !IsVideoHidden;
+    public bool ShowPlaceholder => !HasRenderableTimelineContent;
+
+    public bool IsVideoVisible => HasRenderableTimelineContent && !IsVideoHidden;
 
     [RelayCommand]
     private void TogglePlayPause()
@@ -168,10 +172,20 @@ public sealed partial class PreviewViewModel : ViewModelBase
                 var resolvedPath = ResolveVideoPath?.Invoke();
                 if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath))
                 {
-                    return;
+                    if (!HasRenderableTimelineContent)
+                    {
+                        return;
+                    }
                 }
+                else
+                {
+                    SourceVideoPath = resolvedPath;
+                }
+            }
 
-                SourceVideoPath = resolvedPath;
+            if (!HasRenderableTimelineContent)
+            {
+                return;
             }
 
             IsPlaying = true;
@@ -199,6 +213,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     partial void OnSourceVideoPathChanged(string? value)
     {
         OnPropertyChanged(nameof(HasVideoLoaded));
+        OnPropertyChanged(nameof(HasRenderableTimelineContent));
         OnPropertyChanged(nameof(ShowPlaceholder));
         OnPropertyChanged(nameof(IsVideoVisible));
         OnPropertyChanged(nameof(ShowTransformHandles));
@@ -245,16 +260,35 @@ public sealed partial class PreviewViewModel : ViewModelBase
             var resolvedPath = ResolveVideoPath?.Invoke();
             if (string.IsNullOrWhiteSpace(resolvedPath) || !File.Exists(resolvedPath))
             {
-                return;
+                if (!HasRenderableTimelineContent)
+                {
+                    return;
+                }
             }
+            else
+            {
+                SourceVideoPath = resolvedPath;
+            }
+        }
 
-            SourceVideoPath = resolvedPath;
+        if (!HasRenderableTimelineContent)
+        {
+            return;
         }
 
         var safeMilliseconds = Math.Max(0, targetPlaybackMilliseconds);
         RequestedSeekMilliseconds = safeMilliseconds;
         SeekRequestVersion++;
         UpdatePlaybackTime(safeMilliseconds);
+    }
+
+    public void RefreshRenderAvailability()
+    {
+        OnPropertyChanged(nameof(HasRenderableTimelineContent));
+        OnPropertyChanged(nameof(ShowPlaceholder));
+        OnPropertyChanged(nameof(IsVideoVisible));
+        OnPropertyChanged(nameof(ShowTransformHandles));
+        OnPropertyChanged(nameof(ShowClipperHandles));
     }
 
     private static string FormatPlaybackTime(long playbackMilliseconds)

@@ -55,6 +55,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),
             ResolveVideoLayers = playbackMilliseconds => Timeline.ResolvePreviewVideoLayers(playbackMilliseconds),
             ResolveAudioState = playbackMilliseconds => Timeline.ResolvePreviewAudioState(playbackMilliseconds),
+            HasSyntheticVideoContent = () => Timeline.HasVisibleTextOnlyPlaybackContent(),
             HasSelectedVideoClip = () => Timeline.HasSelectedVideoClip(),
             ResolvePlaybackMaxMilliseconds = () => Timeline.ResolvePlaybackDurationMilliseconds(),
             PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
@@ -122,6 +123,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.TextOverlayStateChanged = state =>
         {
             Preview.UpdateTextOverlayState(state.Text, state.FontFamily, state.FontSize, state.ColorHex, state.IsVisible);
+            Preview.RefreshRenderAvailability();
         };
 
         Timeline.PreviewClipChanged = () =>
@@ -129,6 +131,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var resolvedPath = Timeline.ResolvePreviewClipPath();
             Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
             SyncPreviewTransformFromTimelineTarget();
+            Preview.RefreshRenderAvailability();
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
                 Preview.Stop();

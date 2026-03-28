@@ -19,7 +19,7 @@ public partial class PreviewPanelView
 {
     private async Task RenderSeekFrameAsync(TimeSpan position, PreviewViewModel viewModel)
     {
-        if (!decoder.IsOpen || viewModel.IsVideoHidden)
+        if (viewModel.IsVideoHidden)
         {
             return;
         }
@@ -41,6 +41,11 @@ public partial class PreviewPanelView
             {
                 var layeredFrame = ComposeMultipleLayers(viewModel, resolvedLayers);
                 return layeredFrame ?? ComposeBlackFrame(viewModel);
+            }
+
+            if (!decoder.IsOpen)
+            {
+                return null;
             }
 
             lock (decoder)

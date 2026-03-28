@@ -85,19 +85,16 @@ public partial class PreviewPanelView
 
         if (viewModel.IsPlaying)
         {
-            if (decoder.IsOpen)
-            {
-                playbackStartMilliseconds = viewModel.CurrentPlaybackMilliseconds;
-                playbackStopwatch.Restart();
-                SyncAudioToTimeline(viewModel, playbackStartMilliseconds, forceSeek: true);
-                StartPlaybackLoop(viewModel);
-            }
+            playbackStartMilliseconds = viewModel.CurrentPlaybackMilliseconds;
+            playbackStopwatch.Restart();
+            SyncAudioToTimeline(viewModel, playbackStartMilliseconds, forceSeek: true);
+            StartPlaybackLoop(viewModel);
 
             return;
         }
 
         playbackCts?.Cancel();
-        if (viewModel.StopRequestVersion > handledStopRequestVersion && decoder.IsOpen)
+        if (viewModel.StopRequestVersion > handledStopRequestVersion)
         {
             handledStopRequestVersion = viewModel.StopRequestVersion;
             audioService.Stop();
@@ -116,11 +113,6 @@ public partial class PreviewPanelView
     private async void ApplySeekRequest(PreviewViewModel viewModel)
     {
         if (viewModel.SeekRequestVersion <= handledSeekRequestVersion)
-        {
-            return;
-        }
-
-        if (!decoder.IsOpen)
         {
             return;
         }

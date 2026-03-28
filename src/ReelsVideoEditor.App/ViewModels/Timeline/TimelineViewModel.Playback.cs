@@ -143,6 +143,11 @@ public partial class TimelineViewModel
         return VideoClips.Any(clip => clip.IsSelected);
     }
 
+    public bool HasVisibleTextOnlyPlaybackContent()
+    {
+        return ResolveVisibleTextOnlyPlaybackEndSeconds() > 0;
+    }
+
     public PreviewClipTransform ResolveTransformTargetState()
     {
         var targetClip = ResolveTransformTargetClip();
