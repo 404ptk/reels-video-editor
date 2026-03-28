@@ -36,7 +36,7 @@
                                    IsVisible="{Binding IsTextOverlayVisible}"
                                    Foreground="{Binding TextOverlayColor}"
                                    FontFamily="{Binding TextOverlayFontFamily}"
-                                   FontSize="{Binding TextOverlayFontSize}"
+                                   FontSize="{Binding ScaledTextOverlayFontSize}"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"

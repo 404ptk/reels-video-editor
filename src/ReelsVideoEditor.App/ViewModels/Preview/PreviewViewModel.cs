@@ -18,6 +18,7 @@ public enum PreviewQuality
 public sealed partial class PreviewViewModel : ViewModelBase
 {
     private const string ZeroTime = "00:00:00";
+    private const double TextOverlayReferenceHeight = 1280.0;
     private readonly Stack<TransformCropState> transformCropUndoStack = new();
     private TransformCropState? pendingEditStartState;
 
@@ -139,6 +140,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private string textOverlayFontFamily = "Inter";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScaledTextOverlayFontSize))]
     private double textOverlayFontSize = 14;
 
     [ObservableProperty]
@@ -361,7 +363,18 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private double previewFrameWidth = 1.0;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ScaledTextOverlayFontSize))]
     private double previewFrameHeight = 1.0;
+
+    public double ScaledTextOverlayFontSize
+    {
+        get
+        {
+            var frameHeight = Math.Max(1.0, PreviewFrameHeight);
+            var scale = frameHeight / TextOverlayReferenceHeight;
+            return Math.Max(1.0, TextOverlayFontSize * scale);
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TransformHandleThickness))]
