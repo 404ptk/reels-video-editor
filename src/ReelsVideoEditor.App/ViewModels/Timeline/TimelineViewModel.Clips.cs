@@ -176,14 +176,18 @@ public partial class TimelineViewModel
     public void ResizeClipFromLeft(TimelineClipItem clip, double requestedStartSeconds)
     {
         var clipEndSeconds = clip.StartSeconds + clip.DurationSeconds;
-        var minStartBySource = clip.StartSeconds - Math.Max(0, clip.SourceStartSeconds);
+        var minStartBySource = IsSourceBoundedClip(clip)
+            ? clip.StartSeconds - Math.Max(0, clip.SourceStartSeconds)
+            : 0;
         var maxStartByDuration = clipEndSeconds - MinClipDurationSeconds;
         var clampedStartSeconds = Math.Clamp(requestedStartSeconds, minStartBySource, maxStartByDuration);
         clampedStartSeconds = Math.Max(0, clampedStartSeconds);
 
         var nextDurationSeconds = clipEndSeconds - clampedStartSeconds;
         var consumedFromSourceDelta = clip.StartSeconds - clampedStartSeconds;
-        var nextSourceStartSeconds = Math.Max(0, clip.SourceStartSeconds - consumedFromSourceDelta);
+        var nextSourceStartSeconds = IsSourceBoundedClip(clip)
+            ? Math.Max(0, clip.SourceStartSeconds - consumedFromSourceDelta)
+            : 0;
 
         ApplyClipResize(clip, clampedStartSeconds, nextDurationSeconds, nextSourceStartSeconds);
     }
@@ -191,7 +195,9 @@ public partial class TimelineViewModel
     public void ResizeClipFromRight(TimelineClipItem clip, double requestedEndSeconds)
     {
         var minEndByDuration = clip.StartSeconds + MinClipDurationSeconds;
-        var maxEndBySource = clip.StartSeconds + Math.Max(MinClipDurationSeconds, clip.SourceDurationSeconds - clip.SourceStartSeconds);
+        var maxEndBySource = IsSourceBoundedClip(clip)
+            ? clip.StartSeconds + Math.Max(MinClipDurationSeconds, clip.SourceDurationSeconds - clip.SourceStartSeconds)
+            : TimelineDurationSeconds;
         var maxEndSeconds = Math.Min(TimelineDurationSeconds, maxEndBySource);
         var clampedEndSeconds = Math.Clamp(requestedEndSeconds, minEndByDuration, maxEndSeconds);
 
@@ -461,6 +467,11 @@ public partial class TimelineViewModel
         {
             UpdateAudioClipLevelLine(audioClip);
         }
+    }
+
+    private static bool IsSourceBoundedClip(TimelineClipItem clip)
+    {
+        return !string.IsNullOrWhiteSpace(clip.Path);
     }
 
     private void UpdateAudioClipLevelLine(TimelineClipItem clip)
