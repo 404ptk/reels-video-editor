@@ -92,7 +92,11 @@
                         <TextBlock Text="Text"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
-                        <TextBox Text="{Binding SelectedClipText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Text="{Binding SelectedClipText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalContentAlignment="Top"
+                                 MinHeight="76" />
                     </StackPanel>
 
                     <StackPanel Spacing="4">

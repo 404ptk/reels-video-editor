@@ -80,7 +80,8 @@ public partial class TimelineViewModel
             return;
         }
 
-        var normalizedText = string.IsNullOrWhiteSpace(text) ? "Text" : text.Trim();
+        var normalizedTextContent = NormalizeTextContent(text);
+        var normalizedDisplayName = BuildDisplayName(normalizedTextContent);
         var normalizedFontSize = Math.Clamp(fontSize, 10, 180);
         var normalizedFontFamily = string.IsNullOrWhiteSpace(fontFamily)
             ? selectedTextClip.TextFontFamily
@@ -91,8 +92,8 @@ public partial class TimelineViewModel
             normalizedColorHex = parsedColor.ToString();
         }
 
-        if (string.Equals(selectedTextClip.Name, normalizedText, StringComparison.Ordinal)
-            && string.Equals(selectedTextClip.TextContent, normalizedText, StringComparison.Ordinal)
+        if (string.Equals(selectedTextClip.Name, normalizedDisplayName, StringComparison.Ordinal)
+            && string.Equals(selectedTextClip.TextContent, normalizedTextContent, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
             && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001
             && string.Equals(selectedTextClip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
@@ -100,13 +101,34 @@ public partial class TimelineViewModel
             return;
         }
 
-        selectedTextClip.Name = normalizedText;
-        selectedTextClip.TextContent = normalizedText;
+        selectedTextClip.Name = normalizedDisplayName;
+        selectedTextClip.TextContent = normalizedTextContent;
         selectedTextClip.TextColorHex = normalizedColorHex;
         selectedTextClip.TextFontSize = normalizedFontSize;
         selectedTextClip.TextFontFamily = normalizedFontFamily;
 
         NotifyTextOverlayStateChanged();
+    }
+
+    private static string NormalizeTextContent(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "Text";
+        }
+
+        var normalized = text
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Trim();
+
+        return string.IsNullOrWhiteSpace(normalized) ? "Text" : normalized;
+    }
+
+    private static string BuildDisplayName(string textContent)
+    {
+        var singleLine = textContent.Replace('\n', ' ').Trim();
+        return string.IsNullOrWhiteSpace(singleLine) ? "Text" : singleLine;
     }
 
     public void MoveClipToStart(

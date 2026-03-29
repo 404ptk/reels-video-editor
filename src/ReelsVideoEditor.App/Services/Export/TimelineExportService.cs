@@ -444,9 +444,45 @@ public class TimelineExportService
             TextAlign = SKTextAlign.Center
         };
 
+        var lines = state.Text
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace('\r', '\n')
+            .Split('\n');
+        if (lines.Length == 0)
+        {
+            return;
+        }
+
+        var nonEmptyAny = lines.Any(line => !string.IsNullOrWhiteSpace(line));
+        if (!nonEmptyAny)
+        {
+            return;
+        }
+
         var metrics = paint.FontMetrics;
-        var baselineY = (bitmap.Height / 2f) - yOffset - ((metrics.Ascent + metrics.Descent) / 2f);
-        canvas.DrawText(state.Text, bitmap.Width / 2f, baselineY, paint);
+        var lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
+        if (lineHeight <= 0)
+        {
+            lineHeight = fontSize * 1.2f;
+        }
+
+        var totalTextHeight = lineHeight * lines.Length;
+        var firstBaselineY = (bitmap.Height / 2f)
+            - yOffset
+            - (totalTextHeight / 2f)
+            - metrics.Ascent;
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+            if (line.Length == 0)
+            {
+                continue;
+            }
+
+            var baselineY = firstBaselineY + (i * lineHeight);
+            canvas.DrawText(line, bitmap.Width / 2f, baselineY, paint);
+        }
     }
 
     private static SKTypeface ResolveTypeface(string fontFamily)
