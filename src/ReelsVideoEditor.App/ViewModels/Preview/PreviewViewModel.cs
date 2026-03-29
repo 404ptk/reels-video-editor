@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using System;
 using System.Collections.Generic;
@@ -137,7 +138,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private string textOverlayValue = string.Empty;
 
     [ObservableProperty]
-    private string textOverlayFontFamily = "Inter";
+    private FontFamily textOverlayFontFamily = new("Inter");
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ScaledTextOverlayFontSize))]
@@ -323,7 +324,14 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
         if (!string.IsNullOrWhiteSpace(fontFamily))
         {
-            TextOverlayFontFamily = fontFamily;
+            try
+            {
+                TextOverlayFontFamily = new FontFamily(fontFamily.Trim());
+            }
+            catch
+            {
+                TextOverlayFontFamily = new FontFamily("Inter");
+            }
         }
 
         if (fontSize > 0)

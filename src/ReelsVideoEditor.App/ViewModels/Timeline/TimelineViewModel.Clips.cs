@@ -72,7 +72,7 @@ public partial class TimelineViewModel
         });
     }
 
-    public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize)
+    public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize, string fontFamily)
     {
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
@@ -82,6 +82,9 @@ public partial class TimelineViewModel
 
         var normalizedText = string.IsNullOrWhiteSpace(text) ? "Text" : text.Trim();
         var normalizedFontSize = Math.Clamp(fontSize, 10, 180);
+        var normalizedFontFamily = string.IsNullOrWhiteSpace(fontFamily)
+            ? selectedTextClip.TextFontFamily
+            : fontFamily.Trim();
         var normalizedColorHex = selectedTextClip.TextColorHex;
         if (!string.IsNullOrWhiteSpace(colorHex) && Color.TryParse(colorHex.Trim(), out var parsedColor))
         {
@@ -91,7 +94,8 @@ public partial class TimelineViewModel
         if (string.Equals(selectedTextClip.Name, normalizedText, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextContent, normalizedText, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
-            && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001)
+            && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001
+            && string.Equals(selectedTextClip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
         {
             return;
         }
@@ -100,6 +104,7 @@ public partial class TimelineViewModel
         selectedTextClip.TextContent = normalizedText;
         selectedTextClip.TextColorHex = normalizedColorHex;
         selectedTextClip.TextFontSize = normalizedFontSize;
+        selectedTextClip.TextFontFamily = normalizedFontFamily;
 
         NotifyTextOverlayStateChanged();
     }

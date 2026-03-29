@@ -114,9 +114,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.CurrentAudioVolume = audioVolume;
         };
 
-        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize) =>
+        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize, fontFamily) =>
         {
-            Timeline.UpdateSelectedTextClipSettings(text, colorHex, fontSize);
+            Timeline.UpdateSelectedTextClipSettings(text, colorHex, fontSize, fontFamily);
             Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         };
 

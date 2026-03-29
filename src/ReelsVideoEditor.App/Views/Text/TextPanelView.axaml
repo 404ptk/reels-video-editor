@@ -96,6 +96,25 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
+                        <TextBlock Text="Font"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <ComboBox ItemsSource="{Binding AvailableFonts}"
+                                  SelectedItem="{Binding SelectedClipFontFamily, Mode=TwoWay}"
+                                  Width="280"
+                                  HorizontalAlignment="Left"
+                                  MaxDropDownHeight="300">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding .}"
+                                               Width="248"
+                                               TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
                         <TextBlock Text="Color"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />

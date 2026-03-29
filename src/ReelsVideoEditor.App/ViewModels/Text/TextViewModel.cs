@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Versioning;
+using Microsoft.Win32;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,6 +13,7 @@ namespace ReelsVideoEditor.App.ViewModels.Text;
 public sealed partial class TextViewModel : ViewModelBase
 {
     private bool isSyncingFromTimeline;
+    private IReadOnlyList<string> RenderableFonts { get; } = LoadRenderableFonts();
 
     public string Title { get; } = "Text";
 
@@ -17,7 +21,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public string EditorTitle { get; } = "Edit text clip";
 
-    public string EditorDescription { get; } = "Change text content, size and color for selected clip.";
+    public string EditorDescription { get; } = "Change text content, font, size and color for selected clip.";
 
     public IReadOnlyList<Models.TextPresetDefinition> Presets { get; } =
     [
@@ -40,7 +44,14 @@ public sealed partial class TextViewModel : ViewModelBase
         new("Pink", "#FF5D8F")
     ];
 
-    public Action<string, string, double>? ApplySelectedTextSettingsRequested { get; set; }
+    public IReadOnlyList<string> AvailableFonts { get; }
+
+    public Action<string, string, double, string>? ApplySelectedTextSettingsRequested { get; set; }
+
+    public TextViewModel()
+    {
+        AvailableFonts = LoadAvailableFonts(RenderableFonts);
+    }
 
     [ObservableProperty]
     private bool isEditorVisible;
@@ -65,6 +76,9 @@ public sealed partial class TextViewModel : ViewModelBase
     [ObservableProperty]
     private double selectedClipFontSize = 14;
 
+    [ObservableProperty]
+    private string selectedClipFontFamily = "Inter";
+
     public IBrush SelectedColorPreviewBrush => new SolidColorBrush(Color.FromRgb(
         NormalizeColorChannel(SelectedColorR),
         NormalizeColorChannel(SelectedColorG),
@@ -83,6 +97,7 @@ public sealed partial class TextViewModel : ViewModelBase
                 SelectedClipText = state.Text;
                 ApplyColorFromHex(state.ColorHex);
                 SelectedClipFontSize = state.FontSize;
+                SelectedClipFontFamily = ResolveAvailableFontFamily(state.FontFamily);
                 IsEditorVisible = true;
             }
             else
@@ -138,6 +153,11 @@ public sealed partial class TextViewModel : ViewModelBase
         ApplySelectedTextSettings();
     }
 
+    partial void OnSelectedClipFontFamilyChanged(string value)
+    {
+        ApplySelectedTextSettings();
+    }
+
     private void ApplySelectedTextSettings()
     {
         if (isSyncingFromTimeline || !HasSelectedTextClip || !IsEditorVisible)
@@ -145,7 +165,11 @@ public sealed partial class TextViewModel : ViewModelBase
             return;
         }
 
-        ApplySelectedTextSettingsRequested?.Invoke(SelectedClipText, SelectedColorHex, SelectedClipFontSize);
+        ApplySelectedTextSettingsRequested?.Invoke(
+            SelectedClipText,
+            SelectedColorHex,
+            SelectedClipFontSize,
+            ResolveAvailableFontFamily(SelectedClipFontFamily));
     }
 
     [RelayCommand]
@@ -174,5 +198,141 @@ public sealed partial class TextViewModel : ViewModelBase
     private static byte NormalizeColorChannel(double value)
     {
         return (byte)Math.Clamp((int)Math.Round(value), 0, 255);
+    }
+
+    private string ResolveAvailableFontFamily(string? fontFamily)
+    {
+        if (!string.IsNullOrWhiteSpace(fontFamily))
+        {
+            var requested = fontFamily.Trim();
+
+            var exactRenderable = RenderableFonts.FirstOrDefault(font =>
+                string.Equals(font, requested, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrWhiteSpace(exactRenderable))
+            {
+                return exactRenderable;
+            }
+
+            var normalizedRequested = NormalizeFontLookup(requested);
+            if (normalizedRequested.Length > 0)
+            {
+                var normalizedExact = RenderableFonts.FirstOrDefault(font =>
+                    string.Equals(NormalizeFontLookup(font), normalizedRequested, StringComparison.Ordinal));
+                if (!string.IsNullOrWhiteSpace(normalizedExact))
+                {
+                    return normalizedExact;
+                }
+
+                var aliasMatch = RenderableFonts
+                    .Select(font => new { Font = font, Normalized = NormalizeFontLookup(font) })
+                    .Where(item => item.Normalized.Length > 0
+                        && (normalizedRequested.StartsWith(item.Normalized, StringComparison.Ordinal)
+                            || item.Normalized.StartsWith(normalizedRequested, StringComparison.Ordinal)))
+                    .OrderBy(item => Math.Abs(item.Normalized.Length - normalizedRequested.Length))
+                    .ThenBy(item => item.Font, StringComparer.OrdinalIgnoreCase)
+                    .Select(item => item.Font)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrWhiteSpace(aliasMatch))
+                {
+                    return aliasMatch;
+                }
+            }
+        }
+
+        return RenderableFonts.FirstOrDefault() ?? AvailableFonts.FirstOrDefault() ?? "Inter";
+    }
+
+    private static IReadOnlyList<string> LoadRenderableFonts()
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var family in FontManager.Current.SystemFonts)
+        {
+            if (!string.IsNullOrWhiteSpace(family.Name))
+            {
+                names.Add(family.Name);
+            }
+        }
+
+        if (names.Count == 0)
+        {
+            names.Add("Inter");
+        }
+
+        return names
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> LoadAvailableFonts(IReadOnlyList<string> renderableFonts)
+    {
+        var names = new HashSet<string>(renderableFonts, StringComparer.OrdinalIgnoreCase);
+
+        if (OperatingSystem.IsWindows())
+        {
+            AddWindowsRegistryFonts(names, Registry.CurrentUser, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
+            AddWindowsRegistryFonts(names, Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts");
+        }
+
+        if (names.Count == 0)
+        {
+            names.Add("Inter");
+        }
+
+        return names
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string NormalizeFontLookup(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return new string(value
+            .ToUpperInvariant()
+            .Where(char.IsLetterOrDigit)
+            .ToArray());
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static void AddWindowsRegistryFonts(HashSet<string> names, RegistryKey root, string subKeyPath)
+    {
+        try
+        {
+            using var key = root.OpenSubKey(subKeyPath);
+            if (key is null)
+            {
+                return;
+            }
+
+            foreach (var valueName in key.GetValueNames())
+            {
+                var normalizedName = NormalizeRegistryFontName(valueName);
+                if (!string.IsNullOrWhiteSpace(normalizedName))
+                {
+                    names.Add(normalizedName);
+                }
+            }
+        }
+        catch
+        {
+            // Ignore registry access problems and continue with discovered fonts.
+        }
+    }
+
+    private static string NormalizeRegistryFontName(string? valueName)
+    {
+        if (string.IsNullOrWhiteSpace(valueName))
+        {
+            return string.Empty;
+        }
+
+        var separatorIndex = valueName.IndexOf(" (", StringComparison.Ordinal);
+        return separatorIndex > 0
+            ? valueName[..separatorIndex].Trim()
+            : valueName.Trim();
     }
 }
