@@ -6,9 +6,11 @@
              x:Class="ReelsVideoEditor.App.Views.Text.TextPanelView"
              x:DataType="vm:TextViewModel">
 
-    <StackPanel Spacing="12">
-        <StackPanel Spacing="12"
-                IsVisible="{Binding IsPresetVisible}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="12">
+            <StackPanel Spacing="12"
+                        IsVisible="{Binding IsPresetVisible}">
             <TextBlock Text="{Binding Title}"
                        Foreground="{DynamicResource Accent}"
                        FontSize="20"
@@ -63,10 +65,10 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </StackPanel>
+            </StackPanel>
 
-        <StackPanel Spacing="12"
-                    IsVisible="{Binding IsEditorVisible}">
+            <StackPanel Spacing="12"
+                        IsVisible="{Binding IsEditorVisible}">
             <Grid ColumnDefinitions="Auto,*"
                   ColumnSpacing="10">
                 <commonViews:BackButton Command="{Binding BackToPresetsCommand}" />
@@ -198,7 +200,8 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </ScrollViewer>
 
 </UserControl>
