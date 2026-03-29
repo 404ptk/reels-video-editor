@@ -59,6 +59,7 @@ public partial class TimelineViewModel
         clip.TextColorHex = preset.ColorHex;
         clip.TextFontFamily = preset.FontFamily;
         clip.TextFontSize = preset.FontSize;
+        clip.TransformY = -72;
         VideoClips.Add(clip);
 
         if (VideoClips.Count == 1)

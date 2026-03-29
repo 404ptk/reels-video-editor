@@ -28,11 +28,13 @@ public partial class PreviewPanelView
         IReadOnlyList<PreviewVideoLayer>? resolvedLayers = null;
         if (resolveLayers is not null)
         {
-            resolvedLayers = resolveLayers((long)position.TotalMilliseconds);
+            var playbackMilliseconds = (long)position.TotalMilliseconds;
+            resolvedLayers = resolveLayers(playbackMilliseconds);
             var hasAnySelection = viewModel.HasSelectedVideoClip?.Invoke() ?? false;
-            var hasActiveSelectedLayer = resolvedLayers.Any(layer => layer.IsSelected);
-            viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveSelectedLayer;
-            UpdateVideoForegroundBoundsForLayers(viewModel, resolvedLayers);
+            var hasActiveTransformTarget = viewModel.HasActiveTransformTarget?.Invoke(playbackMilliseconds)
+                ?? resolvedLayers.Any(layer => layer.IsSelected);
+            viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveTransformTarget;
+            UpdateVideoForegroundBoundsForLayers(viewModel, resolvedLayers, playbackMilliseconds);
         }
 
         var composed = await Task.Run(() =>
@@ -180,10 +182,22 @@ public partial class PreviewPanelView
         return compositor.ComposeLayers(frameLayers, targetW, targetH);
     }
 
-    private void UpdateVideoForegroundBoundsForLayers(PreviewViewModel viewModel, IReadOnlyList<PreviewVideoLayer> layers)
+    private void UpdateVideoForegroundBoundsForLayers(PreviewViewModel viewModel, IReadOnlyList<PreviewVideoLayer> layers, long playbackMilliseconds)
     {
-        if (previewFrame is null || layers.Count == 0)
+        if (previewFrame is null)
         {
+            return;
+        }
+
+        if (UpdateTextForegroundBoundsIfNeeded(viewModel, playbackMilliseconds))
+        {
+            return;
+        }
+
+        if (layers.Count == 0)
+        {
+            viewModel.ForegroundWidth = previewFrame.Width;
+            viewModel.ForegroundHeight = previewFrame.Height;
             return;
         }
 
@@ -209,6 +223,33 @@ public partial class PreviewPanelView
 
         viewModel.ForegroundWidth = sourceW * scale;
         viewModel.ForegroundHeight = sourceH * scale;
+    }
+
+    private bool UpdateTextForegroundBoundsIfNeeded(PreviewViewModel viewModel, long playbackMilliseconds)
+    {
+        if (previewFrame is null || previewTextOverlay is null)
+        {
+            return false;
+        }
+
+        var isTextTarget = viewModel.IsTextTransformTarget?.Invoke(playbackMilliseconds) ?? false;
+        if (!isTextTarget)
+        {
+            return false;
+        }
+
+        previewTextOverlay.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var measuredWidth = Math.Max(previewTextOverlay.Bounds.Width, previewTextOverlay.DesiredSize.Width);
+        var measuredHeight = Math.Max(previewTextOverlay.Bounds.Height, previewTextOverlay.DesiredSize.Height);
+        if (measuredWidth <= 1 || measuredHeight <= 1)
+        {
+            return false;
+        }
+
+        const double textHandlePadding = 24;
+        viewModel.ForegroundWidth = Math.Clamp(measuredWidth + textHandlePadding, 24, previewFrame.Width);
+        viewModel.ForegroundHeight = Math.Clamp(measuredHeight + textHandlePadding, 24, previewFrame.Height);
+        return true;
     }
 
     private VideoFrameDecoder? ResolveDecoderForPath(string path)

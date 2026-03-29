@@ -32,15 +32,40 @@
                                    VerticalAlignment="Stretch" />
                         </Border>
 
-                        <TextBlock Text="{Binding TextOverlayValue}"
-                                   IsVisible="{Binding IsTextOverlayVisible}"
-                                   Foreground="{Binding TextOverlayColor}"
-                                   FontFamily="{Binding TextOverlayFontFamily}"
-                                   FontSize="{Binding ScaledTextOverlayFontSize}"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,0,72" />
+                        <Grid Width="{Binding PreviewFrameWidth}"
+                              Height="{Binding PreviewFrameHeight}"
+                              IsVisible="{Binding IsTextOverlayVisible}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              ClipToBounds="False">
+                            <Grid.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="{Binding TextOverlayTransformScale}"
+                                                    ScaleY="{Binding TextOverlayTransformScale}" />
+                                    <TranslateTransform X="{Binding TextOverlayTransformX}"
+                                                       Y="{Binding TextOverlayTransformY}" />
+                                </TransformGroup>
+                            </Grid.RenderTransform>
+
+                            <Canvas ClipToBounds="True">
+                                <Grid Width="{Binding TextOverlayCropWidth}"
+                                      Height="{Binding TextOverlayCropHeight}"
+                                      Canvas.Left="{Binding TextOverlayCropLeftPx}"
+                                      Canvas.Top="{Binding TextOverlayCropTopPx}"
+                                      ClipToBounds="True">
+                                    <TextBlock x:Name="TextOverlayText"
+                                               Text="{Binding TextOverlayValue}"
+                                               Foreground="{Binding TextOverlayColor}"
+                                               FontFamily="{Binding TextOverlayFontFamily}"
+                                               FontSize="{Binding ScaledTextOverlayFontSize}"
+                                               FontWeight="SemiBold"
+                                               TextWrapping="Wrap"
+                                               TextAlignment="Center"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Canvas>
+                        </Grid>
 
                         <Grid Width="{Binding ScaledForegroundWidth}"
                               Height="{Binding ScaledForegroundHeight}"

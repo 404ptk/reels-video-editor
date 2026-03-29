@@ -350,8 +350,9 @@ public partial class PreviewPanelView
                 {
                     var layers = resolveLayers(currentMs);
                     var hasAnySelection = viewModel.HasSelectedVideoClip?.Invoke() ?? false;
-                    var hasActiveSelectedLayer = layers.Any(layer => layer.IsSelected);
-                    viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveSelectedLayer;
+                    var hasActiveTransformTarget = viewModel.HasActiveTransformTarget?.Invoke(currentMs)
+                        ?? layers.Any(layer => layer.IsSelected);
+                    viewModel.IsTransformTargetActive = !hasAnySelection || hasActiveTransformTarget;
                     composed = ComposeMultipleLayers(viewModel, layers);
                     if (composed is null)
                     {

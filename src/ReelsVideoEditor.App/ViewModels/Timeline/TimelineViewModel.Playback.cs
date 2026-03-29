@@ -143,6 +143,60 @@ public partial class TimelineViewModel
         return VideoClips.Any(clip => clip.IsSelected);
     }
 
+    public bool HasActiveTransformTargetAt(long playbackMilliseconds)
+    {
+        var selectedClip = ResolveSelectedVideoClip();
+        if (selectedClip is null)
+        {
+            return false;
+        }
+
+        return IsTransformTargetActiveAt(selectedClip, playbackMilliseconds);
+    }
+
+    public bool IsTextTransformTargetAt(long playbackMilliseconds)
+    {
+        var selectedClip = ResolveSelectedVideoClip();
+        if (selectedClip is null || !IsTextTimelineClip(selectedClip))
+        {
+            return false;
+        }
+
+        return IsTransformTargetActiveAt(selectedClip, playbackMilliseconds);
+    }
+
+    private bool IsTransformTargetActiveAt(TimelineClipItem selectedClip, long playbackMilliseconds)
+    {
+
+        var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);
+        if (timelineSeconds < selectedClip.StartSeconds
+            || timelineSeconds > selectedClip.StartSeconds + selectedClip.DurationSeconds)
+        {
+            return false;
+        }
+
+        var lane = ResolveLaneByLabel(selectedClip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+        if (lane is null || lane.IsHidden)
+        {
+            return false;
+        }
+
+        var hasSoloLanes = VideoLanes.Any(videoLane => videoLane.IsSolo);
+        if (hasSoloLanes && !lane.IsSolo)
+        {
+            return false;
+        }
+
+        if (IsTextTimelineClip(selectedClip))
+        {
+            return true;
+        }
+
+        var plan = BuildCompositionPlan();
+        var activeLayers = compositionPlanner.ResolveActiveVideoLayers(plan, timelineSeconds);
+        return activeLayers.Any(layer => ReferenceEquals(layer.Clip, selectedClip));
+    }
+
     public bool HasVisibleTextOnlyPlaybackContent()
     {
         return ResolveVisibleTextOnlyPlaybackEndSeconds() > 0;
@@ -188,6 +242,12 @@ public partial class TimelineViewModel
         targetClip.CropTop = Math.Clamp(cropTop, 0.0, 0.95);
         targetClip.CropRight = Math.Clamp(cropRight, 0.0, 0.95);
         targetClip.CropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
+
+        // Text overlays are rendered from TimelineTextOverlayState, so refresh it on every drag frame.
+        if (IsTextTimelineClip(targetClip))
+        {
+            NotifyTextOverlayStateChanged();
+        }
     }
 
     public void UpdatePlayheadFromPlayback(long playbackMilliseconds)
@@ -427,7 +487,19 @@ public partial class TimelineViewModel
 
         if (activeTextClip is null)
         {
-            return new TimelineTextOverlayState(false, string.Empty, "Inter", 14, "#FFFFFF");
+            return new TimelineTextOverlayState(
+                false,
+                string.Empty,
+                "Inter",
+                14,
+                "#FFFFFF",
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0);
         }
 
         return new TimelineTextOverlayState(
@@ -435,7 +507,14 @@ public partial class TimelineViewModel
             activeTextClip.TextContent,
             activeTextClip.TextFontFamily,
             activeTextClip.TextFontSize,
-            activeTextClip.TextColorHex);
+            activeTextClip.TextColorHex,
+            activeTextClip.TransformX,
+            activeTextClip.TransformY,
+            activeTextClip.TransformScale,
+            activeTextClip.CropLeft,
+            activeTextClip.CropTop,
+            activeTextClip.CropRight,
+            activeTextClip.CropBottom);
     }
 
     private TimelineClipItem? ResolveSelectedTextClip()

@@ -57,6 +57,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             ResolveAudioState = playbackMilliseconds => Timeline.ResolvePreviewAudioState(playbackMilliseconds),
             HasSyntheticVideoContent = () => Timeline.HasVisibleTextOnlyPlaybackContent(),
             HasSelectedVideoClip = () => Timeline.HasSelectedVideoClip(),
+            HasActiveTransformTarget = playbackMilliseconds => Timeline.HasActiveTransformTargetAt(playbackMilliseconds),
+            IsTextTransformTarget = playbackMilliseconds => Timeline.IsTextTransformTargetAt(playbackMilliseconds),
             ResolvePlaybackMaxMilliseconds = () => Timeline.ResolvePlaybackDurationMilliseconds(),
             PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
             PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
@@ -122,7 +124,19 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Timeline.TextOverlayStateChanged = state =>
         {
-            Preview.UpdateTextOverlayState(state.Text, state.FontFamily, state.FontSize, state.ColorHex, state.IsVisible);
+            Preview.UpdateTextOverlayState(
+                state.Text,
+                state.FontFamily,
+                state.FontSize,
+                state.ColorHex,
+                state.IsVisible,
+                state.TransformX,
+                state.TransformY,
+                state.TransformScale,
+                state.CropLeft,
+                state.CropTop,
+                state.CropRight,
+                state.CropBottom);
             Preview.RefreshRenderAvailability();
         };
 

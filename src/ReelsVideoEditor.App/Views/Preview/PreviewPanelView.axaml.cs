@@ -25,6 +25,7 @@ public partial class PreviewPanelView : UserControl
     private readonly Border? previewFrame;
     private readonly Control? previewViewport;
     private readonly Image? previewImage;
+    private readonly TextBlock? previewTextOverlay;
 
     private PreviewViewModel? boundViewModel;
     private string? loadedPath;
@@ -94,6 +95,7 @@ public partial class PreviewPanelView : UserControl
         previewFrame = previewCanvas?.FindControl<Border>("PreviewFrame");
         previewViewport = previewCanvas?.FindControl<Control>("PreviewViewport");
         previewImage = previewCanvas?.FindControl<Image>("PreviewImage");
+        previewTextOverlay = previewCanvas?.FindControl<TextBlock>("TextOverlayText");
 
         if (previewViewport is not null)
         {
@@ -108,6 +110,19 @@ public partial class PreviewPanelView : UserControl
         }
 
         Loaded += (_, _) => UpdatePreviewFrameSize();
+        if (previewTextOverlay is not null)
+        {
+            previewTextOverlay.LayoutUpdated += (_, _) =>
+            {
+                if (boundViewModel is null)
+                {
+                    return;
+                }
+
+                UpdateTextForegroundBoundsIfNeeded(boundViewModel, boundViewModel.CurrentPlaybackMilliseconds);
+            };
+        }
+
         DataContextChanged += OnDataContextChanged;
         DetachedFromVisualTree += (_, _) => DisposeResources();
     }

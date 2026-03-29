@@ -33,6 +33,10 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<bool>? HasSelectedVideoClip { get; set; }
 
+    public Func<long, bool>? HasActiveTransformTarget { get; set; }
+
+    public Func<long, bool>? IsTextTransformTarget { get; set; }
+
     public Func<long>? ResolvePlaybackMaxMilliseconds { get; set; }
 
     public Action<long>? PlaybackTimeChanged { get; set; }
@@ -146,6 +150,33 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private string textOverlayColor = "#FFFFFF";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropLeftPx))]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropWidth))]
+    private double textOverlayCropLeft;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropTopPx))]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropHeight))]
+    private double textOverlayCropTop;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropWidth))]
+    private double textOverlayCropRight;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TextOverlayCropHeight))]
+    private double textOverlayCropBottom;
+
+    [ObservableProperty]
+    private double textOverlayTransformX;
+
+    [ObservableProperty]
+    private double textOverlayTransformY;
+
+    [ObservableProperty]
+    private double textOverlayTransformScale = 1.0;
 
     public string Title { get; } = "Preview";
 
@@ -315,7 +346,19 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFrame));
     }
 
-    public void UpdateTextOverlayState(string? text, string? fontFamily, double fontSize, string? colorHex, bool isVisible)
+    public void UpdateTextOverlayState(
+        string? text,
+        string? fontFamily,
+        double fontSize,
+        string? colorHex,
+        bool isVisible,
+        double transformX,
+        double transformY,
+        double transformScale,
+        double cropLeft,
+        double cropTop,
+        double cropRight,
+        double cropBottom)
     {
         if (!string.IsNullOrWhiteSpace(text))
         {
@@ -343,6 +386,14 @@ public sealed partial class PreviewViewModel : ViewModelBase
         {
             TextOverlayColor = colorHex;
         }
+
+        TextOverlayTransformX = transformX;
+        TextOverlayTransformY = transformY;
+        TextOverlayTransformScale = Math.Max(0.1, transformScale);
+        TextOverlayCropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
+        TextOverlayCropTop = Math.Clamp(cropTop, 0.0, 0.95);
+        TextOverlayCropRight = Math.Clamp(cropRight, 0.0, 0.95);
+        TextOverlayCropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
 
         IsTextOverlayVisible = isVisible;
     }
@@ -451,13 +502,37 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(ScaledForegroundWidth));
         NotifyCropOverlayChanged();
+        NotifyTextOverlayCropChanged();
     }
 
     partial void OnForegroundHeightChanged(double value)
     {
         OnPropertyChanged(nameof(ScaledForegroundHeight));
         NotifyCropOverlayChanged();
+        NotifyTextOverlayCropChanged();
     }
+
+    partial void OnPreviewFrameWidthChanged(double value)
+    {
+        OnPropertyChanged(nameof(ScaledTextOverlayFontSize));
+        NotifyTextOverlayCropChanged();
+    }
+
+    partial void OnPreviewFrameHeightChanged(double value)
+    {
+        OnPropertyChanged(nameof(ScaledTextOverlayFontSize));
+        NotifyTextOverlayCropChanged();
+    }
+
+    partial void OnTextOverlayCropLeftChanged(double value) => NotifyTextOverlayCropChanged();
+    partial void OnTextOverlayCropTopChanged(double value) => NotifyTextOverlayCropChanged();
+    partial void OnTextOverlayCropRightChanged(double value) => NotifyTextOverlayCropChanged();
+    partial void OnTextOverlayCropBottomChanged(double value) => NotifyTextOverlayCropChanged();
+
+    public double TextOverlayCropLeftPx => PreviewFrameWidth * TextOverlayCropLeft;
+    public double TextOverlayCropTopPx => PreviewFrameHeight * TextOverlayCropTop;
+    public double TextOverlayCropWidth => Math.Max(0.0, PreviewFrameWidth * (1.0 - TextOverlayCropLeft - TextOverlayCropRight));
+    public double TextOverlayCropHeight => Math.Max(0.0, PreviewFrameHeight * (1.0 - TextOverlayCropTop - TextOverlayCropBottom));
 
     partial void OnTransformScaleChanged(double value) => NotifyCropOverlayChanged();
     partial void OnCurrentZoomChanged(double value) => NotifyCropOverlayChanged();
@@ -489,6 +564,14 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(CropHandleBottomCenterY));
         OnPropertyChanged(nameof(CropHandleBottomRightX));
         OnPropertyChanged(nameof(CropHandleBottomRightY));
+    }
+
+    private void NotifyTextOverlayCropChanged()
+    {
+        OnPropertyChanged(nameof(TextOverlayCropLeftPx));
+        OnPropertyChanged(nameof(TextOverlayCropTopPx));
+        OnPropertyChanged(nameof(TextOverlayCropWidth));
+        OnPropertyChanged(nameof(TextOverlayCropHeight));
     }
 
     public void BeginTransformCropEdit()

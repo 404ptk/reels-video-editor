@@ -371,7 +371,17 @@ public partial class PreviewPanelView
 
     private void UpdateVideoForegroundBounds()
     {
-        if (boundViewModel is null || !decoder.IsOpen || previewFrame is null)
+        if (boundViewModel is null || previewFrame is null)
+        {
+            return;
+        }
+
+        if (UpdateTextForegroundBoundsIfNeeded(boundViewModel, boundViewModel.CurrentPlaybackMilliseconds))
+        {
+            return;
+        }
+
+        if (!decoder.IsOpen)
         {
             return;
         }

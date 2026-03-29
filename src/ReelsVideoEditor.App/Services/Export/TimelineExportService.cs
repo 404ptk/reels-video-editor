@@ -430,9 +430,15 @@ public class TimelineExportService
         }
 
         var scale = targetHeight / TextOverlayReferenceHeight;
-        var fontSize = Math.Max(1f, (float)(state.FontSize * scale));
-        var yOffset = (float)(72 * scale);
+        var textScale = Math.Max(0.1, state.TransformScale);
+        var fontSize = Math.Max(1f, (float)(state.FontSize * scale * textScale));
+        var offsetX = (float)(state.TransformX * scale);
+        var offsetY = (float)(state.TransformY * scale);
         var color = ParseTextColor(state.ColorHex);
+        var cropLeft = Math.Clamp(state.CropLeft, 0.0, 0.95);
+        var cropTop = Math.Clamp(state.CropTop, 0.0, 0.95);
+        var cropRight = Math.Clamp(state.CropRight, 0.0, 0.95);
+        var cropBottom = Math.Clamp(state.CropBottom, 0.0, 0.95);
 
         using var canvas = new SKCanvas(bitmap);
         using var paint = new SKPaint
@@ -459,6 +465,15 @@ public class TimelineExportService
             return;
         }
 
+        var layerWidth = (float)(bitmap.Width * textScale);
+        var layerHeight = (float)(bitmap.Height * textScale);
+        var layerLeft = ((bitmap.Width - layerWidth) / 2f) + offsetX;
+        var layerTop = ((bitmap.Height - layerHeight) / 2f) + offsetY;
+        var clipLeft = layerLeft + (float)(layerWidth * cropLeft);
+        var clipTop = layerTop + (float)(layerHeight * cropTop);
+        var clipWidth = Math.Max(1f, (float)(layerWidth * (1.0 - cropLeft - cropRight)));
+        var clipHeight = Math.Max(1f, (float)(layerHeight * (1.0 - cropTop - cropBottom)));
+
         var metrics = paint.FontMetrics;
         var lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
         if (lineHeight <= 0)
@@ -467,10 +482,14 @@ public class TimelineExportService
         }
 
         var totalTextHeight = lineHeight * lines.Length;
-        var firstBaselineY = (bitmap.Height / 2f)
-            - yOffset
+        var centerX = layerLeft + (layerWidth / 2f);
+        var centerY = layerTop + (layerHeight / 2f);
+        var firstBaselineY = centerY
             - (totalTextHeight / 2f)
             - metrics.Ascent;
+
+        canvas.Save();
+        canvas.ClipRect(SKRect.Create(clipLeft, clipTop, clipWidth, clipHeight));
 
         for (var i = 0; i < lines.Length; i++)
         {
@@ -481,8 +500,10 @@ public class TimelineExportService
             }
 
             var baselineY = firstBaselineY + (i * lineHeight);
-            canvas.DrawText(line, bitmap.Width / 2f, baselineY, paint);
+            canvas.DrawText(line, centerX, baselineY, paint);
         }
+
+        canvas.Restore();
     }
 
     private static SKTypeface ResolveTypeface(string fontFamily)

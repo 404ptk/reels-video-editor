@@ -94,7 +94,14 @@ public sealed record TimelineTextOverlayState(
     string Text,
     string FontFamily,
     double FontSize,
-    string ColorHex);
+    string ColorHex,
+    double TransformX,
+    double TransformY,
+    double TransformScale,
+    double CropLeft,
+    double CropTop,
+    double CropRight,
+    double CropBottom);
 
 public sealed record TimelineSelectedTextClipState(
     bool HasSelection,
