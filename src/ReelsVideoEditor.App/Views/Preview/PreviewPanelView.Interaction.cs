@@ -349,10 +349,29 @@ public partial class PreviewPanelView
         var frameWidth = Math.Min(availableWidth, frameWidthFromHeight);
         var frameHeight = frameWidth / PreviewAspectRatio;
 
+        var previousFrameWidth = currentPreviewFrameWidth;
+        var previousFrameHeight = currentPreviewFrameHeight;
+
         previewFrame.Width = Math.Max(64, frameWidth);
         previewFrame.Height = Math.Max(112, frameHeight);
         currentPreviewFrameWidth = previewFrame.Width;
         currentPreviewFrameHeight = previewFrame.Height;
+
+        if (boundViewModel is not null && hasInitializedPreviewFrameSize)
+        {
+            var safePrevWidth = Math.Max(1.0, previousFrameWidth);
+            var safePrevHeight = Math.Max(1.0, previousFrameHeight);
+            var ratioX = currentPreviewFrameWidth / safePrevWidth;
+            var ratioY = currentPreviewFrameHeight / safePrevHeight;
+
+            if (Math.Abs(ratioX - 1.0) > 0.0001 || Math.Abs(ratioY - 1.0) > 0.0001)
+            {
+                boundViewModel.TransformX *= ratioX;
+                boundViewModel.TransformY *= ratioY;
+            }
+        }
+
+        hasInitializedPreviewFrameSize = true;
 
         if (boundViewModel is not null)
         {

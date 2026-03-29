@@ -63,6 +63,7 @@ public partial class PreviewPanelView : UserControl
     
     private double currentPreviewFrameWidth = 64;
     private double currentPreviewFrameHeight = 112;
+    private bool hasInitializedPreviewFrameSize;
 
     private enum CropHandle
     {
