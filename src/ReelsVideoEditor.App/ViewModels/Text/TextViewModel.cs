@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
@@ -6,13 +7,23 @@ using Microsoft.Win32;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ReelsVideoEditor.App.Services.Text;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Text;
 
 public sealed partial class TextViewModel : ViewModelBase
 {
+    private static readonly Models.TextPresetDefinition[] DefaultPresets =
+    [
+        new("Sunset", "Inter", 14, "#FF6B6B"),
+        new("Ocean", "Inter", 14, "#3A86FF"),
+        new("Mint", "Inter", 14, "#2EC4B6")
+    ];
+
     private bool isSyncingFromTimeline;
+    private readonly TextPresetStorageService presetStorage = new();
+    private readonly HashSet<string> builtInPresetNames = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> RenderableFonts { get; } = LoadRenderableFonts();
 
     public string Title { get; } = "Text";
@@ -23,12 +34,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public string EditorDescription { get; } = "Change text content, font, size and color for selected clip.";
 
-    public IReadOnlyList<Models.TextPresetDefinition> Presets { get; } =
-    [
-        new("Sunset", "Inter", 14, "#FF6B6B"),
-        new("Ocean", "Inter", 14, "#3A86FF"),
-        new("Mint", "Inter", 14, "#2EC4B6")
-    ];
+    public ObservableCollection<Models.TextPresetDefinition> Presets { get; } = [];
 
     public IReadOnlyList<Models.TextColorPreset> BasicColors { get; } =
     [
@@ -51,6 +57,7 @@ public sealed partial class TextViewModel : ViewModelBase
     public TextViewModel()
     {
         AvailableFonts = LoadAvailableFonts(RenderableFonts);
+        LoadPresets();
     }
 
     [ObservableProperty]
@@ -78,6 +85,16 @@ public sealed partial class TextViewModel : ViewModelBase
 
     [ObservableProperty]
     private string selectedClipFontFamily = "Inter";
+
+    [ObservableProperty]
+    private string newPresetName = string.Empty;
+
+    [ObservableProperty]
+    private string presetSaveStatus = string.Empty;
+
+    public bool HasPresetSaveStatus => !string.IsNullOrWhiteSpace(PresetSaveStatus);
+
+    private bool CanSavePreset => HasSelectedTextClip && IsEditorVisible;
 
     public IBrush SelectedColorPreviewBrush => new SolidColorBrush(Color.FromRgb(
         NormalizeColorChannel(SelectedColorR),
@@ -117,9 +134,49 @@ public sealed partial class TextViewModel : ViewModelBase
         IsEditorVisible = false;
     }
 
+    [RelayCommand(CanExecute = nameof(CanSavePreset))]
+    private void SavePreset()
+    {
+        var preferredName = string.IsNullOrWhiteSpace(NewPresetName)
+            ? BuildDefaultPresetName()
+            : NewPresetName.Trim();
+
+        var uniqueName = EnsureUniquePresetName(preferredName);
+        var preset = new Models.TextPresetDefinition(
+            uniqueName,
+            ResolveAvailableFontFamily(SelectedClipFontFamily),
+            Math.Clamp(SelectedClipFontSize, 10, 180),
+            SelectedColorHex);
+
+        UpsertPreset(preset, isBuiltIn: false);
+        PersistCustomPresets();
+
+        NewPresetName = string.Empty;
+        PresetSaveStatus = $"Saved preset: {uniqueName}";
+    }
+
     partial void OnIsEditorVisibleChanged(bool value)
     {
         OnPropertyChanged(nameof(IsPresetVisible));
+        SavePresetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnHasSelectedTextClipChanged(bool value)
+    {
+        SavePresetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnPresetSaveStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasPresetSaveStatus));
+    }
+
+    partial void OnNewPresetNameChanged(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(PresetSaveStatus))
+        {
+            PresetSaveStatus = string.Empty;
+        }
     }
 
     partial void OnSelectedClipTextChanged(string value)
@@ -334,5 +391,101 @@ public sealed partial class TextViewModel : ViewModelBase
         return separatorIndex > 0
             ? valueName[..separatorIndex].Trim()
             : valueName.Trim();
+    }
+
+    private void LoadPresets()
+    {
+        foreach (var defaultPreset in DefaultPresets)
+        {
+            UpsertPreset(defaultPreset, isBuiltIn: true);
+        }
+
+        var customPresets = presetStorage.LoadCustomPresets();
+        foreach (var customPreset in customPresets)
+        {
+            var baseName = string.IsNullOrWhiteSpace(customPreset.Name)
+                ? BuildDefaultPresetName()
+                : customPreset.Name;
+
+            var uniqueName = EnsureUniquePresetName(baseName);
+            var normalizedPreset = new Models.TextPresetDefinition(
+                uniqueName,
+                ResolveAvailableFontFamily(customPreset.FontFamily),
+                Math.Clamp(customPreset.FontSize, 10, 180),
+                NormalizeHexColor(customPreset.ColorHex));
+
+            UpsertPreset(normalizedPreset, isBuiltIn: false);
+        }
+    }
+
+    private void PersistCustomPresets()
+    {
+        var customPresets = Presets
+            .Where(preset => !builtInPresetNames.Contains(preset.Name))
+            .ToArray();
+
+        presetStorage.SaveCustomPresets(customPresets);
+    }
+
+    private void UpsertPreset(Models.TextPresetDefinition preset, bool isBuiltIn)
+    {
+        if (isBuiltIn)
+        {
+            builtInPresetNames.Add(preset.Name);
+        }
+
+        var existingIndex = FindPresetIndexByName(preset.Name);
+        if (existingIndex >= 0)
+        {
+            Presets[existingIndex] = preset;
+            return;
+        }
+
+        Presets.Add(preset);
+    }
+
+    private int FindPresetIndexByName(string name)
+    {
+        for (var i = 0; i < Presets.Count; i++)
+        {
+            if (string.Equals(Presets[i].Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private string EnsureUniquePresetName(string baseName)
+    {
+        var normalizedBaseName = string.IsNullOrWhiteSpace(baseName)
+            ? "My preset"
+            : baseName.Trim();
+
+        var candidate = normalizedBaseName;
+        var suffix = 2;
+        while (FindPresetIndexByName(candidate) >= 0)
+        {
+            candidate = $"{normalizedBaseName} {suffix}";
+            suffix++;
+        }
+
+        return candidate;
+    }
+
+    private string BuildDefaultPresetName()
+    {
+        return "My preset";
+    }
+
+    private static string NormalizeHexColor(string? colorHex)
+    {
+        if (!string.IsNullOrWhiteSpace(colorHex) && Color.TryParse(colorHex.Trim(), out var parsedColor))
+        {
+            return $"#{parsedColor.R:X2}{parsedColor.G:X2}{parsedColor.B:X2}";
+        }
+
+        return "#FFFFFF";
     }
 }

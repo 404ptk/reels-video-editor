@@ -198,6 +198,26 @@
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="11" />
                     </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Preset"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="8">
+                            <TextBox Text="{Binding NewPresetName, Mode=TwoWay}"
+                                     Watermark="Preset name (optional)" />
+                            <Button Grid.Column="1"
+                                    Content="Save preset"
+                                    Command="{Binding SavePresetCommand}"
+                                    MinWidth="108"
+                                    HorizontalAlignment="Right" />
+                        </Grid>
+                        <TextBlock Text="{Binding PresetSaveStatus}"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="11"
+                                   IsVisible="{Binding HasPresetSaveStatus}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
             </StackPanel>
