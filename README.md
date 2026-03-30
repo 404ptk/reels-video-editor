@@ -4,6 +4,8 @@ Desktop short-form video editor (reels/shorts) built with `C#`, `.NET 8`, and `A
 
 ![Reels Video Editor - UI](readme_images/homepage.png)
 
+![Reels Video Editor - Text Editor](readme_images/text-editor.png)
+
 ## About the Project
 
 `Reels Video Editor` is a desktop app focused on fast editing for vertical formats (`9:16`) with a straightforward workflow:
@@ -27,14 +29,32 @@ The project is developed iteratively — some modules are already production-rea
 - playhead scrubbing and preview synchronization,
 - preview play/pause/stop,
 - audio mute / video hide in timeline context,
-- `mp4` export (`libx264` + `aac`) with progress reporting,
+- text clip editing (content, font, color, size),
+- draggable text presets from Text panel to timeline,
+- custom text presets with local persistence per user machine,
+- custom preset management (save, rename/update, delete with confirmation),
+- accurate `mp4` export (`libx264` + `aac`) with progress reporting,
 - output format (`9:16` / `16:9`) and resolution selection.
+
+## Export Pipeline
+
+- The app currently exports through the accurate pipeline (`ExportAccurateAsync`).
+- Video is rendered frame-by-frame (30 FPS) from timeline preview layers, including text overlays.
+- Audio clips are mixed in a separate pass (`amix`) and encoded as `aac`.
+- Final output is muxed to `mp4` with `+faststart`.
+- A legacy filter-graph export path still exists in code (`ExportAsync`) but is not the default path used by UI export.
 
 ### TODO
 
 - effects panel,
-- text panel,
 - watermark panel.
+
+## Text Presets
+
+- Built-in presets are available out of the box (`Sunset`, `Ocean`, `Mint`).
+- Users can create and manage their own presets from the Text editor.
+- Custom presets are stored locally in `LocalApplicationData/ReelsVideoEditor/text-presets.json`.
+- Presets are machine-local by design (a fresh setup on another computer starts clean).
 
 ## Architecture
 
@@ -80,14 +100,10 @@ dotnet run --project .\src\ReelsVideoEditor.App\ReelsVideoEditor.App.csproj
 
 ## Roadmap
 
-### Short Term
-
-- finalize crop support in the rendering pipeline,
-
 ### Mid Term
 
 - full effects panel with presets,
-- text and watermark tools (positioning, styling, animations),
+- watermark tools (positioning, styling, animations),
 - improved multi-clip composition model in preview.
 
 ### Long Term
@@ -97,4 +113,4 @@ dotnet run --project .\src\ReelsVideoEditor.App\ReelsVideoEditor.App.csproj
 
 ## Status
 
-The project is actively developed and currently focused on intensive preview and effects refinement.
+The project is actively developed and currently focused on preview quality and effects panel implementation.
