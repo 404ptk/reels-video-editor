@@ -56,7 +56,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public TextViewModel()
     {
-        AvailableFonts = LoadAvailableFonts(RenderableFonts);
+        AvailableFonts = RenderableFonts;
         LoadPresets();
     }
 
@@ -271,6 +271,7 @@ public sealed partial class TextViewModel : ViewModelBase
             }
 
             var normalizedRequested = NormalizeFontLookup(requested);
+            var normalizedRequestedWithoutPrefix = TrimLeadingDigits(normalizedRequested);
             if (normalizedRequested.Length > 0)
             {
                 var normalizedExact = RenderableFonts.FirstOrDefault(font =>
@@ -280,11 +281,31 @@ public sealed partial class TextViewModel : ViewModelBase
                     return normalizedExact;
                 }
 
+                if (normalizedRequestedWithoutPrefix.Length > 0)
+                {
+                    var normalizedExactWithoutPrefix = RenderableFonts.FirstOrDefault(font =>
+                        string.Equals(TrimLeadingDigits(NormalizeFontLookup(font)), normalizedRequestedWithoutPrefix, StringComparison.Ordinal));
+                    if (!string.IsNullOrWhiteSpace(normalizedExactWithoutPrefix))
+                    {
+                        return normalizedExactWithoutPrefix;
+                    }
+                }
+
                 var aliasMatch = RenderableFonts
-                    .Select(font => new { Font = font, Normalized = NormalizeFontLookup(font) })
+                    .Select(font => new
+                    {
+                        Font = font,
+                        Normalized = NormalizeFontLookup(font),
+                        NormalizedWithoutPrefix = TrimLeadingDigits(NormalizeFontLookup(font))
+                    })
                     .Where(item => item.Normalized.Length > 0
-                        && (normalizedRequested.StartsWith(item.Normalized, StringComparison.Ordinal)
-                            || item.Normalized.StartsWith(normalizedRequested, StringComparison.Ordinal)))
+                        && (
+                            normalizedRequested.StartsWith(item.Normalized, StringComparison.Ordinal)
+                            || item.Normalized.StartsWith(normalizedRequested, StringComparison.Ordinal)
+                            || (normalizedRequestedWithoutPrefix.Length > 0
+                                && item.NormalizedWithoutPrefix.Length > 0
+                                && (normalizedRequestedWithoutPrefix.StartsWith(item.NormalizedWithoutPrefix, StringComparison.Ordinal)
+                                    || item.NormalizedWithoutPrefix.StartsWith(normalizedRequestedWithoutPrefix, StringComparison.Ordinal)))))
                     .OrderBy(item => Math.Abs(item.Normalized.Length - normalizedRequested.Length))
                     .ThenBy(item => item.Font, StringComparer.OrdinalIgnoreCase)
                     .Select(item => item.Font)
@@ -388,9 +409,49 @@ public sealed partial class TextViewModel : ViewModelBase
         }
 
         var separatorIndex = valueName.IndexOf(" (", StringComparison.Ordinal);
-        return separatorIndex > 0
+        var normalized = separatorIndex > 0
             ? valueName[..separatorIndex].Trim()
             : valueName.Trim();
+
+        return TrimRegistryPrefix(normalized);
+    }
+
+    private static string TrimRegistryPrefix(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var startIndex = 0;
+        while (startIndex < value.Length
+               && (char.IsDigit(value[startIndex])
+                   || char.IsWhiteSpace(value[startIndex])
+                   || value[startIndex] == '-'
+                   || value[startIndex] == '_'
+                   || value[startIndex] == '.'))
+        {
+            startIndex++;
+        }
+
+        var trimmed = value[startIndex..].Trim();
+        return string.IsNullOrWhiteSpace(trimmed) ? value.Trim() : trimmed;
+    }
+
+    private static string TrimLeadingDigits(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var index = 0;
+        while (index < value.Length && char.IsDigit(value[index]))
+        {
+            index++;
+        }
+
+        return value[index..];
     }
 
     private void LoadPresets()

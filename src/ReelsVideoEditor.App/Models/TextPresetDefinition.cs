@@ -11,4 +11,23 @@ public sealed record TextPresetDefinition(
     public string DisplayText { get; } = "Preview";
 
     public IBrush ColorBrush { get; } = Brush.Parse(ColorHex);
+
+    public Avalonia.Media.FontFamily PreviewFontFamily { get; } = BuildPreviewFontFamily(FontFamily);
+
+    private static Avalonia.Media.FontFamily BuildPreviewFontFamily(string fontFamily)
+    {
+        if (!string.IsNullOrWhiteSpace(fontFamily))
+        {
+            try
+            {
+                return new Avalonia.Media.FontFamily(fontFamily.Trim());
+            }
+            catch
+            {
+                // Fall back to default font family for malformed values.
+            }
+        }
+
+        return Avalonia.Media.FontFamily.Default;
+    }
 }

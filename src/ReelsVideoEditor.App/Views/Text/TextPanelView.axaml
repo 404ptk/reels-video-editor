@@ -102,8 +102,8 @@
 
                                 <TextBlock Grid.Row="1"
                                            Text="{Binding DisplayText}"
-                                           FontFamily="{Binding FontFamily}"
-                                           FontSize="{Binding FontSize}"
+                                           FontFamily="{Binding PreviewFontFamily}"
+                                           FontSize="28"
                                            Foreground="{Binding ColorBrush}"
                                            TextTrimming="CharacterEllipsis"
                                            HorizontalAlignment="Center"
