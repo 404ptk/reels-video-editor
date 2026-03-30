@@ -1,6 +1,7 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.ViewModels.Text;
@@ -27,6 +28,23 @@ public partial class TextPanelView : UserControl
 
         if (!eventArgs.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
+            return;
+        }
+
+        if (eventArgs.Source is Button
+            || (eventArgs.Source is Control sourceControl && sourceControl.FindAncestorOfType<Button>() is not null))
+        {
+            return;
+        }
+
+        if (eventArgs.ClickCount >= 2)
+        {
+            if (DataContext is TextViewModel viewModel)
+            {
+                viewModel.BeginPresetEdit(preset);
+            }
+
+            eventArgs.Handled = true;
             return;
         }
 

@@ -92,9 +92,26 @@ public sealed partial class TextViewModel : ViewModelBase
     [ObservableProperty]
     private string presetSaveStatus = string.Empty;
 
+    [ObservableProperty]
+    private bool isEditingPreset;
+
+    [ObservableProperty]
+    private string editingPresetSourceName = string.Empty;
+
+    [ObservableProperty]
+    private string pendingDeletePresetName = string.Empty;
+
     public bool HasPresetSaveStatus => !string.IsNullOrWhiteSpace(PresetSaveStatus);
 
-    private bool CanSavePreset => HasSelectedTextClip && IsEditorVisible;
+    public string SavePresetButtonLabel => IsEditingPreset ? "Update preset" : "Save preset";
+
+    public string DeletePresetButtonLabel => IsDeletePendingForCurrentPreset ? "Confirm delete" : "Delete preset";
+
+    public bool IsDeletePendingForCurrentPreset => IsEditingPreset && IsPendingDeletePreset(EditingPresetSourceName);
+
+    private bool CanSavePreset => IsEditorVisible;
+
+    private bool CanDeletePreset => IsEditingPreset && !string.IsNullOrWhiteSpace(EditingPresetSourceName);
 
     public IBrush SelectedColorPreviewBrush => new SolidColorBrush(Color.FromRgb(
         NormalizeColorChannel(SelectedColorR),
@@ -105,6 +122,11 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public void SyncSelectedTextClip(TimelineSelectedTextClipState state)
     {
+        if (IsEditingPreset)
+        {
+            return;
+        }
+
         isSyncingFromTimeline = true;
         try
         {
@@ -131,17 +153,27 @@ public sealed partial class TextViewModel : ViewModelBase
     [RelayCommand]
     private void BackToPresets()
     {
+        ClearDeleteConfirmation();
+        ExitPresetEditMode();
         IsEditorVisible = false;
     }
 
     [RelayCommand(CanExecute = nameof(CanSavePreset))]
     private void SavePreset()
     {
+        if (IsEditingPreset)
+        {
+            SavePresetEdits();
+            return;
+        }
+
+        ClearDeleteConfirmation();
+
         var preferredName = string.IsNullOrWhiteSpace(NewPresetName)
             ? BuildDefaultPresetName()
             : NewPresetName.Trim();
 
-        var uniqueName = EnsureUniquePresetName(preferredName);
+        var uniqueName = EnsureUniquePresetName(preferredName, excludedName: null);
         var preset = new Models.TextPresetDefinition(
             uniqueName,
             ResolveAvailableFontFamily(SelectedClipFontFamily),
@@ -155,15 +187,114 @@ public sealed partial class TextViewModel : ViewModelBase
         PresetSaveStatus = $"Saved preset: {uniqueName}";
     }
 
+    [RelayCommand(CanExecute = nameof(CanDeletePreset))]
+    private void DeletePreset()
+    {
+        if (!IsEditingPreset || string.IsNullOrWhiteSpace(EditingPresetSourceName))
+        {
+            return;
+        }
+
+        if (!ConfirmDeleteRequest(EditingPresetSourceName))
+        {
+            return;
+        }
+
+        DeletePresetByName(EditingPresetSourceName, closeEditorIfDeleted: true);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanManagePreset))]
+    private void EditPresetFromTile(Models.TextPresetDefinition? preset)
+    {
+        if (preset is null)
+        {
+            return;
+        }
+
+        BeginPresetEdit(preset);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanManagePreset))]
+    private void DeletePresetFromTile(Models.TextPresetDefinition? preset)
+    {
+        if (preset is null)
+        {
+            return;
+        }
+
+        if (!ConfirmDeleteRequest(preset.Name))
+        {
+            return;
+        }
+
+        DeletePresetByName(preset.Name, closeEditorIfDeleted: false);
+    }
+
+    public void BeginPresetEdit(Models.TextPresetDefinition preset)
+    {
+        if (preset is null)
+        {
+            return;
+        }
+
+        if (IsBuiltInPresetName(preset.Name))
+        {
+            PresetSaveStatus = "Built-in presets cannot be edited.";
+            return;
+        }
+
+        isSyncingFromTimeline = true;
+        try
+        {
+            ClearDeleteConfirmation();
+            IsEditingPreset = true;
+            EditingPresetSourceName = preset.Name;
+            NewPresetName = preset.Name;
+            ApplyColorFromHex(preset.ColorHex);
+            SelectedClipFontSize = Math.Clamp(preset.FontSize, 10, 180);
+            SelectedClipFontFamily = ResolveAvailableFontFamily(preset.FontFamily);
+            IsEditorVisible = true;
+        }
+        finally
+        {
+            isSyncingFromTimeline = false;
+        }
+
+        PresetSaveStatus = string.Empty;
+    }
+
     partial void OnIsEditorVisibleChanged(bool value)
     {
         OnPropertyChanged(nameof(IsPresetVisible));
         SavePresetCommand.NotifyCanExecuteChanged();
+        DeletePresetCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnHasSelectedTextClipChanged(bool value)
     {
         SavePresetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsEditingPresetChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SavePresetButtonLabel));
+        OnPropertyChanged(nameof(DeletePresetButtonLabel));
+        OnPropertyChanged(nameof(IsDeletePendingForCurrentPreset));
+        SavePresetCommand.NotifyCanExecuteChanged();
+        DeletePresetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnEditingPresetSourceNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(DeletePresetButtonLabel));
+        OnPropertyChanged(nameof(IsDeletePendingForCurrentPreset));
+        DeletePresetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnPendingDeletePresetNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(DeletePresetButtonLabel));
+        OnPropertyChanged(nameof(IsDeletePendingForCurrentPreset));
     }
 
     partial void OnPresetSaveStatusChanged(string value)
@@ -217,7 +348,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     private void ApplySelectedTextSettings()
     {
-        if (isSyncingFromTimeline || !HasSelectedTextClip || !IsEditorVisible)
+        if (isSyncingFromTimeline || IsEditingPreset || !HasSelectedTextClip || !IsEditorVisible)
         {
             return;
         }
@@ -468,7 +599,7 @@ public sealed partial class TextViewModel : ViewModelBase
                 ? BuildDefaultPresetName()
                 : customPreset.Name;
 
-            var uniqueName = EnsureUniquePresetName(baseName);
+            var uniqueName = EnsureUniquePresetName(baseName, excludedName: null);
             var normalizedPreset = new Models.TextPresetDefinition(
                 uniqueName,
                 ResolveAvailableFontFamily(customPreset.FontFamily),
@@ -518,7 +649,129 @@ public sealed partial class TextViewModel : ViewModelBase
         return -1;
     }
 
-    private string EnsureUniquePresetName(string baseName)
+    private bool IsBuiltInPresetName(string name)
+    {
+        return builtInPresetNames.Contains(name);
+    }
+
+    private bool CanManagePreset(Models.TextPresetDefinition? preset)
+    {
+        return preset is not null && !IsBuiltInPresetName(preset.Name);
+    }
+
+    private void DeletePresetByName(string presetName, bool closeEditorIfDeleted)
+    {
+        if (string.IsNullOrWhiteSpace(presetName))
+        {
+            return;
+        }
+
+        if (IsBuiltInPresetName(presetName))
+        {
+            ClearDeleteConfirmation();
+            PresetSaveStatus = "Built-in presets cannot be deleted.";
+            return;
+        }
+
+        var index = FindPresetIndexByName(presetName);
+        if (index < 0)
+        {
+            ClearDeleteConfirmation();
+            PresetSaveStatus = "Preset no longer exists.";
+            if (closeEditorIfDeleted)
+            {
+                ExitPresetEditMode();
+                IsEditorVisible = false;
+            }
+
+            return;
+        }
+
+        var deletedName = Presets[index].Name;
+        Presets.RemoveAt(index);
+        PersistCustomPresets();
+        ClearDeleteConfirmation();
+
+        if (closeEditorIfDeleted
+            || (IsEditingPreset && string.Equals(EditingPresetSourceName, deletedName, StringComparison.OrdinalIgnoreCase)))
+        {
+            ExitPresetEditMode();
+            IsEditorVisible = false;
+        }
+
+        PresetSaveStatus = $"Deleted preset: {deletedName}";
+    }
+
+    private bool ConfirmDeleteRequest(string presetName)
+    {
+        if (string.IsNullOrWhiteSpace(presetName))
+        {
+            return false;
+        }
+
+        if (IsPendingDeletePreset(presetName))
+        {
+            return true;
+        }
+
+        PendingDeletePresetName = presetName;
+        PresetSaveStatus = $"Click delete again to confirm: {presetName}";
+        return false;
+    }
+
+    private bool IsPendingDeletePreset(string presetName)
+    {
+        return !string.IsNullOrWhiteSpace(presetName)
+            && string.Equals(PendingDeletePresetName, presetName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ClearDeleteConfirmation()
+    {
+        PendingDeletePresetName = string.Empty;
+    }
+
+    private void SavePresetEdits()
+    {
+        if (!IsEditingPreset || string.IsNullOrWhiteSpace(EditingPresetSourceName))
+        {
+            return;
+        }
+
+        if (IsBuiltInPresetName(EditingPresetSourceName))
+        {
+            PresetSaveStatus = "Built-in presets cannot be edited.";
+            return;
+        }
+
+        var existingIndex = FindPresetIndexByName(EditingPresetSourceName);
+        if (existingIndex < 0)
+        {
+            PresetSaveStatus = "Preset no longer exists.";
+            ExitPresetEditMode();
+            return;
+        }
+
+        var preferredName = string.IsNullOrWhiteSpace(NewPresetName)
+            ? EditingPresetSourceName
+            : NewPresetName.Trim();
+
+        var uniqueName = EnsureUniquePresetName(preferredName, EditingPresetSourceName);
+        var updatedPreset = new Models.TextPresetDefinition(
+            uniqueName,
+            ResolveAvailableFontFamily(SelectedClipFontFamily),
+            Math.Clamp(SelectedClipFontSize, 10, 180),
+            SelectedColorHex);
+
+        Presets[existingIndex] = updatedPreset;
+        PersistCustomPresets();
+        ClearDeleteConfirmation();
+
+        ExitPresetEditMode();
+        IsEditorVisible = false;
+        PresetSaveStatus = $"Updated preset: {uniqueName}";
+    }
+
+    private string EnsureUniquePresetName(string baseName, string? excludedName)
     {
         var normalizedBaseName = string.IsNullOrWhiteSpace(baseName)
             ? "My preset"
@@ -526,8 +779,20 @@ public sealed partial class TextViewModel : ViewModelBase
 
         var candidate = normalizedBaseName;
         var suffix = 2;
-        while (FindPresetIndexByName(candidate) >= 0)
+        while (true)
         {
+            var existingIndex = FindPresetIndexByName(candidate);
+            if (existingIndex < 0)
+            {
+                break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(excludedName)
+                && string.Equals(Presets[existingIndex].Name, excludedName, StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
             candidate = $"{normalizedBaseName} {suffix}";
             suffix++;
         }
@@ -538,6 +803,13 @@ public sealed partial class TextViewModel : ViewModelBase
     private string BuildDefaultPresetName()
     {
         return "My preset";
+    }
+
+    private void ExitPresetEditMode()
+    {
+        IsEditingPreset = false;
+        EditingPresetSourceName = string.Empty;
+        NewPresetName = string.Empty;
     }
 
     private static string NormalizeHexColor(string? colorHex)
