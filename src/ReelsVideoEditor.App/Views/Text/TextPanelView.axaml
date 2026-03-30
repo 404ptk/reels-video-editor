@@ -6,6 +6,59 @@
              x:Class="ReelsVideoEditor.App.Views.Text.TextPanelView"
              x:DataType="vm:TextViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="TextBox.accentInput">
+            <Setter Property="Background" Value="#111318" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="TextBox.accentInput:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="TextBox.accentInput:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput">
+            <Setter Property="Background" Value="#111318" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="Background" Value="#141921" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="Background" Value="#141921" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="Background" Value="#111318" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput ComboBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput ComboBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource AccentMuted}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentMuted}" />
+        </Style>
+
+        <Style Selector="ComboBox.accentInput ComboBoxItem:selected">
+            <Setter Property="Foreground" Value="#0E1413" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="12">
@@ -95,6 +148,7 @@
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
                         <TextBox Text="{Binding SelectedClipText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Classes="accentInput"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  VerticalContentAlignment="Top"
@@ -106,6 +160,7 @@
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
                         <ComboBox ItemsSource="{Binding AvailableFonts}"
+                                  Classes="accentInput"
                                   SelectedItem="{Binding SelectedClipFontFamily, Mode=TwoWay}"
                                   Width="280"
                                   HorizontalAlignment="Left"
@@ -206,12 +261,11 @@
                         <Grid ColumnDefinitions="*,Auto"
                               ColumnSpacing="8">
                             <TextBox Text="{Binding NewPresetName, Mode=TwoWay}"
+                                                                         Classes="accentInput"
                                      Watermark="Preset name (optional)" />
-                            <Button Grid.Column="1"
-                                    Content="Save preset"
-                                    Command="{Binding SavePresetCommand}"
-                                    MinWidth="108"
-                                    HorizontalAlignment="Right" />
+                                                        <commonViews:ActionButton Grid.Column="1"
+                                                                                                            Label="Save preset"
+                                                                                                            Command="{Binding SavePresetCommand}" />
                         </Grid>
                         <TextBlock Text="{Binding PresetSaveStatus}"
                                    Foreground="{DynamicResource AccentMuted}"
