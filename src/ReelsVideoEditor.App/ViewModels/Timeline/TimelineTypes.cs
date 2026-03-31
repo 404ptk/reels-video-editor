@@ -89,8 +89,7 @@ public sealed record PreviewAudioState(IReadOnlyList<PreviewAudioTrackState> Tra
     public static PreviewAudioState Silent { get; } = new(Array.Empty<PreviewAudioTrackState>(), false);
 }
 
-public sealed record TimelineTextOverlayState(
-    bool IsVisible,
+public sealed record TimelineTextOverlayLayer(
     string Text,
     string FontFamily,
     double FontSize,
@@ -102,6 +101,12 @@ public sealed record TimelineTextOverlayState(
     double CropTop,
     double CropRight,
     double CropBottom);
+
+public sealed record TimelineTextOverlayState(
+    IReadOnlyList<TimelineTextOverlayLayer> Layers)
+{
+    public bool IsVisible => Layers.Count > 0;
+}
 
 public sealed record TimelineSelectedTextClipState(
     bool HasSelection,

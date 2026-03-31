@@ -457,7 +457,7 @@ public partial class TimelineViewModel
     private TimelineTextOverlayState ResolveTextOverlayState(double timelineSeconds)
     {
         var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
-        var activeTextClip = VideoClips
+        var activeTextLayers = VideoClips
             .Where(clip => IsTextTimelineClip(clip)
                 && timelineSeconds >= clip.StartSeconds
                 && timelineSeconds <= clip.StartSeconds + clip.DurationSeconds)
@@ -481,40 +481,29 @@ public partial class TimelineViewModel
 
                 return true;
             })
-            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
-            .ThenByDescending(clip => clip.StartSeconds)
-            .FirstOrDefault();
+            // Draw order: bottom-to-top so the visually higher lane is rendered last.
+            .OrderByDescending(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenBy(clip => clip.StartSeconds)
+            .Select(clip => new TimelineTextOverlayLayer(
+                clip.TextContent,
+                clip.TextFontFamily,
+                clip.TextFontSize,
+                clip.TextColorHex,
+                clip.TransformX,
+                clip.TransformY,
+                clip.TransformScale,
+                clip.CropLeft,
+                clip.CropTop,
+                clip.CropRight,
+                clip.CropBottom))
+            .ToList();
 
-        if (activeTextClip is null)
+        if (activeTextLayers.Count == 0)
         {
-            return new TimelineTextOverlayState(
-                false,
-                string.Empty,
-                "Inter",
-                14,
-                "#FFFFFF",
-                0,
-                0,
-                1,
-                0,
-                0,
-                0,
-                0);
+            return new TimelineTextOverlayState([]);
         }
 
-        return new TimelineTextOverlayState(
-            true,
-            activeTextClip.TextContent,
-            activeTextClip.TextFontFamily,
-            activeTextClip.TextFontSize,
-            activeTextClip.TextColorHex,
-            activeTextClip.TransformX,
-            activeTextClip.TransformY,
-            activeTextClip.TransformScale,
-            activeTextClip.CropLeft,
-            activeTextClip.CropTop,
-            activeTextClip.CropRight,
-            activeTextClip.CropBottom);
+        return new TimelineTextOverlayState(activeTextLayers);
     }
 
     private TimelineClipItem? ResolveSelectedTextClip()

@@ -32,40 +32,52 @@
                                    VerticalAlignment="Stretch" />
                         </Border>
 
-                        <Grid Width="{Binding PreviewFrameWidth}"
-                              Height="{Binding PreviewFrameHeight}"
-                              IsVisible="{Binding IsTextOverlayVisible}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"
-                              ClipToBounds="False">
-                            <Grid.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform ScaleX="{Binding TextOverlayTransformScale}"
-                                                    ScaleY="{Binding TextOverlayTransformScale}" />
-                                    <TranslateTransform X="{Binding TextOverlayTransformX}"
-                                                       Y="{Binding TextOverlayTransformY}" />
-                                </TransformGroup>
-                            </Grid.RenderTransform>
+                        <ItemsControl ItemsSource="{Binding TextOverlays}"
+                                      Width="{Binding PreviewFrameWidth}"
+                                      Height="{Binding PreviewFrameHeight}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      ClipToBounds="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <Grid />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PreviewTextOverlayLayer">
+                                    <Grid Width="{Binding $parent[UserControl].DataContext.PreviewFrameWidth}"
+                                          Height="{Binding $parent[UserControl].DataContext.PreviewFrameHeight}"
+                                          ClipToBounds="False">
+                                        <Grid.RenderTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform ScaleX="{Binding TransformScale}"
+                                                                ScaleY="{Binding TransformScale}" />
+                                                <TranslateTransform X="{Binding TransformX}"
+                                                                   Y="{Binding TransformY}" />
+                                            </TransformGroup>
+                                        </Grid.RenderTransform>
 
-                            <Canvas ClipToBounds="True">
-                                <Grid Width="{Binding TextOverlayCropWidth}"
-                                      Height="{Binding TextOverlayCropHeight}"
-                                      Canvas.Left="{Binding TextOverlayCropLeftPx}"
-                                      Canvas.Top="{Binding TextOverlayCropTopPx}"
-                                      ClipToBounds="True">
-                                    <TextBlock x:Name="TextOverlayText"
-                                               Text="{Binding TextOverlayValue}"
-                                               Foreground="{Binding TextOverlayColor}"
-                                               FontFamily="{Binding TextOverlayFontFamily}"
-                                               FontSize="{Binding ScaledTextOverlayFontSize}"
-                                               FontWeight="SemiBold"
-                                               TextWrapping="Wrap"
-                                               TextAlignment="Center"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center" />
-                                </Grid>
-                            </Canvas>
-                        </Grid>
+                                        <Canvas ClipToBounds="True">
+                                            <Grid Width="{Binding CropWidth}"
+                                                  Height="{Binding CropHeight}"
+                                                  Canvas.Left="{Binding CropLeftPx}"
+                                                  Canvas.Top="{Binding CropTopPx}"
+                                                  ClipToBounds="True">
+                                                <TextBlock Text="{Binding Text}"
+                                                           Foreground="{Binding ColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Canvas>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
                         <Grid Width="{Binding ScaledForegroundWidth}"
                               Height="{Binding ScaledForegroundHeight}"

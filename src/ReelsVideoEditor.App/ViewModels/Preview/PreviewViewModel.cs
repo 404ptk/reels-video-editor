@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using System;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.IO;
 using ReelsVideoEditor.App.ViewModels.Timeline;
@@ -19,9 +20,10 @@ public enum PreviewQuality
 public sealed partial class PreviewViewModel : ViewModelBase
 {
     private const string ZeroTime = "00:00:00";
-    private const double TextOverlayReferenceHeight = 1280.0;
     private readonly Stack<TransformCropState> transformCropUndoStack = new();
     private TransformCropState? pendingEditStartState;
+
+    public ObservableCollection<PreviewTextOverlayLayer> TextOverlays { get; } = [];
 
     public Func<string?>? ResolveVideoPath { get; set; }
 
@@ -134,49 +136,6 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     [ObservableProperty]
     private int seekRequestVersion;
-
-    [ObservableProperty]
-    private bool isTextOverlayVisible;
-
-    [ObservableProperty]
-    private string textOverlayValue = string.Empty;
-
-    [ObservableProperty]
-    private FontFamily textOverlayFontFamily = new("Inter");
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScaledTextOverlayFontSize))]
-    private double textOverlayFontSize = 14;
-
-    [ObservableProperty]
-    private string textOverlayColor = "#FFFFFF";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropLeftPx))]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropWidth))]
-    private double textOverlayCropLeft;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropTopPx))]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropHeight))]
-    private double textOverlayCropTop;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropWidth))]
-    private double textOverlayCropRight;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TextOverlayCropHeight))]
-    private double textOverlayCropBottom;
-
-    [ObservableProperty]
-    private double textOverlayTransformX;
-
-    [ObservableProperty]
-    private double textOverlayTransformY;
-
-    [ObservableProperty]
-    private double textOverlayTransformScale = 1.0;
 
     public string Title { get; } = "Preview";
 
@@ -346,56 +305,28 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(CurrentFrame));
     }
 
-    public void UpdateTextOverlayState(
-        string? text,
-        string? fontFamily,
-        double fontSize,
-        string? colorHex,
-        bool isVisible,
-        double transformX,
-        double transformY,
-        double transformScale,
-        double cropLeft,
-        double cropTop,
-        double cropRight,
-        double cropBottom)
+    public void UpdateTextOverlayState(TimelineTextOverlayState state)
     {
-        if (!string.IsNullOrWhiteSpace(text))
+        TextOverlays.Clear();
+        if (!state.IsVisible)
         {
-            TextOverlayValue = text;
+            return;
         }
 
-        if (!string.IsNullOrWhiteSpace(fontFamily))
+        var safeWidth = Math.Max(1.0, PreviewFrameWidth);
+        var safeHeight = Math.Max(1.0, PreviewFrameHeight);
+        for (var i = 0; i < state.Layers.Count; i++)
         {
-            try
+            var layer = state.Layers[i];
+            if (string.IsNullOrWhiteSpace(layer.Text))
             {
-                TextOverlayFontFamily = new FontFamily(fontFamily.Trim());
+                continue;
             }
-            catch
-            {
-                TextOverlayFontFamily = new FontFamily("Inter");
-            }
+
+            var previewLayer = new PreviewTextOverlayLayer();
+            previewLayer.Apply(layer, safeWidth, safeHeight);
+            TextOverlays.Add(previewLayer);
         }
-
-        if (fontSize > 0)
-        {
-            TextOverlayFontSize = fontSize;
-        }
-
-        if (!string.IsNullOrWhiteSpace(colorHex))
-        {
-            TextOverlayColor = colorHex;
-        }
-
-        TextOverlayTransformX = transformX;
-        TextOverlayTransformY = transformY;
-        TextOverlayTransformScale = Math.Max(0.1, transformScale);
-        TextOverlayCropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
-        TextOverlayCropTop = Math.Clamp(cropTop, 0.0, 0.95);
-        TextOverlayCropRight = Math.Clamp(cropRight, 0.0, 0.95);
-        TextOverlayCropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
-
-        IsTextOverlayVisible = isVisible;
     }
 
     [ObservableProperty]
@@ -422,18 +353,7 @@ public sealed partial class PreviewViewModel : ViewModelBase
     private double previewFrameWidth = 1.0;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ScaledTextOverlayFontSize))]
     private double previewFrameHeight = 1.0;
-
-    public double ScaledTextOverlayFontSize
-    {
-        get
-        {
-            var frameHeight = Math.Max(1.0, PreviewFrameHeight);
-            var scale = frameHeight / TextOverlayReferenceHeight;
-            return Math.Max(1.0, TextOverlayFontSize * scale);
-        }
-    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TransformHandleThickness))]
@@ -502,37 +422,23 @@ public sealed partial class PreviewViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(ScaledForegroundWidth));
         NotifyCropOverlayChanged();
-        NotifyTextOverlayCropChanged();
     }
 
     partial void OnForegroundHeightChanged(double value)
     {
         OnPropertyChanged(nameof(ScaledForegroundHeight));
         NotifyCropOverlayChanged();
-        NotifyTextOverlayCropChanged();
     }
 
     partial void OnPreviewFrameWidthChanged(double value)
     {
-        OnPropertyChanged(nameof(ScaledTextOverlayFontSize));
-        NotifyTextOverlayCropChanged();
+        UpdateTextOverlayLayouts();
     }
 
     partial void OnPreviewFrameHeightChanged(double value)
     {
-        OnPropertyChanged(nameof(ScaledTextOverlayFontSize));
-        NotifyTextOverlayCropChanged();
+        UpdateTextOverlayLayouts();
     }
-
-    partial void OnTextOverlayCropLeftChanged(double value) => NotifyTextOverlayCropChanged();
-    partial void OnTextOverlayCropTopChanged(double value) => NotifyTextOverlayCropChanged();
-    partial void OnTextOverlayCropRightChanged(double value) => NotifyTextOverlayCropChanged();
-    partial void OnTextOverlayCropBottomChanged(double value) => NotifyTextOverlayCropChanged();
-
-    public double TextOverlayCropLeftPx => PreviewFrameWidth * TextOverlayCropLeft;
-    public double TextOverlayCropTopPx => PreviewFrameHeight * TextOverlayCropTop;
-    public double TextOverlayCropWidth => Math.Max(0.0, PreviewFrameWidth * (1.0 - TextOverlayCropLeft - TextOverlayCropRight));
-    public double TextOverlayCropHeight => Math.Max(0.0, PreviewFrameHeight * (1.0 - TextOverlayCropTop - TextOverlayCropBottom));
 
     partial void OnTransformScaleChanged(double value) => NotifyCropOverlayChanged();
     partial void OnCurrentZoomChanged(double value) => NotifyCropOverlayChanged();
@@ -566,12 +472,14 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(CropHandleBottomRightY));
     }
 
-    private void NotifyTextOverlayCropChanged()
+    private void UpdateTextOverlayLayouts()
     {
-        OnPropertyChanged(nameof(TextOverlayCropLeftPx));
-        OnPropertyChanged(nameof(TextOverlayCropTopPx));
-        OnPropertyChanged(nameof(TextOverlayCropWidth));
-        OnPropertyChanged(nameof(TextOverlayCropHeight));
+        var safeWidth = Math.Max(1.0, PreviewFrameWidth);
+        var safeHeight = Math.Max(1.0, PreviewFrameHeight);
+        for (var i = 0; i < TextOverlays.Count; i++)
+        {
+            TextOverlays[i].RecomputeLayout(safeWidth, safeHeight);
+        }
     }
 
     public void BeginTransformCropEdit()

@@ -424,86 +424,90 @@ public class TimelineExportService
 
     private static void DrawTextOverlay(SKBitmap bitmap, TimelineTextOverlayState state, int targetHeight)
     {
-        if (!state.IsVisible || string.IsNullOrWhiteSpace(state.Text))
+        if (!state.IsVisible)
         {
             return;
         }
 
         var scale = targetHeight / TextOverlayReferenceHeight;
-        var textScale = Math.Max(0.1, state.TransformScale);
-        var fontSize = Math.Max(1f, (float)(state.FontSize * scale * textScale));
-        var offsetX = (float)(state.TransformX * scale);
-        var offsetY = (float)(state.TransformY * scale);
-        var color = ParseTextColor(state.ColorHex);
-        var cropLeft = Math.Clamp(state.CropLeft, 0.0, 0.95);
-        var cropTop = Math.Clamp(state.CropTop, 0.0, 0.95);
-        var cropRight = Math.Clamp(state.CropRight, 0.0, 0.95);
-        var cropBottom = Math.Clamp(state.CropBottom, 0.0, 0.95);
-
         using var canvas = new SKCanvas(bitmap);
-        using var paint = new SKPaint
+
+        for (var layerIndex = 0; layerIndex < state.Layers.Count; layerIndex++)
         {
-            IsAntialias = true,
-            Color = color,
-            Typeface = ResolveTypeface(state.FontFamily),
-            TextSize = fontSize,
-            TextAlign = SKTextAlign.Center
-        };
-
-        var lines = state.Text
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace('\r', '\n')
-            .Split('\n');
-        if (lines.Length == 0)
-        {
-            return;
-        }
-
-        var nonEmptyAny = lines.Any(line => !string.IsNullOrWhiteSpace(line));
-        if (!nonEmptyAny)
-        {
-            return;
-        }
-
-        var layerWidth = (float)(bitmap.Width * textScale);
-        var layerHeight = (float)(bitmap.Height * textScale);
-        var layerLeft = ((bitmap.Width - layerWidth) / 2f) + offsetX;
-        var layerTop = ((bitmap.Height - layerHeight) / 2f) + offsetY;
-        var clipLeft = layerLeft + (float)(layerWidth * cropLeft);
-        var clipTop = layerTop + (float)(layerHeight * cropTop);
-        var clipWidth = Math.Max(1f, (float)(layerWidth * (1.0 - cropLeft - cropRight)));
-        var clipHeight = Math.Max(1f, (float)(layerHeight * (1.0 - cropTop - cropBottom)));
-
-        var metrics = paint.FontMetrics;
-        var lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
-        if (lineHeight <= 0)
-        {
-            lineHeight = fontSize * 1.2f;
-        }
-
-        var totalTextHeight = lineHeight * lines.Length;
-        var centerX = layerLeft + (layerWidth / 2f);
-        var centerY = layerTop + (layerHeight / 2f);
-        var firstBaselineY = centerY
-            - (totalTextHeight / 2f)
-            - metrics.Ascent;
-
-        canvas.Save();
-        canvas.ClipRect(SKRect.Create(clipLeft, clipTop, clipWidth, clipHeight));
-
-        for (var i = 0; i < lines.Length; i++)
-        {
-            var line = lines[i];
-            if (line.Length == 0)
+            var layerState = state.Layers[layerIndex];
+            if (string.IsNullOrWhiteSpace(layerState.Text))
             {
                 continue;
             }
 
-            var baselineY = firstBaselineY + (i * lineHeight);
-            canvas.DrawText(line, centerX, baselineY, paint);
-        }
+            var textScale = Math.Max(0.1, layerState.TransformScale);
+            var fontSize = Math.Max(1f, (float)(layerState.FontSize * scale * textScale));
+            var offsetX = (float)(layerState.TransformX * scale);
+            var offsetY = (float)(layerState.TransformY * scale);
+            var color = ParseTextColor(layerState.ColorHex);
+            var cropLeft = Math.Clamp(layerState.CropLeft, 0.0, 0.95);
+            var cropTop = Math.Clamp(layerState.CropTop, 0.0, 0.95);
+            var cropRight = Math.Clamp(layerState.CropRight, 0.0, 0.95);
+            var cropBottom = Math.Clamp(layerState.CropBottom, 0.0, 0.95);
 
-        canvas.Restore();
+            using var paint = new SKPaint
+            {
+                IsAntialias = true,
+                Color = color,
+                Typeface = ResolveTypeface(layerState.FontFamily),
+                TextSize = fontSize,
+                TextAlign = SKTextAlign.Center
+            };
+
+            var lines = layerState.Text
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n')
+                .Split('\n');
+            if (lines.Length == 0 || !lines.Any(line => !string.IsNullOrWhiteSpace(line)))
+            {
+                continue;
+            }
+
+            var layerWidth = (float)(bitmap.Width * textScale);
+            var layerHeight = (float)(bitmap.Height * textScale);
+            var layerLeft = ((bitmap.Width - layerWidth) / 2f) + offsetX;
+            var layerTop = ((bitmap.Height - layerHeight) / 2f) + offsetY;
+            var clipLeft = layerLeft + (float)(layerWidth * cropLeft);
+            var clipTop = layerTop + (float)(layerHeight * cropTop);
+            var clipWidth = Math.Max(1f, (float)(layerWidth * (1.0 - cropLeft - cropRight)));
+            var clipHeight = Math.Max(1f, (float)(layerHeight * (1.0 - cropTop - cropBottom)));
+
+            var metrics = paint.FontMetrics;
+            var lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
+            if (lineHeight <= 0)
+            {
+                lineHeight = fontSize * 1.2f;
+            }
+
+            var totalTextHeight = lineHeight * lines.Length;
+            var centerX = layerLeft + (layerWidth / 2f);
+            var centerY = layerTop + (layerHeight / 2f);
+            var firstBaselineY = centerY
+                - (totalTextHeight / 2f)
+                - metrics.Ascent;
+
+            canvas.Save();
+            canvas.ClipRect(SKRect.Create(clipLeft, clipTop, clipWidth, clipHeight));
+
+            for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+            {
+                var line = lines[lineIndex];
+                if (line.Length == 0)
+                {
+                    continue;
+                }
+
+                var baselineY = firstBaselineY + (lineIndex * lineHeight);
+                canvas.DrawText(line, centerX, baselineY, paint);
+            }
+
+            canvas.Restore();
+        }
     }
 
     private static SKTypeface ResolveTypeface(string fontFamily)

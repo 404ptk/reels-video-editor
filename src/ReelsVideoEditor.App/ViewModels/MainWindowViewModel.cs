@@ -124,19 +124,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Timeline.TextOverlayStateChanged = state =>
         {
-            Preview.UpdateTextOverlayState(
-                state.Text,
-                state.FontFamily,
-                state.FontSize,
-                state.ColorHex,
-                state.IsVisible,
-                state.TransformX,
-                state.TransformY,
-                state.TransformScale,
-                state.CropLeft,
-                state.CropTop,
-                state.CropRight,
-                state.CropBottom);
+            Preview.UpdateTextOverlayState(state);
             Preview.RefreshRenderAvailability();
         };
 
