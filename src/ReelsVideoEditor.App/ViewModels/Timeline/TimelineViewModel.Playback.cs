@@ -304,6 +304,22 @@ public partial class TimelineViewModel
         NotifyTextOverlayStateChanged();
     }
 
+    public void ScaleAllClipTransforms(double ratioX, double ratioY)
+    {
+        if (Math.Abs(ratioX - 1.0) < 0.0001 && Math.Abs(ratioY - 1.0) < 0.0001)
+        {
+            return;
+        }
+
+        foreach (var clip in VideoClips)
+        {
+            clip.TransformX *= ratioX;
+            clip.TransformY *= ratioY;
+        }
+
+        NotifyTextOverlayStateChanged();
+    }
+
     public TimelineTextOverlayState ResolveTextOverlayStateAt(long playbackMilliseconds)
     {
         var timelineSeconds = ResolveTimelineSecondsForLayerPlayback(playbackMilliseconds);

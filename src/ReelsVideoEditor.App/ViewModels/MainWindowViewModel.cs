@@ -61,7 +61,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             IsTextTransformTarget = playbackMilliseconds => Timeline.IsTextTransformTargetAt(playbackMilliseconds),
             ResolvePlaybackMaxMilliseconds = () => Timeline.ResolvePlaybackDurationMilliseconds(),
             PlaybackTimeChanged = playbackMilliseconds => Timeline.UpdatePlayheadFromPlayback(playbackMilliseconds),
-            PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying)
+            PlaybackStateChanged = isPlaying => Timeline.SetPlaybackActive(isPlaying),
+            PreviewFrameScaleChanged = (ratioX, ratioY) =>
+            {
+                Timeline.ScaleAllClipTransforms(ratioX, ratioY);
+                SyncPreviewTransformFromTimelineTarget();
+            }
         };
 
         Preview.PropertyChanged += (_, args) =>

@@ -96,6 +96,7 @@ public partial class PreviewPanelView
     private SKBitmap? ComposeMultipleLayers(PreviewViewModel viewModel, IReadOnlyList<PreviewVideoLayer> layers)
     {
         var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
+        var sourceLayers = new List<PreviewVideoLayer>(layers.Count);
         var sourceWidthForTarget = 0;
         var sourceHeightForTarget = 0;
 
@@ -146,6 +147,7 @@ public partial class PreviewPanelView
                     0f,
                     0f,
                     layer.DrawBlurredBackground));
+                sourceLayers.Add(layer);
             }
         }
 
@@ -164,7 +166,7 @@ public partial class PreviewPanelView
         for (var i = 0; i < frameLayers.Count; i++)
         {
             var layer = frameLayers[i];
-            var sourceLayer = layers[i];
+            var sourceLayer = sourceLayers[i];
             var renderOffsetX = (float)(sourceLayer.TransformX * ((double)targetW / currentPreviewFrameWidth));
             var renderOffsetY = (float)(sourceLayer.TransformY * ((double)targetH / currentPreviewFrameHeight));
             frameLayers[i] = layer with

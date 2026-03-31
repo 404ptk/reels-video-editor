@@ -387,7 +387,12 @@ public class TimelineExportService
                 }
 
                 var composed = compositor.ComposeLayers(frameLayers, width, height);
-                DrawTextOverlay(composed, resolveTextOverlayState(playbackMs), height);
+                DrawTextOverlay(
+                    composed,
+                    resolveTextOverlayState(playbackMs),
+                    height,
+                    safePreviewWidth,
+                    safePreviewHeight);
 
                 var byteCount = width * height * 4;
                 if (frameBuffer is null || frameBuffer.Length != byteCount)
@@ -422,7 +427,12 @@ public class TimelineExportService
         }
     }
 
-    private static void DrawTextOverlay(SKBitmap bitmap, TimelineTextOverlayState state, int targetHeight)
+    private static void DrawTextOverlay(
+        SKBitmap bitmap,
+        TimelineTextOverlayState state,
+        int targetHeight,
+        double previewFrameWidth,
+        double previewFrameHeight)
     {
         if (!state.IsVisible)
         {
@@ -430,6 +440,10 @@ public class TimelineExportService
         }
 
         var scale = targetHeight / TextOverlayReferenceHeight;
+        var safePreviewWidth = Math.Max(1.0, previewFrameWidth);
+        var safePreviewHeight = Math.Max(1.0, previewFrameHeight);
+        var offsetScaleX = bitmap.Width / safePreviewWidth;
+        var offsetScaleY = bitmap.Height / safePreviewHeight;
         using var canvas = new SKCanvas(bitmap);
 
         for (var layerIndex = 0; layerIndex < state.Layers.Count; layerIndex++)
@@ -442,8 +456,8 @@ public class TimelineExportService
 
             var textScale = Math.Max(0.1, layerState.TransformScale);
             var fontSize = Math.Max(1f, (float)(layerState.FontSize * scale * textScale));
-            var offsetX = (float)(layerState.TransformX * scale);
-            var offsetY = (float)(layerState.TransformY * scale);
+            var offsetX = (float)(layerState.TransformX * offsetScaleX);
+            var offsetY = (float)(layerState.TransformY * offsetScaleY);
             var color = ParseTextColor(layerState.ColorHex);
             var cropLeft = Math.Clamp(layerState.CropLeft, 0.0, 0.95);
             var cropTop = Math.Clamp(layerState.CropTop, 0.0, 0.95);

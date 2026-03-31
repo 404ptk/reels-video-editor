@@ -41,6 +41,8 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<long>? ResolvePlaybackMaxMilliseconds { get; set; }
 
+    public Action<double, double>? PreviewFrameScaleChanged { get; set; }
+
     public Action<long>? PlaybackTimeChanged { get; set; }
 
     public Action<bool>? PlaybackStateChanged { get; set; }
@@ -282,6 +284,16 @@ public sealed partial class PreviewViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsVideoVisible));
         OnPropertyChanged(nameof(ShowTransformHandles));
         OnPropertyChanged(nameof(ShowClipperHandles));
+    }
+
+    public void NotifyPreviewFrameScaleChanged(double ratioX, double ratioY)
+    {
+        if (double.IsNaN(ratioX) || double.IsNaN(ratioY) || ratioX <= 0 || ratioY <= 0)
+        {
+            return;
+        }
+
+        PreviewFrameScaleChanged?.Invoke(ratioX, ratioY);
     }
 
     private static string FormatPlaybackTime(long playbackMilliseconds)

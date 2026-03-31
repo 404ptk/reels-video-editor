@@ -366,8 +366,7 @@ public partial class PreviewPanelView
 
             if (Math.Abs(ratioX - 1.0) > 0.0001 || Math.Abs(ratioY - 1.0) > 0.0001)
             {
-                boundViewModel.TransformX *= ratioX;
-                boundViewModel.TransformY *= ratioY;
+                boundViewModel.NotifyPreviewFrameScaleChanged(ratioX, ratioY);
             }
         }
 
@@ -383,6 +382,11 @@ public partial class PreviewPanelView
         previewFrame.VerticalAlignment = VerticalAlignment.Center;
 
         UpdateVideoForegroundBounds();
+
+        if (boundViewModel is not null && !boundViewModel.IsPlaying)
+        {
+            TriggerRecomposeAsync();
+        }
 
         ConstrainPan();
         ApplyTransform();
