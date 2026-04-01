@@ -26,6 +26,8 @@ public sealed partial class TextViewModel
             EditingPresetSourceName = preset.Name;
             NewPresetName = preset.Name;
             ApplyColorFromHex(preset.ColorHex);
+            ApplyOutlineColorFromHex(preset.OutlineColorHex);
+            SelectedClipOutlineThickness = NormalizeOutlineThickness(preset.OutlineThickness);
             SelectedClipFontSize = Math.Clamp(preset.FontSize, 10, 180);
             SelectedClipFontFamily = ResolveAvailableFontFamily(preset.FontFamily);
             IsEditorVisible = true;
@@ -57,7 +59,9 @@ public sealed partial class TextViewModel
                 uniqueName,
                 ResolveAvailableFontFamily(customPreset.FontFamily),
                 Math.Clamp(customPreset.FontSize, 10, 180),
-                NormalizeHexColor(customPreset.ColorHex));
+                NormalizeHexColor(customPreset.ColorHex),
+                NormalizeOutlineHexColor(customPreset.OutlineColorHex),
+                NormalizeOutlineThickness(customPreset.OutlineThickness));
 
             UpsertPreset(normalizedPreset, isBuiltIn: false);
         }
@@ -213,7 +217,9 @@ public sealed partial class TextViewModel
             uniqueName,
             ResolveAvailableFontFamily(SelectedClipFontFamily),
             Math.Clamp(SelectedClipFontSize, 10, 180),
-            SelectedColorHex);
+            SelectedColorHex,
+            SelectedOutlineColorHex,
+            NormalizeOutlineThickness(SelectedClipOutlineThickness));
 
         Presets[existingIndex] = updatedPreset;
         PersistCustomPresets();

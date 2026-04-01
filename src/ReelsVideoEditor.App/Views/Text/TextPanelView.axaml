@@ -292,6 +292,85 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
+                        <TextBlock Text="Outline"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+
+                        <Grid ColumnDefinitions="64,*"
+                              ColumnSpacing="10">
+                            <Border Width="64"
+                                    Height="64"
+                                    CornerRadius="8"
+                                    BorderBrush="{DynamicResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    Background="{Binding SelectedOutlineColorPreviewBrush}" />
+                            <StackPanel Grid.Column="1"
+                                        Spacing="4"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SelectedOutlineColorHex}"
+                                           Foreground="{DynamicResource Accent}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+
+                                <ItemsControl ItemsSource="{Binding BasicColors}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TextColorPreset">
+                                            <Button Width="34"
+                                                    Height="34"
+                                                    Margin="0,0,8,8"
+                                                    Background="Transparent"
+                                                    BorderBrush="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="0"
+                                                    Command="{Binding $parent[UserControl].DataContext.SelectBasicOutlineColorCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Border Width="24"
+                                                        Height="24"
+                                                        CornerRadius="6"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                                        BorderThickness="1"
+                                                        Background="{Binding ColorBrush}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Outline thickness"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <Border Padding="10,6"
+                                Background="#112EC4B6"
+                                BorderBrush="{DynamicResource AccentSubtle}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                HorizontalAlignment="Left"
+                                Cursor="SizeWestEast"
+                                PointerPressed="OutlineThicknessValue_OnPointerPressed"
+                                PointerMoved="OutlineThicknessValue_OnPointerMoved"
+                                PointerReleased="OutlineThicknessValue_OnPointerReleased"
+                                PointerCaptureLost="OutlineThicknessValue_OnPointerCaptureLost">
+                            <TextBlock Text="{Binding SelectedClipOutlineThickness, StringFormat='{}{0:F0}px'}"
+                                       Foreground="{DynamicResource Accent}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                        <TextBlock Text="Drag left/right to change outline thickness"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="11" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
                         <TextBlock Text="Size"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />

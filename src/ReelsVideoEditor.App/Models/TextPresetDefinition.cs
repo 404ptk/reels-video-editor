@@ -6,11 +6,15 @@ public sealed record TextPresetDefinition(
     string Name,
     string FontFamily,
     double FontSize,
-    string ColorHex)
+    string ColorHex,
+    string OutlineColorHex = "#000000",
+    double OutlineThickness = 0)
 {
     public string DisplayText { get; } = "Preview";
 
     public IBrush ColorBrush { get; } = Brush.Parse(ColorHex);
+
+    public IBrush OutlineColorBrush { get; } = Brush.Parse(OutlineColorHex);
 
     public Avalonia.Media.FontFamily PreviewFontFamily { get; } = BuildPreviewFontFamily(FontFamily);
 

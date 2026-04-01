@@ -64,6 +64,119 @@
                                                   Canvas.Top="{Binding CropTopPx}"
                                                   ClipToBounds="True">
                                                 <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetNegPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform Y="{Binding OutlineOffsetNegPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform Y="{Binding OutlineOffsetPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetNegPx}" Y="{Binding OutlineOffsetNegPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetPx}" Y="{Binding OutlineOffsetNegPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetNegPx}" Y="{Binding OutlineOffsetPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Text}"
+                                                           IsVisible="{Binding HasOutline}"
+                                                           Foreground="{Binding OutlineColorHex}"
+                                                           FontFamily="{Binding FontFamily}"
+                                                           FontSize="{Binding ScaledFontSize}"
+                                                           FontWeight="SemiBold"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <TranslateTransform X="{Binding OutlineOffsetPx}" Y="{Binding OutlineOffsetPx}" />
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+
+                                                <TextBlock Text="{Binding Text}"
                                                            Foreground="{Binding ColorHex}"
                                                            FontFamily="{Binding FontFamily}"
                                                            FontSize="{Binding ScaledFontSize}"

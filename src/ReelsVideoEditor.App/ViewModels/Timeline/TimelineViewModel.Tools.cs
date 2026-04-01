@@ -324,6 +324,8 @@ public partial class TimelineViewModel
             CropBottom = source.CropBottom,
             TextContent = source.TextContent,
             TextColorHex = source.TextColorHex,
+            TextOutlineColorHex = source.TextOutlineColorHex,
+            TextOutlineThickness = source.TextOutlineThickness,
             TextFontSize = source.TextFontSize,
             TextFontFamily = source.TextFontFamily
         };
@@ -383,11 +385,13 @@ public partial class TimelineViewModel
             clip.CropLeft,
             clip.CropTop,
             clip.CropRight,
-                clip.CropBottom,
-                clip.TextContent,
-                clip.TextColorHex,
-                clip.TextFontSize,
-                clip.TextFontFamily)).ToList();
+            clip.CropBottom,
+            clip.TextContent,
+            clip.TextColorHex,
+            clip.TextOutlineColorHex,
+            clip.TextOutlineThickness,
+            clip.TextFontSize,
+            clip.TextFontFamily)).ToList();
     }
 
     private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
@@ -429,6 +433,8 @@ public partial class TimelineViewModel
             CropBottom = snapshot.CropBottom,
             TextContent = snapshot.TextContent,
             TextColorHex = snapshot.TextColorHex,
+            TextOutlineColorHex = snapshot.TextOutlineColorHex,
+            TextOutlineThickness = snapshot.TextOutlineThickness,
             TextFontSize = snapshot.TextFontSize,
             TextFontFamily = snapshot.TextFontFamily
         };
@@ -498,6 +504,8 @@ public partial class TimelineViewModel
         double CropBottom,
         string TextContent,
         string TextColorHex,
+        string TextOutlineColorHex,
+        double TextOutlineThickness,
         double TextFontSize,
         string TextFontFamily);
 }

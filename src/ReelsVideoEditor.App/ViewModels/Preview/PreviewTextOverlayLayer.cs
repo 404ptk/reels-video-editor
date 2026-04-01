@@ -10,6 +10,7 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
     private const double TextOverlayReferenceHeight = 1280.0;
 
     private double rawFontSize = 14;
+    private double rawOutlineThickness;
     private double rawTransformScale = 1.0;
     private double rawCropLeft;
     private double rawCropTop;
@@ -23,10 +24,19 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
     private string colorHex = "#FFFFFF";
 
     [ObservableProperty]
+    private string outlineColorHex = "#000000";
+
+    [ObservableProperty]
     private FontFamily fontFamily = new("Inter");
 
     [ObservableProperty]
     private double scaledFontSize = 14;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OutlineOffsetPx))]
+    [NotifyPropertyChangedFor(nameof(OutlineOffsetNegPx))]
+    [NotifyPropertyChangedFor(nameof(HasOutline))]
+    private double scaledOutlineThickness;
 
     [ObservableProperty]
     private double transformX;
@@ -49,15 +59,23 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
     [ObservableProperty]
     private double cropHeight;
 
+    public double OutlineOffsetPx => ScaledOutlineThickness;
+
+    public double OutlineOffsetNegPx => -ScaledOutlineThickness;
+
+    public bool HasOutline => ScaledOutlineThickness > 0.01;
+
     public void Apply(TimelineTextOverlayLayer source, double frameWidth, double frameHeight)
     {
         Text = source.Text;
         ColorHex = source.ColorHex;
+        OutlineColorHex = source.OutlineColorHex;
         FontFamily = ResolveFontFamily(source.FontFamily);
         TransformX = source.TransformX;
         TransformY = source.TransformY;
 
         rawFontSize = Math.Max(1.0, source.FontSize);
+        rawOutlineThickness = Math.Clamp(source.OutlineThickness, 0, 24);
         rawTransformScale = Math.Max(0.1, source.TransformScale);
         rawCropLeft = Math.Clamp(source.CropLeft, 0.0, 0.95);
         rawCropTop = Math.Clamp(source.CropTop, 0.0, 0.95);
@@ -75,6 +93,7 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
         TransformScale = rawTransformScale;
         ScaledFontSize = Math.Max(1.0, rawFontSize * frameScale);
+        ScaledOutlineThickness = Math.Max(0.0, rawOutlineThickness * frameScale);
         CropLeftPx = safeWidth * rawCropLeft;
         CropTopPx = safeHeight * rawCropTop;
         CropWidth = Math.Max(0.0, safeWidth * (1.0 - rawCropLeft - rawCropRight));

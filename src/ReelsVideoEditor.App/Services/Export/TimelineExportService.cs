@@ -459,6 +459,8 @@ public class TimelineExportService
             var offsetX = (float)(layerState.TransformX * offsetScaleX);
             var offsetY = (float)(layerState.TransformY * offsetScaleY);
             var color = ParseTextColor(layerState.ColorHex);
+            var outlineColor = ParseTextColor(layerState.OutlineColorHex);
+            var outlineThickness = Math.Max(0f, (float)(layerState.OutlineThickness * scale * textScale));
             var cropLeft = Math.Clamp(layerState.CropLeft, 0.0, 0.95);
             var cropTop = Math.Clamp(layerState.CropTop, 0.0, 0.95);
             var cropRight = Math.Clamp(layerState.CropRight, 0.0, 0.95);
@@ -471,6 +473,18 @@ public class TimelineExportService
                 Typeface = ResolveTypeface(layerState.FontFamily),
                 TextSize = fontSize,
                 TextAlign = SKTextAlign.Center
+            };
+
+            using var outlinePaint = new SKPaint
+            {
+                IsAntialias = true,
+                Color = outlineColor,
+                Typeface = paint.Typeface,
+                TextSize = fontSize,
+                TextAlign = SKTextAlign.Center,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = outlineThickness,
+                StrokeJoin = SKStrokeJoin.Round
             };
 
             var lines = layerState.Text
@@ -517,6 +531,11 @@ public class TimelineExportService
                 }
 
                 var baselineY = firstBaselineY + (lineIndex * lineHeight);
+                if (outlineThickness > 0.01f)
+                {
+                    canvas.DrawText(line, centerX, baselineY, outlinePaint);
+                }
+
                 canvas.DrawText(line, centerX, baselineY, paint);
             }
 

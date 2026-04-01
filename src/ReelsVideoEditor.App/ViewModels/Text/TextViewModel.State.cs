@@ -19,6 +19,8 @@ public sealed partial class TextViewModel
             {
                 SelectedClipText = state.Text;
                 ApplyColorFromHex(state.ColorHex);
+                ApplyOutlineColorFromHex(state.OutlineColorHex);
+                SelectedClipOutlineThickness = NormalizeOutlineThickness(state.OutlineThickness);
                 SelectedClipFontSize = state.FontSize;
                 SelectedClipFontFamily = ResolveAvailableFontFamily(state.FontFamily);
                 IsEditorVisible = true;
@@ -107,12 +109,38 @@ public sealed partial class TextViewModel
         ApplySelectedTextSettings();
     }
 
+    partial void OnSelectedOutlineColorRChanged(double value)
+    {
+        OnPropertyChanged(nameof(SelectedOutlineColorPreviewBrush));
+        OnPropertyChanged(nameof(SelectedOutlineColorHex));
+        ApplySelectedTextSettings();
+    }
+
+    partial void OnSelectedOutlineColorGChanged(double value)
+    {
+        OnPropertyChanged(nameof(SelectedOutlineColorPreviewBrush));
+        OnPropertyChanged(nameof(SelectedOutlineColorHex));
+        ApplySelectedTextSettings();
+    }
+
+    partial void OnSelectedOutlineColorBChanged(double value)
+    {
+        OnPropertyChanged(nameof(SelectedOutlineColorPreviewBrush));
+        OnPropertyChanged(nameof(SelectedOutlineColorHex));
+        ApplySelectedTextSettings();
+    }
+
     partial void OnSelectedClipFontSizeChanged(double value)
     {
         ApplySelectedTextSettings();
     }
 
     partial void OnSelectedClipFontFamilyChanged(string value)
+    {
+        ApplySelectedTextSettings();
+    }
+
+    partial void OnSelectedClipOutlineThicknessChanged(double value)
     {
         ApplySelectedTextSettings();
     }
@@ -128,6 +156,8 @@ public sealed partial class TextViewModel
             SelectedClipText,
             SelectedColorHex,
             SelectedClipFontSize,
-            ResolveAvailableFontFamily(SelectedClipFontFamily));
+            ResolveAvailableFontFamily(SelectedClipFontFamily),
+            SelectedOutlineColorHex,
+            NormalizeOutlineThickness(SelectedClipOutlineThickness));
     }
 }

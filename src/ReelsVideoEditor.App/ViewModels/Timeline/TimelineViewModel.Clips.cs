@@ -57,6 +57,8 @@ public partial class TimelineViewModel
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
         clip.TextContent = preset.DisplayText;
         clip.TextColorHex = preset.ColorHex;
+        clip.TextOutlineColorHex = preset.OutlineColorHex;
+        clip.TextOutlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
         clip.TextFontFamily = preset.FontFamily;
         clip.TextFontSize = preset.FontSize;
         clip.TransformY = -72;
@@ -73,7 +75,7 @@ public partial class TimelineViewModel
         });
     }
 
-    public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize, string fontFamily)
+    public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize, string fontFamily, string outlineColorHex, double outlineThickness)
     {
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
@@ -93,9 +95,19 @@ public partial class TimelineViewModel
             normalizedColorHex = parsedColor.ToString();
         }
 
+        var normalizedOutlineColorHex = selectedTextClip.TextOutlineColorHex;
+        if (!string.IsNullOrWhiteSpace(outlineColorHex) && Color.TryParse(outlineColorHex.Trim(), out var parsedOutlineColor))
+        {
+            normalizedOutlineColorHex = parsedOutlineColor.ToString();
+        }
+
+        var normalizedOutlineThickness = Math.Clamp(Math.Round(outlineThickness, MidpointRounding.AwayFromZero), 0, 24);
+
         if (string.Equals(selectedTextClip.Name, normalizedDisplayName, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextContent, normalizedTextContent, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
+            && string.Equals(selectedTextClip.TextOutlineColorHex, normalizedOutlineColorHex, StringComparison.Ordinal)
+            && Math.Abs(selectedTextClip.TextOutlineThickness - normalizedOutlineThickness) < 0.001
             && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001
             && string.Equals(selectedTextClip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
         {
@@ -105,6 +117,8 @@ public partial class TimelineViewModel
         selectedTextClip.Name = normalizedDisplayName;
         selectedTextClip.TextContent = normalizedTextContent;
         selectedTextClip.TextColorHex = normalizedColorHex;
+        selectedTextClip.TextOutlineColorHex = normalizedOutlineColorHex;
+        selectedTextClip.TextOutlineThickness = normalizedOutlineThickness;
         selectedTextClip.TextFontSize = normalizedFontSize;
         selectedTextClip.TextFontFamily = normalizedFontFamily;
 

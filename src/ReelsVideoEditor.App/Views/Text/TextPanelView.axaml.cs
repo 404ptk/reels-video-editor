@@ -13,6 +13,9 @@ public partial class TextPanelView : UserControl
     private bool isSizeDragActive;
     private double sizeDragStartX;
     private double sizeDragStartValue;
+    private bool isOutlineThicknessDragActive;
+    private double outlineThicknessDragStartX;
+    private double outlineThicknessDragStartValue;
 
     public TextPanelView()
     {
@@ -121,6 +124,73 @@ public partial class TextPanelView : UserControl
         }
 
         isSizeDragActive = false;
+        if (pointer is not null)
+        {
+            pointer.Capture(null);
+        }
+    }
+
+    private void OutlineThicknessValue_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (sender is not InputElement dragElement)
+        {
+            return;
+        }
+
+        if (!eventArgs.GetCurrentPoint(dragElement).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        isOutlineThicknessDragActive = true;
+        outlineThicknessDragStartX = eventArgs.GetPosition(this).X;
+        outlineThicknessDragStartValue = viewModel.SelectedClipOutlineThickness;
+        eventArgs.Pointer.Capture(dragElement);
+        eventArgs.Handled = true;
+    }
+
+    private void OutlineThicknessValue_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (!isOutlineThicknessDragActive)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        var deltaX = eventArgs.GetPosition(this).X - outlineThicknessDragStartX;
+        var nextThickness = Math.Clamp(outlineThicknessDragStartValue + (deltaX * 0.1), 0, 24);
+        viewModel.SelectedClipOutlineThickness = Math.Round(nextThickness, MidpointRounding.AwayFromZero);
+        eventArgs.Handled = true;
+    }
+
+    private void OutlineThicknessValue_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
+    {
+        EndOutlineThicknessDrag(eventArgs.Pointer);
+        eventArgs.Handled = true;
+    }
+
+    private void OutlineThicknessValue_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs eventArgs)
+    {
+        EndOutlineThicknessDrag(eventArgs.Pointer);
+    }
+
+    private void EndOutlineThicknessDrag(IPointer? pointer)
+    {
+        if (!isOutlineThicknessDragActive)
+        {
+            return;
+        }
+
+        isOutlineThicknessDragActive = false;
         if (pointer is not null)
         {
             pointer.Capture(null);

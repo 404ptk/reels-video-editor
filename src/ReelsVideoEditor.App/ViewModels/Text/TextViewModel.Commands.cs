@@ -33,7 +33,9 @@ public sealed partial class TextViewModel
             uniqueName,
             ResolveAvailableFontFamily(SelectedClipFontFamily),
             Math.Clamp(SelectedClipFontSize, 10, 180),
-            SelectedColorHex);
+            SelectedColorHex,
+            SelectedOutlineColorHex,
+            NormalizeOutlineThickness(SelectedClipOutlineThickness));
 
         UpsertPreset(preset, isBuiltIn: false);
         PersistCustomPresets();

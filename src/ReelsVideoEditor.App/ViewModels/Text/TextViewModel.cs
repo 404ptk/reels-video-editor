@@ -47,7 +47,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public IReadOnlyList<string> AvailableFonts { get; }
 
-    public Action<string, string, double, string>? ApplySelectedTextSettingsRequested { get; set; }
+    public Action<string, string, double, string, string, double>? ApplySelectedTextSettingsRequested { get; set; }
 
     public TextViewModel()
     {
@@ -76,10 +76,22 @@ public sealed partial class TextViewModel : ViewModelBase
     private double selectedColorB = 255;
 
     [ObservableProperty]
+    private double selectedOutlineColorR;
+
+    [ObservableProperty]
+    private double selectedOutlineColorG;
+
+    [ObservableProperty]
+    private double selectedOutlineColorB;
+
+    [ObservableProperty]
     private double selectedClipFontSize = 14;
 
     [ObservableProperty]
     private string selectedClipFontFamily = "Inter";
+
+    [ObservableProperty]
+    private double selectedClipOutlineThickness;
 
     [ObservableProperty]
     private string newPresetName = string.Empty;
@@ -114,4 +126,11 @@ public sealed partial class TextViewModel : ViewModelBase
         NormalizeColorChannel(SelectedColorB)));
 
     public string SelectedColorHex => $"#{NormalizeColorChannel(SelectedColorR):X2}{NormalizeColorChannel(SelectedColorG):X2}{NormalizeColorChannel(SelectedColorB):X2}";
+
+    public IBrush SelectedOutlineColorPreviewBrush => new SolidColorBrush(Color.FromRgb(
+        NormalizeColorChannel(SelectedOutlineColorR),
+        NormalizeColorChannel(SelectedOutlineColorG),
+        NormalizeColorChannel(SelectedOutlineColorB)));
+
+    public string SelectedOutlineColorHex => $"#{NormalizeColorChannel(SelectedOutlineColorR):X2}{NormalizeColorChannel(SelectedOutlineColorG):X2}{NormalizeColorChannel(SelectedOutlineColorB):X2}";
 }

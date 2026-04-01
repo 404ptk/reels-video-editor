@@ -67,7 +67,13 @@ public sealed class TextPresetStorageService
                 .Select(CreateValidatedPreset)
                 .Where(preset => preset is not null)
                 .Select(preset => preset!)
-                .Select(preset => new StoredTextPreset(preset.Name, preset.FontFamily, preset.FontSize, preset.ColorHex))
+                .Select(preset => new StoredTextPreset(
+                    preset.Name,
+                    preset.FontFamily,
+                    preset.FontSize,
+                    preset.ColorHex,
+                    preset.OutlineColorHex,
+                    preset.OutlineThickness))
                 .ToArray();
 
             var directoryPath = Path.GetDirectoryName(presetsFilePath);
@@ -110,6 +116,8 @@ public sealed class TextPresetStorageService
         var fontFamily = preset.FontFamily?.Trim();
         var fontSize = Math.Clamp(preset.FontSize, 10, 180);
         var colorHex = preset.ColorHex?.Trim();
+        var outlineColorHex = preset.OutlineColorHex?.Trim();
+        var outlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
 
         if (string.IsNullOrWhiteSpace(name)
             || string.IsNullOrWhiteSpace(fontFamily)
@@ -119,8 +127,15 @@ public sealed class TextPresetStorageService
             return null;
         }
 
+        var parsedOutlineColor = Colors.Black;
+        if (!string.IsNullOrWhiteSpace(outlineColorHex) && Color.TryParse(outlineColorHex, out var validOutlineColor))
+        {
+            parsedOutlineColor = validOutlineColor;
+        }
+
         var normalizedHex = $"#{parsedColor.R:X2}{parsedColor.G:X2}{parsedColor.B:X2}";
-        return new TextPresetDefinition(name, fontFamily, fontSize, normalizedHex);
+        var normalizedOutlineHex = $"#{parsedOutlineColor.R:X2}{parsedOutlineColor.G:X2}{parsedOutlineColor.B:X2}";
+        return new TextPresetDefinition(name, fontFamily, fontSize, normalizedHex, normalizedOutlineHex, outlineThickness);
     }
 
     private static string ResolveDefaultPath()
@@ -134,5 +149,11 @@ public sealed class TextPresetStorageService
         return Path.Combine(baseDirectory, AppDirectoryName, PresetsFileName);
     }
 
-    private sealed record StoredTextPreset(string Name, string FontFamily, double FontSize, string ColorHex);
+    private sealed record StoredTextPreset(
+        string Name,
+        string FontFamily,
+        double FontSize,
+        string ColorHex,
+        string OutlineColorHex = "#000000",
+        double OutlineThickness = 0);
 }

@@ -75,6 +75,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     private string textColorHex = "#FFFFFF";
 
     [ObservableProperty]
+    private string textOutlineColorHex = "#000000";
+
+    [ObservableProperty]
+    private double textOutlineThickness;
+
+    [ObservableProperty]
     private double textFontSize = 14;
 
     [ObservableProperty]

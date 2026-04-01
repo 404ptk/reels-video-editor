@@ -331,7 +331,7 @@ public partial class TimelineViewModel
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
         {
-            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, "#FFFFFF");
+            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, "#FFFFFF", "#000000", 0);
         }
 
         return new TimelineSelectedTextClipState(
@@ -339,7 +339,9 @@ public partial class TimelineViewModel
             selectedTextClip.TextContent,
             selectedTextClip.TextFontFamily,
             selectedTextClip.TextFontSize,
-            selectedTextClip.TextColorHex);
+            selectedTextClip.TextColorHex,
+            selectedTextClip.TextOutlineColorHex,
+            selectedTextClip.TextOutlineThickness);
     }
 
     private TimelineClipItem? ResolvePreviewClip()
@@ -505,6 +507,8 @@ public partial class TimelineViewModel
                 clip.TextFontFamily,
                 clip.TextFontSize,
                 clip.TextColorHex,
+                clip.TextOutlineColorHex,
+                clip.TextOutlineThickness,
                 clip.TransformX,
                 clip.TransformY,
                 clip.TransformScale,
