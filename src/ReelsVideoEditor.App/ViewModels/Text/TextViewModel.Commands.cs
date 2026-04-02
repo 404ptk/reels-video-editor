@@ -35,7 +35,8 @@ public sealed partial class TextViewModel
             Math.Clamp(SelectedClipFontSize, 10, 180),
             SelectedColorHex,
             SelectedOutlineColorHex,
-            NormalizeOutlineThickness(SelectedClipOutlineThickness));
+            NormalizeOutlineThickness(SelectedClipOutlineThickness),
+            IsAutoCaptions: autoCaptionsPresetMode);
 
         UpsertPreset(preset, isBuiltIn: false);
         PersistCustomPresets();

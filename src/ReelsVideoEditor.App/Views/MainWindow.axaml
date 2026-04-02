@@ -6,7 +6,6 @@
         xmlns:videoFilesViews="using:ReelsVideoEditor.App.Views.VideoFiles"
         xmlns:effectsViews="using:ReelsVideoEditor.App.Views.Effects"
         xmlns:textViews="using:ReelsVideoEditor.App.Views.Text"
-        xmlns:subtitlesViews="using:ReelsVideoEditor.App.Views.Subtitles"
         xmlns:watermarksViews="using:ReelsVideoEditor.App.Views.Watermarks"
         xmlns:exportViews="using:ReelsVideoEditor.App.Views.Export"
         xmlns:commonViews="using:ReelsVideoEditor.App.Views.Common"
@@ -223,7 +222,7 @@
                             <Border IsVisible="{Binding IsSubtitlesSection}"
                                     CornerRadius="8"
                                     Background="{StaticResource BaseBg}">
-                                <subtitlesViews:SubtitlesPanelView DataContext="{Binding Subtitles}" />
+                                <textViews:TextPanelView DataContext="{Binding Subtitles}" />
                             </Border>
                         </Grid>
                     </Border>

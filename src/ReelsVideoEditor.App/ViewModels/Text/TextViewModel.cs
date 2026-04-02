@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReelsVideoEditor.App.Services.Text;
-using ReelsVideoEditor.App.Services.SpeechTranscription;
 
 namespace ReelsVideoEditor.App.ViewModels.Text;
 
@@ -12,22 +12,30 @@ public sealed partial class TextViewModel : ViewModelBase
 {
     public const string AutoCaptionsPresetName = "🎤 Auto Captions";
 
-    private static readonly Models.TextPresetDefinition[] DefaultPresets =
+    private static readonly Models.TextPresetDefinition[] DefaultTextPresets =
     [
-        new(AutoCaptionsPresetName, "Inter", 18, "#FFFFFF", "#000000", 3, IsAutoCaptions: true),
         new("Sunset", "Inter", 14, "#FF6B6B"),
         new("Ocean", "Inter", 14, "#3A86FF"),
         new("Mint", "Inter", 14, "#2EC4B6")
     ];
 
+    private static readonly Models.TextPresetDefinition[] DefaultSubtitlesPresets =
+    [
+        new(AutoCaptionsPresetName, "Inter", 18, "#FFFFFF", "#000000", 3, IsAutoCaptions: true),
+    ];
+
     private bool isSyncingFromTimeline;
-    private readonly TextPresetStorageService presetStorage = new();
+    private readonly TextPresetStorageService presetStorage;
+    private readonly IReadOnlyList<Models.TextPresetDefinition> defaultPresets;
+    private readonly bool autoCaptionsPresetMode;
+    private readonly string title;
+    private readonly string description;
     private readonly HashSet<string> builtInPresetNames = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> RenderableFonts { get; } = LoadRenderableFonts();
 
-    public string Title { get; } = "Text";
+    public string Title => title;
 
-    public string Description { get; } = "Drag the preset onto the timeline to add text to your video.";
+    public string Description => description;
 
     public string EditorTitle { get; } = "Edit text clip";
 
@@ -55,10 +63,50 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public Func<Models.TextPresetDefinition, double, string?, System.Threading.Tasks.Task>? AutoCaptionsRequested { get; set; }
 
-    public TextViewModel()
+    public static TextViewModel CreateTextPanel()
     {
+        return new TextViewModel(autoCaptionsPresetMode: false);
+    }
+
+    public static TextViewModel CreateSubtitlesPanel()
+    {
+        return new TextViewModel(autoCaptionsPresetMode: true);
+    }
+
+    public TextViewModel()
+        : this(autoCaptionsPresetMode: false)
+    {
+    }
+
+    private TextViewModel(bool autoCaptionsPresetMode)
+    {
+        this.autoCaptionsPresetMode = autoCaptionsPresetMode;
+        title = autoCaptionsPresetMode ? "Subtitles" : "Text";
+        description = autoCaptionsPresetMode
+            ? "Drag an auto-captions preset onto the timeline to generate subtitles."
+            : "Drag the preset onto the timeline to add text to your video.";
+
+        defaultPresets = autoCaptionsPresetMode ? DefaultSubtitlesPresets : DefaultTextPresets;
+        presetStorage = CreatePresetStorageService(autoCaptionsPresetMode);
         AvailableFonts = RenderableFonts;
         LoadPresets();
+    }
+
+    private static TextPresetStorageService CreatePresetStorageService(bool subtitlesMode)
+    {
+        if (!subtitlesMode)
+        {
+            return new TextPresetStorageService();
+        }
+
+        var baseDirectory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        if (string.IsNullOrWhiteSpace(baseDirectory))
+        {
+            baseDirectory = AppContext.BaseDirectory;
+        }
+
+        var filePath = Path.Combine(baseDirectory, "ReelsVideoEditor", "subtitles-presets.json");
+        return new TextPresetStorageService(filePath);
     }
 
     [ObservableProperty]

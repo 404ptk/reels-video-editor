@@ -42,7 +42,7 @@ public sealed partial class TextViewModel
 
     private void LoadPresets()
     {
-        foreach (var defaultPreset in DefaultPresets)
+        foreach (var defaultPreset in defaultPresets)
         {
             UpsertPreset(defaultPreset, isBuiltIn: true);
         }
@@ -61,7 +61,8 @@ public sealed partial class TextViewModel
                 Math.Clamp(customPreset.FontSize, 10, 180),
                 NormalizeHexColor(customPreset.ColorHex),
                 NormalizeOutlineHexColor(customPreset.OutlineColorHex),
-                NormalizeOutlineThickness(customPreset.OutlineThickness));
+                NormalizeOutlineThickness(customPreset.OutlineThickness),
+                IsAutoCaptions: autoCaptionsPresetMode);
 
             UpsertPreset(normalizedPreset, isBuiltIn: false);
         }
@@ -219,7 +220,8 @@ public sealed partial class TextViewModel
             Math.Clamp(SelectedClipFontSize, 10, 180),
             SelectedColorHex,
             SelectedOutlineColorHex,
-            NormalizeOutlineThickness(SelectedClipOutlineThickness));
+            NormalizeOutlineThickness(SelectedClipOutlineThickness),
+            IsAutoCaptions: autoCaptionsPresetMode);
 
         Presets[existingIndex] = updatedPreset;
         PersistCustomPresets();
@@ -261,7 +263,7 @@ public sealed partial class TextViewModel
 
     private string BuildDefaultPresetName()
     {
-        return "My preset";
+        return autoCaptionsPresetMode ? "Auto captions preset" : "My preset";
     }
 
     private void ExitPresetEditMode()

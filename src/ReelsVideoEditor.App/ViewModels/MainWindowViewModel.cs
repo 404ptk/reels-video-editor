@@ -4,7 +4,6 @@ using System.IO;
 using ReelsVideoEditor.App.ViewModels.Effects;
 using ReelsVideoEditor.App.ViewModels.Export;
 using ReelsVideoEditor.App.ViewModels.Preview;
-using ReelsVideoEditor.App.ViewModels.Subtitles;
 using ReelsVideoEditor.App.ViewModels.Text;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.VideoFiles;
@@ -29,9 +28,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public WatermarksViewModel Watermarks { get; } = new();
 
-    public TextViewModel Text { get; } = new();
+    public TextViewModel Text { get; } = TextViewModel.CreateTextPanel();
 
-    public SubtitlesViewModel Subtitles { get; } = new();
+    public TextViewModel Subtitles { get; } = TextViewModel.CreateSubtitlesPanel();
 
     public ExportViewModel Export { get; } = new();
 
@@ -137,20 +136,20 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var audioInputs = Timeline.ResolveAudioInputsForTranscription();
             if (audioInputs.Count == 0)
             {
-                Text.TranscriptionStatus = "Brak audio na osi czasu.";
+                Subtitles.TranscriptionStatus = "Brak audio na osi czasu.";
                 await System.Threading.Tasks.Task.Delay(3000);
-                Text.TranscriptionStatus = string.Empty;
+                Subtitles.TranscriptionStatus = string.Empty;
                 return;
             }
 
-            Text.IsTranscribing = true;
+            Subtitles.IsTranscribing = true;
             try
             {
                 var service = new Services.SpeechTranscription.SpeechTranscriptionService();
                 var progress = new System.Progress<Services.SpeechTranscription.TranscriptionProgress>(p =>
                 {
-                    Text.TranscriptionStatus = p.Status;
-                    Text.TranscriptionProgress = p.Percent;
+                    Subtitles.TranscriptionStatus = p.Status;
+                    Subtitles.TranscriptionProgress = p.Percent;
                 });
 
                 var chunks = await service.TranscribeAsync(audioInputs, progress);
@@ -158,13 +157,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
             catch (System.Exception ex)
             {
-                Text.TranscriptionStatus = $"Błąd transkrypcji: {ex.Message}";
+                Subtitles.TranscriptionStatus = $"Błąd transkrypcji: {ex.Message}";
                 await System.Threading.Tasks.Task.Delay(5000);
             }
             finally
             {
-                Text.TranscriptionStatus = string.Empty;
-                Text.IsTranscribing = false;
+                Subtitles.TranscriptionStatus = string.Empty;
+                Subtitles.IsTranscribing = false;
             }
         };
 
