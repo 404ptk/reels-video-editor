@@ -9,6 +9,8 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline;
 
 public partial class TimelineViewModel
 {
+    private const double SeekSnapThresholdPixels = 10.0;
+
     partial void OnPlayheadSecondsChanged(double value)
     {
         OnPropertyChanged(nameof(PlayheadLeft));
@@ -275,10 +277,52 @@ public partial class TimelineViewModel
     {
         var playheadSeconds = Math.Max(0, (pointerX - 10) / TickWidth);
         var clampedSeconds = Math.Clamp(playheadSeconds, 0, TimelineDurationSeconds);
+        clampedSeconds = ResolveSnappedSeekSeconds(clampedSeconds);
 
         PlayheadSeconds = clampedSeconds;
         lastPlaybackMilliseconds = -1;
         PlaybackSeekRequested?.Invoke(ResolvePlaybackSeekMilliseconds(clampedSeconds));
+    }
+
+    private double ResolveSnappedSeekSeconds(double rawSeconds)
+    {
+        if ((VideoClips.Count + AudioClips.Count) == 0 || TickWidth <= 0.0001)
+        {
+            return rawSeconds;
+        }
+
+        var thresholdSeconds = SeekSnapThresholdPixels / TickWidth;
+        var nearestEdge = rawSeconds;
+        var nearestDistance = double.MaxValue;
+
+        void Consider(double edgeSeconds)
+        {
+            var distance = Math.Abs(rawSeconds - edgeSeconds);
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                nearestEdge = edgeSeconds;
+            }
+        }
+
+        foreach (var clip in VideoClips)
+        {
+            Consider(clip.StartSeconds);
+            Consider(clip.StartSeconds + clip.DurationSeconds);
+        }
+
+        foreach (var clip in AudioClips)
+        {
+            Consider(clip.StartSeconds);
+            Consider(clip.StartSeconds + clip.DurationSeconds);
+        }
+
+        if (nearestDistance <= thresholdSeconds)
+        {
+            return Math.Clamp(nearestEdge, 0, TimelineDurationSeconds);
+        }
+
+        return rawSeconds;
     }
 
     public void SetPlaybackActive(bool isPlaying)
