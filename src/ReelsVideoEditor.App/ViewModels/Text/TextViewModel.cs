@@ -4,13 +4,17 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReelsVideoEditor.App.Services.Text;
+using ReelsVideoEditor.App.Services.SpeechTranscription;
 
 namespace ReelsVideoEditor.App.ViewModels.Text;
 
 public sealed partial class TextViewModel : ViewModelBase
 {
+    public const string AutoCaptionsPresetName = "🎤 Auto Captions";
+
     private static readonly Models.TextPresetDefinition[] DefaultPresets =
     [
+        new(AutoCaptionsPresetName, "Inter", 18, "#FFFFFF", "#000000", 3, IsAutoCaptions: true),
         new("Sunset", "Inter", 14, "#FF6B6B"),
         new("Ocean", "Inter", 14, "#3A86FF"),
         new("Mint", "Inter", 14, "#2EC4B6")
@@ -48,6 +52,8 @@ public sealed partial class TextViewModel : ViewModelBase
     public IReadOnlyList<string> AvailableFonts { get; }
 
     public Action<string, string, double, string, string, double>? ApplySelectedTextSettingsRequested { get; set; }
+
+    public Func<Models.TextPresetDefinition, double, string?, System.Threading.Tasks.Task>? AutoCaptionsRequested { get; set; }
 
     public TextViewModel()
     {
@@ -107,6 +113,17 @@ public sealed partial class TextViewModel : ViewModelBase
 
     [ObservableProperty]
     private string pendingDeletePresetName = string.Empty;
+
+    [ObservableProperty]
+    private bool isTranscribing;
+
+    [ObservableProperty]
+    private double transcriptionProgress;
+
+    [ObservableProperty]
+    private string transcriptionStatus = string.Empty;
+
+    public bool HasTranscriptionStatus => !string.IsNullOrWhiteSpace(TranscriptionStatus);
 
     public bool HasPresetSaveStatus => !string.IsNullOrWhiteSpace(PresetSaveStatus);
 

@@ -75,6 +75,11 @@ public sealed partial class TextViewModel
         OnPropertyChanged(nameof(HasPresetSaveStatus));
     }
 
+    partial void OnTranscriptionStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasTranscriptionStatus));
+    }
+
     partial void OnNewPresetNameChanged(string value)
     {
         if (!string.IsNullOrWhiteSpace(PresetSaveStatus))

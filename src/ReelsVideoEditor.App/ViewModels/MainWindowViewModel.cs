@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
 using ReelsVideoEditor.App.ViewModels.Effects;
@@ -125,6 +125,42 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             Timeline.UpdateSelectedTextClipSettings(text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness);
             Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
+        };
+
+        Timeline.AutoCaptionsRequested = async (preset, dropX, targetLaneLabel) =>
+        {
+            var audioInputs = Timeline.ResolveAudioInputsForTranscription();
+            if (audioInputs.Count == 0)
+            {
+                Text.TranscriptionStatus = "Brak audio na osi czasu.";
+                await System.Threading.Tasks.Task.Delay(3000);
+                Text.TranscriptionStatus = string.Empty;
+                return;
+            }
+
+            Text.IsTranscribing = true;
+            try
+            {
+                var service = new Services.SpeechTranscription.SpeechTranscriptionService();
+                var progress = new System.Progress<Services.SpeechTranscription.TranscriptionProgress>(p =>
+                {
+                    Text.TranscriptionStatus = p.Status;
+                    Text.TranscriptionProgress = p.Percent;
+                });
+
+                var chunks = await service.TranscribeAsync(audioInputs, progress);
+                Timeline.AddAutoCaptionClips(chunks, preset, targetLaneLabel);
+            }
+            catch (System.Exception ex)
+            {
+                Text.TranscriptionStatus = $"Błąd transkrypcji: {ex.Message}";
+                await System.Threading.Tasks.Task.Delay(5000);
+            }
+            finally
+            {
+                Text.TranscriptionStatus = string.Empty;
+                Text.IsTranscribing = false;
+            }
         };
 
         Timeline.TextOverlayStateChanged = state =>

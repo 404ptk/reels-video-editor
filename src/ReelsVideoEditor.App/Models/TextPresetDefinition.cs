@@ -8,7 +8,8 @@ public sealed record TextPresetDefinition(
     double FontSize,
     string ColorHex,
     string OutlineColorHex = "#000000",
-    double OutlineThickness = 0)
+    double OutlineThickness = 0,
+    bool IsAutoCaptions = false)
 {
     public string DisplayText { get; } = "Preview";
 

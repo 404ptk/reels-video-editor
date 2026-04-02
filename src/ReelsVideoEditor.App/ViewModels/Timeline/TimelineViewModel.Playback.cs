@@ -116,6 +116,18 @@ public partial class TimelineViewModel
         return compositionPlanner.BuildExportAudioInputs(ResolveActiveAudioClips());
     }
 
+    public IReadOnlyList<Services.SpeechTranscription.AudioInputForTranscription> ResolveAudioInputsForTranscription()
+    {
+        return ResolveActiveAudioClips()
+            .Where(clip => !string.IsNullOrWhiteSpace(clip.Path))
+            .Select(clip => new Services.SpeechTranscription.AudioInputForTranscription(
+                clip.Path,
+                clip.StartSeconds,
+                clip.DurationSeconds,
+                clip.SourceStartSeconds))
+            .ToList();
+    }
+
     public long ResolvePlaybackDurationMilliseconds()
     {
         var durationSeconds = ResolvePlaybackDurationSeconds();

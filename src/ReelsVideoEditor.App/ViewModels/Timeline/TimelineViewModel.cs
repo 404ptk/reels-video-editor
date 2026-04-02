@@ -59,6 +59,8 @@ public partial class TimelineViewModel : ViewModelBase
 
     public Action<TimelineTextOverlayState>? TextOverlayStateChanged { get; set; }
 
+    public Action<Models.TextPresetDefinition, double, string?>? AutoCaptionsRequested { get; set; }
+
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 
     public ObservableCollection<TimelineMajorTick> MajorTicks { get; } = [];

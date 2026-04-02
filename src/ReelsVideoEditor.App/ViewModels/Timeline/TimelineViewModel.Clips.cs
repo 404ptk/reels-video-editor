@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
@@ -46,6 +47,12 @@ public partial class TimelineViewModel
 
     public void AddTextPresetClip(TextPresetDefinition preset, double dropX, string? targetLaneLabel = null)
     {
+        if (preset.IsAutoCaptions)
+        {
+            AutoCaptionsRequested?.Invoke(preset, dropX, targetLaneLabel);
+            return;
+        }
+
         var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
         var clip = TimelineClipArrangementService.BuildClip(
             preset.DisplayText,
@@ -73,6 +80,89 @@ public partial class TimelineViewModel
         {
             VideoClips.Remove(clip);
         });
+    }
+
+    public void AddAutoCaptionClips(
+        IReadOnlyList<Services.SpeechTranscription.TranscriptionChunk> chunks,
+        TextPresetDefinition preset,
+        string? targetLaneLabel = null)
+    {
+        if (chunks.Count == 0)
+        {
+            return;
+        }
+
+        var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
+        var laneLabel = targetLane?.Label ?? string.Empty;
+
+        isBatchUpdatingClips = true;
+        var addedClips = new List<TimelineClipItem>(chunks.Count);
+
+        try
+        {
+            foreach (var chunk in chunks)
+            {
+                var startSeconds = chunk.Start.TotalSeconds;
+                var durationSeconds = Math.Max(0.3, (chunk.End - chunk.Start).TotalSeconds);
+
+                if (startSeconds + durationSeconds > TimelineDurationSeconds)
+                {
+                    break;
+                }
+
+                var clip = new TimelineClipItem(
+                    chunk.Text,
+                    string.Empty,
+                    startSeconds,
+                    durationSeconds);
+
+                clip.VideoLaneLabel = laneLabel;
+                clip.TextContent = chunk.Text;
+                clip.TextColorHex = preset.ColorHex;
+                clip.TextOutlineColorHex = preset.OutlineColorHex;
+                clip.TextOutlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
+                clip.TextFontFamily = preset.FontFamily;
+                clip.TextFontSize = preset.FontSize;
+                clip.TransformY = 72;
+
+                TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
+                VideoClips.Add(clip);
+                addedClips.Add(clip);
+            }
+        }
+        finally
+        {
+            isBatchUpdatingClips = false;
+        }
+
+        RebuildLaneClipCollections();
+        OnPropertyChanged(nameof(HasClips));
+        PreviewClipChanged?.Invoke();
+        NotifyTextOverlayStateChanged();
+
+        if (addedClips.Count > 0)
+        {
+            undoStack.Push(() =>
+            {
+                isBatchUpdatingClips = true;
+                try
+                {
+                    foreach (var clip in addedClips)
+                    {
+                        VideoClips.Remove(clip);
+                    }
+                }
+                finally
+                {
+                    isBatchUpdatingClips = false;
+                }
+
+                RebuildLaneClipCollections();
+                OnPropertyChanged(nameof(HasClips));
+                PreviewClipChanged?.Invoke();
+                NotifyTextOverlayStateChanged();
+            });
+        }
     }
 
     public void UpdateSelectedTextClipSettings(string text, string colorHex, double fontSize, string fontFamily, string outlineColorHex, double outlineThickness)
