@@ -120,6 +120,19 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
+
+        <Style Selector="Border.exportStatus">
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Background" Value="#1D2F25" />
+            <Setter Property="BorderBrush" Value="#2E8B57" />
+        </Style>
+
+        <Style Selector="Border.exportStatus.error">
+            <Setter Property="Background" Value="#3A1F1F" />
+            <Setter Property="BorderBrush" Value="#A94442" />
+        </Style>
     </UserControl.Styles>
 
     <Grid>
@@ -132,6 +145,34 @@
                            Foreground="{DynamicResource Accent}"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,16" />
+
+                <Border Classes="exportStatus"
+                    Classes.error="{Binding IsStatusError}"
+                    IsVisible="{Binding HasStatusMessage}">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,6,Auto">
+                    <TextBlock Grid.Row="0"
+                           Grid.Column="0"
+                           Text="{Binding StatusTitle}"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="White" />
+
+                    <Button Grid.Row="0"
+                        Grid.RowSpan="3"
+                        Grid.Column="1"
+                        Margin="12,0,0,0"
+                        Classes="actionBtn"
+                        Content="Dismiss"
+                        Command="{Binding DismissStatusCommand}" />
+
+                    <TextBlock Grid.Row="2"
+                           Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           Foreground="White"
+                           Opacity="0.9"
+                           TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
 
                 <!-- Export Path -->
                 <Border Background="{DynamicResource BaseBgSoft}" 

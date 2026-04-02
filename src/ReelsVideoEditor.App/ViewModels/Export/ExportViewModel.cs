@@ -45,6 +45,18 @@ public sealed partial class ExportViewModel : ViewModelBase
     [ObservableProperty]
     private double exportProgress;
 
+    [ObservableProperty]
+    private string statusTitle = string.Empty;
+
+    [ObservableProperty]
+    private string statusMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool hasStatusMessage;
+
+    [ObservableProperty]
+    private bool isStatusError;
+
     public ObservableCollection<string> AvailableFormats { get; } = new() { "9:16", "16:9" };
 
     public ObservableCollection<string> AvailableResolutions => SelectedFormat == "9:16"
@@ -69,17 +81,33 @@ public sealed partial class ExportViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void DismissStatus()
+    {
+        HasStatusMessage = false;
+    }
+
+    private void SetStatus(string title, string message, bool isError)
+    {
+        StatusTitle = title;
+        StatusMessage = message;
+        IsStatusError = isError;
+        HasStatusMessage = true;
+    }
+
+    [RelayCommand]
     private async Task ExportProjectAsync()
     {
+        HasStatusMessage = false;
+
         if (TimelineContext == null || !TimelineContext.HasClips)
         {
-            ShowMessage?.Invoke("Empty Timeline", "There are no clips to export on the timeline.");
+            SetStatus("Empty Timeline", "There are no clips to export on the timeline.", isError: true);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(OutputName) || string.IsNullOrWhiteSpace(OutputPath))
         {
-            ShowMessage?.Invoke("Invalid Path", "Please specify a valid output name and directory.");
+            SetStatus("Invalid Path", "Please specify a valid output name and directory.", isError: true);
             return;
         }
 
@@ -108,12 +136,12 @@ public sealed partial class ExportViewModel : ViewModelBase
                 playbackMilliseconds => TimelineContext.ResolvePreviewVideoLayers(playbackMilliseconds),
                 playbackMilliseconds => TimelineContext.ResolveTextOverlayStateAt(playbackMilliseconds),
                 new Progress<double>(p => ExportProgress = p));
-            
-            ShowMessage?.Invoke("Export Complete", $"Video successfully exported to:\n{fullPath}");
+
+            SetStatus("Export Complete", $"Video successfully exported to:\n{fullPath}", isError: false);
         }
         catch (Exception ex)
         {
-            ShowMessage?.Invoke("Export Failed", $"An error occurred during export:\n{ex.Message}");
+            SetStatus("Export Failed", $"An error occurred during export:\n{ex.Message}", isError: true);
         }
         finally
         {

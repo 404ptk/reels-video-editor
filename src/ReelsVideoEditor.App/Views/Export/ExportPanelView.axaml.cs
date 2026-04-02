@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using ReelsVideoEditor.App.ViewModels.Export;
-using System.Threading.Tasks;
 
 namespace ReelsVideoEditor.App.Views.Export;
 
@@ -34,28 +33,6 @@ public partial class ExportPanelView : UserControl
                     }
                 }
                 return null;
-            };
-
-            vm.ShowMessage = async (title, message) =>
-            {
-                var msgBox = new Window
-                {
-                    Title = title,
-                    Content = new TextBlock { Text = message, Margin = new Avalonia.Thickness(20), TextWrapping = Avalonia.Media.TextWrapping.Wrap },
-                    Width = 400,
-                    Height = 200,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner
-                };
-                
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel is Window window)
-                {
-                    await msgBox.ShowDialog(window);
-                }
-                else
-                {
-                    msgBox.Show();
-                }
             };
         }
     }
