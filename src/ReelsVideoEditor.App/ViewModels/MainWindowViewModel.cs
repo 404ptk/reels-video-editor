@@ -4,6 +4,7 @@ using System.IO;
 using ReelsVideoEditor.App.ViewModels.Effects;
 using ReelsVideoEditor.App.ViewModels.Export;
 using ReelsVideoEditor.App.ViewModels.Preview;
+using ReelsVideoEditor.App.ViewModels.Subtitles;
 using ReelsVideoEditor.App.ViewModels.Text;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.VideoFiles;
@@ -30,6 +31,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public TextViewModel Text { get; } = new();
 
+    public SubtitlesViewModel Subtitles { get; } = new();
+
     public ExportViewModel Export { get; } = new();
 
 
@@ -40,6 +43,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool IsWatermarksSection => SelectedSection == SidebarSection.Watermarks;
 
     public bool IsTextSection => SelectedSection == SidebarSection.Text;
+
+    public bool IsSubtitlesSection => SelectedSection == SidebarSection.Subtitles;
 
     public bool IsExportSection => SelectedSection == SidebarSection.Export;
 
@@ -252,6 +257,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ShowSubtitles()
+    {
+        SelectedSection = SidebarSection.Subtitles;
+    }
+
+    [RelayCommand]
     private void ShowExport()
     {
         SelectedSection = SidebarSection.Export;
@@ -263,6 +274,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsEffectsSection));
         OnPropertyChanged(nameof(IsWatermarksSection));
         OnPropertyChanged(nameof(IsTextSection));
+        OnPropertyChanged(nameof(IsSubtitlesSection));
         OnPropertyChanged(nameof(IsExportSection));
         OnPropertyChanged(nameof(IsEditorLayoutVisible));
     }
@@ -274,5 +286,6 @@ public enum SidebarSection
     Effects,
     Watermarks,
     Text,
+    Subtitles,
     Export,
 }
