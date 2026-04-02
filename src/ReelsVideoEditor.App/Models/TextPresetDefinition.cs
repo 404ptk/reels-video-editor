@@ -9,8 +9,11 @@ public sealed record TextPresetDefinition(
     string ColorHex,
     string OutlineColorHex = "#000000",
     double OutlineThickness = 0,
-    bool IsAutoCaptions = false)
+    bool IsAutoCaptions = false,
+    bool IsAddTile = false)
 {
+    public bool IsRegularTile => !IsAddTile;
+
     public string DisplayText { get; } = "Preview";
 
     public IBrush ColorBrush { get; } = Brush.Parse(ColorHex);

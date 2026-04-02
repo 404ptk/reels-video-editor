@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ReelsVideoEditor.App.Services.Text;
@@ -31,6 +32,12 @@ public sealed partial class TextViewModel : ViewModelBase
     private readonly string title;
     private readonly string description;
     private readonly HashSet<string> builtInPresetNames = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Models.TextPresetDefinition AddPresetTile = new(
+        "+",
+        "Inter",
+        14,
+        "#2EC4B6",
+        IsAddTile: true);
     private IReadOnlyList<string> RenderableFonts { get; } = LoadRenderableFonts();
 
     public string Title => title;
@@ -42,6 +49,8 @@ public sealed partial class TextViewModel : ViewModelBase
     public string EditorDescription { get; } = "Change text content, font, size and color for selected clip.";
 
     public ObservableCollection<Models.TextPresetDefinition> Presets { get; } = [];
+
+    public IEnumerable<Models.TextPresetDefinition> PresetTiles => Presets.Concat([AddPresetTile]);
 
     public IReadOnlyList<Models.TextColorPreset> BasicColors { get; } =
     [
@@ -89,6 +98,7 @@ public sealed partial class TextViewModel : ViewModelBase
         defaultPresets = autoCaptionsPresetMode ? DefaultSubtitlesPresets : DefaultTextPresets;
         presetStorage = CreatePresetStorageService(autoCaptionsPresetMode);
         AvailableFonts = RenderableFonts;
+        Presets.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PresetTiles));
         LoadPresets();
     }
 

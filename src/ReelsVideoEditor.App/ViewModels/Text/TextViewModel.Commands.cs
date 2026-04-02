@@ -6,6 +6,16 @@ namespace ReelsVideoEditor.App.ViewModels.Text;
 public sealed partial class TextViewModel
 {
     [RelayCommand]
+    private void CreatePresetFromTile()
+    {
+        ClearDeleteConfirmation();
+        ExitPresetEditMode();
+        NewPresetName = string.Empty;
+        PresetSaveStatus = string.Empty;
+        IsEditorVisible = true;
+    }
+
+    [RelayCommand]
     private void BackToPresets()
     {
         ClearDeleteConfirmation();

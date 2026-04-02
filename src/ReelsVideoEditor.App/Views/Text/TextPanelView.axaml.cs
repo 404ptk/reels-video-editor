@@ -29,6 +29,18 @@ public partial class TextPanelView : UserControl
             return;
         }
 
+        if (preset.IsAddTile)
+        {
+            if (DataContext is TextViewModel addPresetViewModel
+                && addPresetViewModel.CreatePresetFromTileCommand.CanExecute(null))
+            {
+                addPresetViewModel.CreatePresetFromTileCommand.Execute(null);
+            }
+
+            eventArgs.Handled = true;
+            return;
+        }
+
         if (!eventArgs.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             return;
