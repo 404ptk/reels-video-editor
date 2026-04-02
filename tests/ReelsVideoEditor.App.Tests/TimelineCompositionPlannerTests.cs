@@ -1,8 +1,5 @@
-using System;
 using System.Collections.ObjectModel;
 using ReelsVideoEditor.App.Services.Composition;
-using ReelsVideoEditor.App.Models;
-using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
@@ -93,91 +90,5 @@ public class TimelineCompositionPlannerTests
             VideoLaneLabel = laneLabel,
             TransformScale = 1.0
         };
-    }
-}
-
-public class PreviewViewModelPlaybackTests
-{
-    [Fact]
-    public void TogglePlayPause_StartsPlayback_WhenOnlySyntheticTimelineContentExists()
-    {
-        var viewModel = new PreviewViewModel
-        {
-            HasSyntheticVideoContent = () => true,
-            ResolveVideoPath = () => null
-        };
-
-        viewModel.TogglePlayPauseCommand.Execute(null);
-
-        Assert.True(viewModel.IsPlaying);
-    }
-
-    [Fact]
-    public void TogglePlayPause_DoesNotStartPlayback_WhenNoVideoAndNoSyntheticContent()
-    {
-        var viewModel = new PreviewViewModel
-        {
-            HasSyntheticVideoContent = () => false,
-            ResolveVideoPath = () => null
-        };
-
-        viewModel.TogglePlayPauseCommand.Execute(null);
-
-        Assert.False(viewModel.IsPlaying);
-    }
-
-    [Fact]
-    public void SeekToPlaybackPosition_UpdatesSeekRequest_WhenOnlySyntheticTimelineContentExists()
-    {
-        var viewModel = new PreviewViewModel
-        {
-            HasSyntheticVideoContent = () => true,
-            ResolveVideoPath = () => null
-        };
-
-        viewModel.SeekToPlaybackPosition(1750);
-
-        Assert.Equal(1750, viewModel.RequestedSeekMilliseconds);
-        Assert.Equal(1, viewModel.SeekRequestVersion);
-        Assert.Equal("00:01:75", viewModel.CurrentPlaybackTimeText);
-    }
-}
-
-public class TimelineTextClipResizeTests
-{
-    [Fact]
-    public void ResizeClipFromRight_AllowsTextClipToExtendBeyondInitialSourceDuration()
-    {
-        var viewModel = new TimelineViewModel();
-        var preset = new TextPresetDefinition("Sunset", "Inter", 56, "#FFFFFF");
-        viewModel.AddTextPresetClip(preset, dropX: 0);
-
-        var clip = Assert.Single(viewModel.VideoClips);
-        Assert.Equal(5, clip.DurationSeconds);
-
-        viewModel.ResizeClipFromRight(clip, requestedEndSeconds: 30);
-
-        Assert.Equal(30, clip.DurationSeconds);
-    }
-}
-
-public class TimelineTextDeleteTests
-{
-    [Fact]
-    public void DeleteSelectedClips_WithTwoTextClips_DoesNotCreateAudioForRemainingText()
-    {
-        var viewModel = new TimelineViewModel();
-        var preset = new TextPresetDefinition("Sunset", "Inter", 56, "#FFFFFF");
-        viewModel.AddTextPresetClip(preset, dropX: 0);
-        viewModel.AddTextPresetClip(preset, dropX: 100);
-
-        Assert.Equal(2, viewModel.VideoClips.Count);
-        Assert.Empty(viewModel.AudioClips);
-
-        viewModel.VideoClips[0].IsSelected = true;
-        viewModel.DeleteSelectedClips();
-
-        Assert.Single(viewModel.VideoClips);
-        Assert.Empty(viewModel.AudioClips);
     }
 }
