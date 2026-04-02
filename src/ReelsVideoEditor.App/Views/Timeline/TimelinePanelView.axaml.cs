@@ -77,7 +77,19 @@ public partial class TimelinePanelView : UserControl
     {
         if (DataContext is not TimelineViewModel viewModel) return;
 
-        if (e.Key == Key.Delete)
+        if (e.Key == Key.C && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            viewModel.CopySelectedClip();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.V && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            if (viewModel.PasteCopiedClipAtPlayhead())
+            {
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Delete)
         {
             viewModel.DeleteSelectedClips();
             e.Handled = true;

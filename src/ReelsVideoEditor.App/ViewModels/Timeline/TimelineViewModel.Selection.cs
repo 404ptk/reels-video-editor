@@ -6,6 +6,158 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline;
 
 public partial class TimelineViewModel
 {
+    private TimelineClipCopyPayload? copiedClipPayload;
+    private double? nextPasteStartSeconds;
+
+    private sealed record TimelineClipCopyPayload(
+        string Name,
+        string Path,
+        double DurationSeconds,
+        double SourceStartSeconds,
+        double SourceDurationSeconds,
+        double VolumeLevel,
+        string VideoLaneLabel,
+        double TransformX,
+        double TransformY,
+        double TransformScale,
+        double CropLeft,
+        double CropTop,
+        double CropRight,
+        double CropBottom,
+        string TextContent,
+        string TextColorHex,
+        string TextOutlineColorHex,
+        double TextOutlineThickness,
+        double TextFontSize,
+        string TextFontFamily);
+
+    public void CopySelectedClip()
+    {
+        var source = ResolveSelectedVideoClip();
+        if (source is null)
+        {
+            var selectedAudio = AudioClips.FirstOrDefault(clip => clip.IsSelected);
+            source = selectedAudio is null
+                ? null
+                : VideoClips.FirstOrDefault(clip => clip.LinkId == selectedAudio.LinkId);
+        }
+
+        if (source is null)
+        {
+            return;
+        }
+
+        copiedClipPayload = new TimelineClipCopyPayload(
+            source.Name,
+            source.Path,
+            source.DurationSeconds,
+            source.SourceStartSeconds,
+            source.SourceDurationSeconds,
+            source.VolumeLevel,
+            source.VideoLaneLabel,
+            source.TransformX,
+            source.TransformY,
+            source.TransformScale,
+            source.CropLeft,
+            source.CropTop,
+            source.CropRight,
+            source.CropBottom,
+            source.TextContent,
+            source.TextColorHex,
+            source.TextOutlineColorHex,
+            source.TextOutlineThickness,
+            source.TextFontSize,
+            source.TextFontFamily);
+            nextPasteStartSeconds = null;
+    }
+
+    public bool PasteCopiedClipAtPlayhead()
+    {
+        if (copiedClipPayload is null)
+        {
+            return false;
+        }
+
+        var playheadSeconds = Math.Clamp(PlayheadSeconds, 0, TimelineDurationSeconds);
+        var useSequentialPaste = nextPasteStartSeconds.HasValue
+            && Math.Abs(playheadSeconds - nextPasteStartSeconds.Value) < 0.0001;
+        var startSeconds = useSequentialPaste
+            ? nextPasteStartSeconds.GetValueOrDefault(playheadSeconds)
+            : playheadSeconds;
+
+        var maxDurationOnTimeline = TimelineDurationSeconds - startSeconds;
+        if (maxDurationOnTimeline < MinClipDurationSeconds)
+        {
+            nextPasteStartSeconds = null;
+            return false;
+        }
+
+        var durationSeconds = Math.Clamp(
+            copiedClipPayload.DurationSeconds,
+            MinClipDurationSeconds,
+            maxDurationOnTimeline);
+
+        var pastedClip = new TimelineClipItem(
+            copiedClipPayload.Name,
+            copiedClipPayload.Path,
+            startSeconds,
+            durationSeconds,
+            null,
+            copiedClipPayload.SourceStartSeconds,
+            copiedClipPayload.SourceDurationSeconds)
+        {
+            VideoLaneLabel = copiedClipPayload.VideoLaneLabel,
+            TransformX = copiedClipPayload.TransformX,
+            TransformY = copiedClipPayload.TransformY,
+            TransformScale = copiedClipPayload.TransformScale,
+            CropLeft = copiedClipPayload.CropLeft,
+            CropTop = copiedClipPayload.CropTop,
+            CropRight = copiedClipPayload.CropRight,
+            CropBottom = copiedClipPayload.CropBottom,
+            TextContent = copiedClipPayload.TextContent,
+            TextColorHex = copiedClipPayload.TextColorHex,
+            TextOutlineColorHex = copiedClipPayload.TextOutlineColorHex,
+            TextOutlineThickness = copiedClipPayload.TextOutlineThickness,
+            TextFontSize = copiedClipPayload.TextFontSize,
+            TextFontFamily = copiedClipPayload.TextFontFamily
+        };
+
+        TimelineClipArrangementService.RebuildLayouts([pastedClip], TickWidth);
+        VideoClips.Add(pastedClip);
+
+        TimelineClipItem? pastedAudio = null;
+        if (ShouldCreateLinkedAudio(copiedClipPayload.Path))
+        {
+            pastedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(pastedClip);
+            pastedAudio.VolumeLevel = copiedClipPayload.VolumeLevel;
+            AudioClips.Add(pastedAudio);
+            UpdateAudioClipLevelLine(pastedAudio);
+            RebuildAudioLaneClipCollections();
+            _ = LoadAudioWaveformAsync(pastedAudio);
+        }
+
+        ClearSelection();
+        SelectSingleVideoClip(pastedClip);
+        var nextStartSeconds = Math.Clamp(startSeconds + durationSeconds, 0, TimelineDurationSeconds);
+        PlayheadSeconds = nextStartSeconds;
+        nextPasteStartSeconds = nextStartSeconds;
+
+        var undoVideo = pastedClip;
+        var undoAudio = pastedAudio;
+        undoStack.Push(() =>
+        {
+            if (undoAudio is not null)
+            {
+                AudioClips.Remove(undoAudio);
+            }
+
+            VideoClips.Remove(undoVideo);
+            nextPasteStartSeconds = null;
+        });
+
+        return true;
+    }
+
     public void SelectClipsInBox(double startX, double endX, double startY, double endY)
     {
         double minX = Math.Min(startX, endX);
