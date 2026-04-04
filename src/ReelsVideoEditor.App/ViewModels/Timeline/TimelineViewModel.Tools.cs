@@ -327,7 +327,9 @@ public partial class TimelineViewModel
             TextOutlineColorHex = source.TextOutlineColorHex,
             TextOutlineThickness = source.TextOutlineThickness,
             TextFontSize = source.TextFontSize,
-            TextFontFamily = source.TextFontFamily
+            TextFontFamily = source.TextFontFamily,
+            TextLineHeightMultiplier = source.TextLineHeightMultiplier,
+            TextLetterSpacing = source.TextLetterSpacing
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -391,7 +393,9 @@ public partial class TimelineViewModel
             clip.TextOutlineColorHex,
             clip.TextOutlineThickness,
             clip.TextFontSize,
-            clip.TextFontFamily)).ToList();
+            clip.TextFontFamily,
+            clip.TextLineHeightMultiplier,
+            clip.TextLetterSpacing)).ToList();
     }
 
     private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
@@ -436,7 +440,9 @@ public partial class TimelineViewModel
             TextOutlineColorHex = snapshot.TextOutlineColorHex,
             TextOutlineThickness = snapshot.TextOutlineThickness,
             TextFontSize = snapshot.TextFontSize,
-            TextFontFamily = snapshot.TextFontFamily
+            TextFontFamily = snapshot.TextFontFamily,
+            TextLineHeightMultiplier = snapshot.TextLineHeightMultiplier,
+            TextLetterSpacing = snapshot.TextLetterSpacing
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -507,7 +513,9 @@ public partial class TimelineViewModel
         string TextOutlineColorHex,
         double TextOutlineThickness,
         double TextFontSize,
-        string TextFontFamily);
+        string TextFontFamily,
+        double TextLineHeightMultiplier,
+        double TextLetterSpacing);
 }
 
 public enum TimelineTool

@@ -16,6 +16,12 @@ public partial class TextPanelView : UserControl
     private bool isOutlineThicknessDragActive;
     private double outlineThicknessDragStartX;
     private double outlineThicknessDragStartValue;
+    private bool isLineHeightDragActive;
+    private double lineHeightDragStartX;
+    private double lineHeightDragStartValue;
+    private bool isLetterSpacingDragActive;
+    private double letterSpacingDragStartX;
+    private double letterSpacingDragStartValue;
 
     public TextPanelView()
     {
@@ -203,6 +209,140 @@ public partial class TextPanelView : UserControl
         }
 
         isOutlineThicknessDragActive = false;
+        if (pointer is not null)
+        {
+            pointer.Capture(null);
+        }
+    }
+
+    private void LineHeightValue_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (sender is not InputElement dragElement)
+        {
+            return;
+        }
+
+        if (!eventArgs.GetCurrentPoint(dragElement).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        isLineHeightDragActive = true;
+        lineHeightDragStartX = eventArgs.GetPosition(this).X;
+        lineHeightDragStartValue = viewModel.SelectedClipLineHeightMultiplier;
+        eventArgs.Pointer.Capture(dragElement);
+        eventArgs.Handled = true;
+    }
+
+    private void LineHeightValue_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (!isLineHeightDragActive)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        var deltaX = eventArgs.GetPosition(this).X - lineHeightDragStartX;
+        var nextValue = Math.Clamp(lineHeightDragStartValue + (deltaX * 0.005), 0.7, 2.5);
+        viewModel.SelectedClipLineHeightMultiplier = Math.Round(nextValue, 2, MidpointRounding.AwayFromZero);
+        eventArgs.Handled = true;
+    }
+
+    private void LineHeightValue_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
+    {
+        EndLineHeightDrag(eventArgs.Pointer);
+        eventArgs.Handled = true;
+    }
+
+    private void LineHeightValue_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs eventArgs)
+    {
+        EndLineHeightDrag(eventArgs.Pointer);
+    }
+
+    private void EndLineHeightDrag(IPointer? pointer)
+    {
+        if (!isLineHeightDragActive)
+        {
+            return;
+        }
+
+        isLineHeightDragActive = false;
+        if (pointer is not null)
+        {
+            pointer.Capture(null);
+        }
+    }
+
+    private void LetterSpacingValue_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (sender is not InputElement dragElement)
+        {
+            return;
+        }
+
+        if (!eventArgs.GetCurrentPoint(dragElement).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        isLetterSpacingDragActive = true;
+        letterSpacingDragStartX = eventArgs.GetPosition(this).X;
+        letterSpacingDragStartValue = viewModel.SelectedClipLetterSpacing;
+        eventArgs.Pointer.Capture(dragElement);
+        eventArgs.Handled = true;
+    }
+
+    private void LetterSpacingValue_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (!isLetterSpacingDragActive)
+        {
+            return;
+        }
+
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        var deltaX = eventArgs.GetPosition(this).X - letterSpacingDragStartX;
+        var nextValue = Math.Clamp(letterSpacingDragStartValue + (deltaX * 0.05), 0, 20);
+        viewModel.SelectedClipLetterSpacing = Math.Round(nextValue, 1, MidpointRounding.AwayFromZero);
+        eventArgs.Handled = true;
+    }
+
+    private void LetterSpacingValue_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
+    {
+        EndLetterSpacingDrag(eventArgs.Pointer);
+        eventArgs.Handled = true;
+    }
+
+    private void LetterSpacingValue_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs eventArgs)
+    {
+        EndLetterSpacingDrag(eventArgs.Pointer);
+    }
+
+    private void EndLetterSpacingDrag(IPointer? pointer)
+    {
+        if (!isLetterSpacingDragActive)
+        {
+            return;
+        }
+
+        isLetterSpacingDragActive = false;
         if (pointer is not null)
         {
             pointer.Capture(null);

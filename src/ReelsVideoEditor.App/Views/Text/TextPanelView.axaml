@@ -370,7 +370,7 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Outline thickness"
+                        <TextBlock Text="Outline"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
                         <Border Padding="10,6"
@@ -389,9 +389,6 @@
                                        FontSize="13"
                                        FontWeight="SemiBold" />
                         </Border>
-                        <TextBlock Text="Drag left/right to change outline thickness"
-                                   Foreground="{DynamicResource AccentMuted}"
-                                   FontSize="11" />
                     </StackPanel>
 
                     <StackPanel Spacing="4">
@@ -414,10 +411,108 @@
                                        FontSize="13"
                                        FontWeight="SemiBold" />
                         </Border>
-                        <TextBlock Text="Drag left/right to change size"
-                                   Foreground="{DynamicResource AccentMuted}"
-                                   FontSize="11" />
                     </StackPanel>
+
+                      <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal"
+                                Spacing="6">
+                            <Canvas Width="16"
+                                Height="16">
+                              <Path Data="M2 5 L4 3 L6 5"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M2 11 L4 13 L6 11"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M4 2 L4 14"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M9 4 L14 4"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M9 8 L14 8"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M9 12 L14 12"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                        </StackPanel>
+                        <Border Padding="10,6"
+                              Background="#112EC4B6"
+                              BorderBrush="{DynamicResource AccentSubtle}"
+                              BorderThickness="1"
+                              CornerRadius="8"
+                              HorizontalAlignment="Left"
+                              Cursor="SizeWestEast"
+                              PointerPressed="LineHeightValue_OnPointerPressed"
+                              PointerMoved="LineHeightValue_OnPointerMoved"
+                              PointerReleased="LineHeightValue_OnPointerReleased"
+                              PointerCaptureLost="LineHeightValue_OnPointerCaptureLost">
+                            <TextBlock Text="{Binding SelectedClipLineHeightMultiplier, StringFormat='{}{0:F2}x'}"
+                                   Foreground="{DynamicResource Accent}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold" />
+                        </Border>
+                      </StackPanel>
+
+                      <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal"
+                                Spacing="6">
+                            <Canvas Width="16"
+                                Height="16">
+                              <Path Data="M3 8 V4.5 A2.5 2.5 0 0 1 8 4.5 V8"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round"
+                                  Fill="Transparent" />
+                              <Path Data="M8 6 H3"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M10 3 L12 8 L14 3"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round"
+                                  Fill="Transparent" />
+                              <Path Data="M3 12 H14"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round" />
+                              <Path Data="M12 14 L14 12 L12 10"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round"
+                                  Fill="Transparent" />
+                              <Path Data="M5 10 L3 12 L5 14"
+                                  Stroke="{DynamicResource AccentMuted}"
+                                  StrokeThickness="1.5"
+                                  StrokeLineCap="Round"
+                                  Fill="Transparent" />
+                            </Canvas>
+                        </StackPanel>
+                        <Border Padding="10,6"
+                              Background="#112EC4B6"
+                              BorderBrush="{DynamicResource AccentSubtle}"
+                              BorderThickness="1"
+                              CornerRadius="8"
+                              HorizontalAlignment="Left"
+                              Cursor="SizeWestEast"
+                              PointerPressed="LetterSpacingValue_OnPointerPressed"
+                              PointerMoved="LetterSpacingValue_OnPointerMoved"
+                              PointerReleased="LetterSpacingValue_OnPointerReleased"
+                              PointerCaptureLost="LetterSpacingValue_OnPointerCaptureLost">
+                            <TextBlock Text="{Binding SelectedClipLetterSpacing, StringFormat='{}{0:F1}px'}"
+                                   Foreground="{DynamicResource Accent}"
+                                   FontSize="13"
+                                   FontWeight="SemiBold" />
+                        </Border>
+                      </StackPanel>
 
                     <StackPanel Spacing="6">
                         <TextBlock Text="Preset"

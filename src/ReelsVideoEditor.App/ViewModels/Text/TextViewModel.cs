@@ -68,7 +68,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public IReadOnlyList<string> AvailableFonts { get; }
 
-    public Action<string, string, double, string, string, double>? ApplySelectedTextSettingsRequested { get; set; }
+    public Action<string, string, double, string, string, double, double, double>? ApplySelectedTextSettingsRequested { get; set; }
 
     public Func<Models.TextPresetDefinition, double, string?, System.Threading.Tasks.Task>? AutoCaptionsRequested { get; set; }
 
@@ -156,6 +156,12 @@ public sealed partial class TextViewModel : ViewModelBase
 
     [ObservableProperty]
     private double selectedClipOutlineThickness;
+
+    [ObservableProperty]
+    private double selectedClipLineHeightMultiplier = 1.0;
+
+    [ObservableProperty]
+    private double selectedClipLetterSpacing;
 
     [ObservableProperty]
     private string newPresetName = string.Empty;

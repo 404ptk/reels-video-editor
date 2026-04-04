@@ -9,6 +9,8 @@ public sealed record TextPresetDefinition(
     string ColorHex,
     string OutlineColorHex = "#000000",
     double OutlineThickness = 0,
+    double LineHeightMultiplier = 1.0,
+    double LetterSpacing = 0,
     bool IsAutoCaptions = false,
     bool IsAddTile = false)
 {

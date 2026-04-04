@@ -30,6 +30,8 @@ public sealed partial class TextViewModel
             SelectedClipOutlineThickness = NormalizeOutlineThickness(preset.OutlineThickness);
             SelectedClipFontSize = Math.Clamp(preset.FontSize, 10, 180);
             SelectedClipFontFamily = ResolveAvailableFontFamily(preset.FontFamily);
+            SelectedClipLineHeightMultiplier = NormalizeLineHeightMultiplier(preset.LineHeightMultiplier);
+            SelectedClipLetterSpacing = NormalizeLetterSpacing(preset.LetterSpacing);
             IsEditorVisible = true;
         }
         finally
@@ -62,6 +64,8 @@ public sealed partial class TextViewModel
                 NormalizeHexColor(customPreset.ColorHex),
                 NormalizeOutlineHexColor(customPreset.OutlineColorHex),
                 NormalizeOutlineThickness(customPreset.OutlineThickness),
+                NormalizeLineHeightMultiplier(customPreset.LineHeightMultiplier),
+                NormalizeLetterSpacing(customPreset.LetterSpacing),
                 IsAutoCaptions: autoCaptionsPresetMode);
 
             UpsertPreset(normalizedPreset, isBuiltIn: false);
@@ -221,6 +225,8 @@ public sealed partial class TextViewModel
             SelectedColorHex,
             SelectedOutlineColorHex,
             NormalizeOutlineThickness(SelectedClipOutlineThickness),
+            NormalizeLineHeightMultiplier(SelectedClipLineHeightMultiplier),
+            NormalizeLetterSpacing(SelectedClipLetterSpacing),
             IsAutoCaptions: autoCaptionsPresetMode);
 
         Presets[existingIndex] = updatedPreset;

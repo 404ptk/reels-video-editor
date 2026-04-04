@@ -87,6 +87,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     private string textFontFamily = "Inter";
 
     [ObservableProperty]
+    private double textLineHeightMultiplier = 1.0;
+
+    [ObservableProperty]
+    private double textLetterSpacing;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]

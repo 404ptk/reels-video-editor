@@ -23,6 +23,8 @@ public sealed partial class TextViewModel
                 SelectedClipOutlineThickness = NormalizeOutlineThickness(state.OutlineThickness);
                 SelectedClipFontSize = state.FontSize;
                 SelectedClipFontFamily = ResolveAvailableFontFamily(state.FontFamily);
+                SelectedClipLineHeightMultiplier = NormalizeLineHeightMultiplier(state.LineHeightMultiplier);
+                SelectedClipLetterSpacing = NormalizeLetterSpacing(state.LetterSpacing);
                 IsEditorVisible = true;
             }
             else
@@ -150,6 +152,16 @@ public sealed partial class TextViewModel
         ApplySelectedTextSettings();
     }
 
+    partial void OnSelectedClipLineHeightMultiplierChanged(double value)
+    {
+        ApplySelectedTextSettings();
+    }
+
+    partial void OnSelectedClipLetterSpacingChanged(double value)
+    {
+        ApplySelectedTextSettings();
+    }
+
     private void ApplySelectedTextSettings()
     {
         if (isSyncingFromTimeline || IsEditingPreset || !HasSelectedTextClip || !IsEditorVisible)
@@ -163,6 +175,8 @@ public sealed partial class TextViewModel
             SelectedClipFontSize,
             ResolveAvailableFontFamily(SelectedClipFontFamily),
             SelectedOutlineColorHex,
-            NormalizeOutlineThickness(SelectedClipOutlineThickness));
+            NormalizeOutlineThickness(SelectedClipOutlineThickness),
+            NormalizeLineHeightMultiplier(SelectedClipLineHeightMultiplier),
+            NormalizeLetterSpacing(SelectedClipLetterSpacing));
     }
 }

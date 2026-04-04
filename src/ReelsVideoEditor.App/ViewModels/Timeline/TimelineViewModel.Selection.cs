@@ -29,7 +29,9 @@ public partial class TimelineViewModel
         string TextOutlineColorHex,
         double TextOutlineThickness,
         double TextFontSize,
-        string TextFontFamily);
+        string TextFontFamily,
+        double TextLineHeightMultiplier,
+        double TextLetterSpacing);
 
     public void CopySelectedClip()
     {
@@ -67,7 +69,9 @@ public partial class TimelineViewModel
             source.TextOutlineColorHex,
             source.TextOutlineThickness,
             source.TextFontSize,
-            source.TextFontFamily);
+            source.TextFontFamily,
+            source.TextLineHeightMultiplier,
+            source.TextLetterSpacing);
             nextPasteStartSeconds = null;
     }
 
@@ -119,7 +123,9 @@ public partial class TimelineViewModel
             TextOutlineColorHex = copiedClipPayload.TextOutlineColorHex,
             TextOutlineThickness = copiedClipPayload.TextOutlineThickness,
             TextFontSize = copiedClipPayload.TextFontSize,
-            TextFontFamily = copiedClipPayload.TextFontFamily
+            TextFontFamily = copiedClipPayload.TextFontFamily,
+            TextLineHeightMultiplier = copiedClipPayload.TextLineHeightMultiplier,
+            TextLetterSpacing = copiedClipPayload.TextLetterSpacing
         };
 
         TimelineClipArrangementService.RebuildLayouts([pastedClip], TickWidth);

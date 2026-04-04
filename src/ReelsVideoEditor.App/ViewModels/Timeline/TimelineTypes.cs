@@ -93,6 +93,8 @@ public sealed record TimelineTextOverlayLayer(
     string Text,
     string FontFamily,
     double FontSize,
+    double LineHeightMultiplier,
+    double LetterSpacing,
     string ColorHex,
     string OutlineColorHex,
     double OutlineThickness,
@@ -115,6 +117,8 @@ public sealed record TimelineSelectedTextClipState(
     string Text,
     string FontFamily,
     double FontSize,
+    double LineHeightMultiplier,
+    double LetterSpacing,
     string ColorHex,
     string OutlineColorHex,
     double OutlineThickness);

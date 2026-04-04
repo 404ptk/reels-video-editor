@@ -73,7 +73,9 @@ public sealed class TextPresetStorageService
                     preset.FontSize,
                     preset.ColorHex,
                     preset.OutlineColorHex,
-                    preset.OutlineThickness))
+                    preset.OutlineThickness,
+                    preset.LineHeightMultiplier,
+                    preset.LetterSpacing))
                 .ToArray();
 
             var directoryPath = Path.GetDirectoryName(presetsFilePath);
@@ -102,7 +104,11 @@ public sealed class TextPresetStorageService
             stored.Name,
             stored.FontFamily,
             stored.FontSize,
-            stored.ColorHex));
+            stored.ColorHex,
+            stored.OutlineColorHex,
+            stored.OutlineThickness,
+            stored.LineHeightMultiplier,
+            stored.LetterSpacing));
     }
 
     private static TextPresetDefinition? CreateValidatedPreset(TextPresetDefinition? preset)
@@ -118,6 +124,8 @@ public sealed class TextPresetStorageService
         var colorHex = preset.ColorHex?.Trim();
         var outlineColorHex = preset.OutlineColorHex?.Trim();
         var outlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
+        var lineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
+        var letterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
 
         if (string.IsNullOrWhiteSpace(name)
             || string.IsNullOrWhiteSpace(fontFamily)
@@ -135,7 +143,15 @@ public sealed class TextPresetStorageService
 
         var normalizedHex = $"#{parsedColor.R:X2}{parsedColor.G:X2}{parsedColor.B:X2}";
         var normalizedOutlineHex = $"#{parsedOutlineColor.R:X2}{parsedOutlineColor.G:X2}{parsedOutlineColor.B:X2}";
-        return new TextPresetDefinition(name, fontFamily, fontSize, normalizedHex, normalizedOutlineHex, outlineThickness);
+        return new TextPresetDefinition(
+            name,
+            fontFamily,
+            fontSize,
+            normalizedHex,
+            normalizedOutlineHex,
+            outlineThickness,
+            lineHeightMultiplier,
+            letterSpacing);
     }
 
     private static string ResolveDefaultPath()
@@ -155,5 +171,7 @@ public sealed class TextPresetStorageService
         double FontSize,
         string ColorHex,
         string OutlineColorHex = "#000000",
-        double OutlineThickness = 0);
+        double OutlineThickness = 0,
+        double LineHeightMultiplier = 1.0,
+        double LetterSpacing = 0);
 }

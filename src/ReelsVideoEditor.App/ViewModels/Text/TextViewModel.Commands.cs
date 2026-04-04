@@ -46,6 +46,8 @@ public sealed partial class TextViewModel
             SelectedColorHex,
             SelectedOutlineColorHex,
             NormalizeOutlineThickness(SelectedClipOutlineThickness),
+            NormalizeLineHeightMultiplier(SelectedClipLineHeightMultiplier),
+            NormalizeLetterSpacing(SelectedClipLetterSpacing),
             IsAutoCaptions: autoCaptionsPresetMode);
 
         UpsertPreset(preset, isBuiltIn: false);

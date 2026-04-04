@@ -461,6 +461,8 @@ public class TimelineExportService
             var color = ParseTextColor(layerState.ColorHex);
             var outlineColor = ParseTextColor(layerState.OutlineColorHex);
             var outlineThickness = Math.Max(0f, (float)(layerState.OutlineThickness * scale * textScale));
+            var lineHeightMultiplier = Math.Clamp((float)layerState.LineHeightMultiplier, 0.7f, 2.5f);
+            var letterSpacing = Math.Max(0f, (float)(layerState.LetterSpacing * scale * textScale));
             var cropLeft = Math.Clamp(layerState.CropLeft, 0.0, 0.95);
             var cropTop = Math.Clamp(layerState.CropTop, 0.0, 0.95);
             var cropRight = Math.Clamp(layerState.CropRight, 0.0, 0.95);
@@ -506,11 +508,13 @@ public class TimelineExportService
             var clipHeight = Math.Max(1f, (float)(layerHeight * (1.0 - cropTop - cropBottom)));
 
             var metrics = paint.FontMetrics;
-            var lineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
-            if (lineHeight <= 0)
+            var baseLineHeight = metrics.Descent - metrics.Ascent + metrics.Leading;
+            if (baseLineHeight <= 0)
             {
-                lineHeight = fontSize * 1.2f;
+                baseLineHeight = fontSize * 1.2f;
             }
+
+            var lineHeight = Math.Max(1f, baseLineHeight * lineHeightMultiplier);
 
             var totalTextHeight = lineHeight * lines.Length;
             var centerX = layerLeft + (layerWidth / 2f);
@@ -533,13 +537,46 @@ public class TimelineExportService
                 var baselineY = firstBaselineY + (lineIndex * lineHeight);
                 if (outlineThickness > 0.01f)
                 {
-                    canvas.DrawText(line, centerX, baselineY, outlinePaint);
+                    DrawTextWithLetterSpacing(canvas, line, centerX, baselineY, outlinePaint, letterSpacing);
                 }
 
-                canvas.DrawText(line, centerX, baselineY, paint);
+                DrawTextWithLetterSpacing(canvas, line, centerX, baselineY, paint, letterSpacing);
             }
 
             canvas.Restore();
+        }
+    }
+
+    private static void DrawTextWithLetterSpacing(SKCanvas canvas, string text, float centerX, float baselineY, SKPaint paint, float letterSpacing)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return;
+        }
+
+        if (letterSpacing <= 0.01f || text.Length == 1)
+        {
+            canvas.DrawText(text, centerX, baselineY, paint);
+            return;
+        }
+
+        var glyphWidths = new float[text.Length];
+        var totalWidth = 0f;
+        for (var i = 0; i < text.Length; i++)
+        {
+            var glyph = text.Substring(i, 1);
+            glyphWidths[i] = paint.MeasureText(glyph);
+            totalWidth += glyphWidths[i];
+        }
+
+        totalWidth += letterSpacing * (text.Length - 1);
+
+        var penX = centerX - (totalWidth / 2f);
+        for (var i = 0; i < text.Length; i++)
+        {
+            var glyph = text.Substring(i, 1);
+            canvas.DrawText(glyph, penX, baselineY, paint);
+            penX += glyphWidths[i] + letterSpacing;
         }
     }
 

@@ -125,11 +125,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.CurrentAudioVolume = audioVolume;
         };
 
-        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness) =>
+        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness, lineHeightMultiplier, letterSpacing) =>
         {
-            Timeline.UpdateSelectedTextClipSettings(text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness);
+            Timeline.UpdateSelectedTextClipSettings(
+                text,
+                colorHex,
+                fontSize,
+                fontFamily,
+                outlineColorHex,
+                outlineThickness,
+                lineHeightMultiplier,
+                letterSpacing);
             Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
+            Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         };
+
+        Subtitles.ApplySelectedTextSettingsRequested = Text.ApplySelectedTextSettingsRequested;
 
         Timeline.AutoCaptionsRequested = async (preset, dropX, targetLaneLabel) =>
         {
@@ -195,6 +206,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             SyncPreviewTransformFromTimelineTarget();
             var selectedTextState = Timeline.ResolveSelectedTextClipState();
             Text.SyncSelectedTextClip(selectedTextState);
+            Subtitles.SyncSelectedTextClip(selectedTextState);
             if (selectedTextState.HasSelection)
             {
                 SelectedSection = SidebarSection.Text;
@@ -209,6 +221,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.RefreshPreviewLevels();
         Timeline.RefreshTextOverlayState();
         Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
+        Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
     }
 
     private void SyncPreviewTransformFromTimelineTarget()

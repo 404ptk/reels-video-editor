@@ -11,6 +11,8 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
     private double rawFontSize = 14;
     private double rawOutlineThickness;
+    private double rawLineHeightMultiplier = 1.0;
+    private double rawLetterSpacing;
     private double rawTransformScale = 1.0;
     private double rawCropLeft;
     private double rawCropTop;
@@ -31,6 +33,12 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
     [ObservableProperty]
     private double scaledFontSize = 14;
+
+    [ObservableProperty]
+    private double scaledLineHeight = 16.8;
+
+    [ObservableProperty]
+    private double scaledLetterSpacing;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(OutlineOffsetPx))]
@@ -76,6 +84,8 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
         rawFontSize = Math.Max(1.0, source.FontSize);
         rawOutlineThickness = Math.Clamp(source.OutlineThickness, 0, 24);
+        rawLineHeightMultiplier = Math.Clamp(source.LineHeightMultiplier, 0.7, 2.5);
+        rawLetterSpacing = Math.Clamp(source.LetterSpacing, 0, 20);
         rawTransformScale = Math.Max(0.1, source.TransformScale);
         rawCropLeft = Math.Clamp(source.CropLeft, 0.0, 0.95);
         rawCropTop = Math.Clamp(source.CropTop, 0.0, 0.95);
@@ -93,6 +103,8 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
         TransformScale = rawTransformScale;
         ScaledFontSize = Math.Max(1.0, rawFontSize * frameScale);
+        ScaledLineHeight = Math.Max(1.0, ScaledFontSize * 1.2 * rawLineHeightMultiplier);
+        ScaledLetterSpacing = Math.Max(0.0, rawLetterSpacing * frameScale);
         ScaledOutlineThickness = Math.Max(0.0, rawOutlineThickness * frameScale);
         CropLeftPx = safeWidth * rawCropLeft;
         CropTopPx = safeHeight * rawCropTop;

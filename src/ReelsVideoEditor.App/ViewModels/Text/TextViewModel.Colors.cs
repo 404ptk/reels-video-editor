@@ -81,4 +81,14 @@ public sealed partial class TextViewModel
     {
         return Math.Clamp(Math.Round(thickness, MidpointRounding.AwayFromZero), 0, 24);
     }
+
+    private static double NormalizeLineHeightMultiplier(double multiplier)
+    {
+        return Math.Clamp(Math.Round(multiplier, 2, MidpointRounding.AwayFromZero), 0.7, 2.5);
+    }
+
+    private static double NormalizeLetterSpacing(double spacing)
+    {
+        return Math.Clamp(Math.Round(spacing, 1, MidpointRounding.AwayFromZero), 0, 20);
+    }
 }
