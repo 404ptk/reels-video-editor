@@ -279,6 +279,7 @@
                                Foreground="{DynamicResource AccentMuted}"
                                FontSize="11"
                                HorizontalAlignment="Center" /> -->
+                    <!-- Wesolych Swiat! -->
                 </StackPanel>
             </Grid>
         </Border>
