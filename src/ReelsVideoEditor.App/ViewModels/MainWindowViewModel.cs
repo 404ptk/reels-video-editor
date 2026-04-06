@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
+using System.Threading.Tasks;
 using ReelsVideoEditor.App.ViewModels.Effects;
 using ReelsVideoEditor.App.ViewModels.Export;
 using ReelsVideoEditor.App.ViewModels.Preview;
@@ -154,6 +155,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
 
             Subtitles.IsTranscribing = true;
+            Subtitles.IsApplyingSubtitles = false;
+            Subtitles.TranscriptionProgress = 0;
             try
             {
                 var service = new Services.SpeechTranscription.SpeechTranscriptionService();
@@ -164,6 +167,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 });
 
                 var chunks = await service.TranscribeAsync(audioInputs, progress);
+                Subtitles.TranscriptionStatus = "Dodawanie napisów do timeline...";
+                Subtitles.IsApplyingSubtitles = true;
+                await Task.Yield();
                 Timeline.AddAutoCaptionClips(chunks, preset, targetLaneLabel);
             }
             catch (System.Exception ex)
@@ -173,7 +179,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             }
             finally
             {
+                Subtitles.IsApplyingSubtitles = false;
                 Subtitles.TranscriptionStatus = string.Empty;
+                Subtitles.TranscriptionProgress = 0;
                 Subtitles.IsTranscribing = false;
             }
         };

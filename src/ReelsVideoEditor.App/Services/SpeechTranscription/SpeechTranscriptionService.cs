@@ -29,15 +29,13 @@ public sealed class SpeechTranscriptionService
             return [];
         }
 
-        // Step 1: Ensure model is downloaded
-        progress?.Report(new TranscriptionProgress("Pobieranie modelu Whisper...", 0));
+        progress?.Report(new TranscriptionProgress("Downloading Whisper model...", 0));
         await modelManager.EnsureModelAsync(
             new Progress<double>(pct =>
-                progress?.Report(new TranscriptionProgress("Pobieranie modelu Whisper...", pct * 0.2))),
+                progress?.Report(new TranscriptionProgress("Downloading Whisper model...", pct * 0.2))),
             cancellationToken);
 
-        // Step 2: Extract & mix audio to 16kHz mono WAV
-        progress?.Report(new TranscriptionProgress("Ekstrakcja audio...", 20));
+        progress?.Report(new TranscriptionProgress("Extracting audio...", 20));
         var tempDir = Path.Combine(Path.GetTempPath(), "ReelsVideoEditor", "transcription_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
         var wavPath = Path.Combine(tempDir, "mixed_audio.wav");
@@ -52,15 +50,13 @@ public sealed class SpeechTranscriptionService
                 return [];
             }
 
-            // Step 3: Run Whisper transcription
-            progress?.Report(new TranscriptionProgress("Transkrypcja mowy...", 40));
+            progress?.Report(new TranscriptionProgress("Transcribing...", 40));
             var segments = await RunWhisperAsync(wavPath, progress, cancellationToken);
 
-            // Step 4: Group into 3-word chunks
-            progress?.Report(new TranscriptionProgress("Generowanie napisów...", 90));
+            progress?.Report(new TranscriptionProgress("Generating chunks...", 90));
             var chunks = GroupIntoChunks(segments);
 
-            progress?.Report(new TranscriptionProgress("Gotowe!", 100));
+            progress?.Report(new TranscriptionProgress("Done!", 100));
             return chunks;
         }
         finally

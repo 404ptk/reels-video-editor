@@ -182,10 +182,21 @@ public sealed partial class TextViewModel : ViewModelBase
     private bool isTranscribing;
 
     [ObservableProperty]
+    private bool isApplyingSubtitles;
+
+    [ObservableProperty]
     private double transcriptionProgress;
 
     [ObservableProperty]
     private string transcriptionStatus = string.Empty;
+
+    public bool IsSubtitlesBusy => IsTranscribing || IsApplyingSubtitles;
+
+    public bool IsTranscriptionProgressVisible => IsTranscribing && TranscriptionProgress > 0;
+
+    public string SubtitlesLoadingTitle => IsApplyingSubtitles
+        ? "Adding subtitles to timeline..."
+        : "Generating subtitles...";
 
     public bool HasTranscriptionStatus => !string.IsNullOrWhiteSpace(TranscriptionStatus);
 

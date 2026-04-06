@@ -82,6 +82,24 @@ public sealed partial class TextViewModel
         OnPropertyChanged(nameof(HasTranscriptionStatus));
     }
 
+    partial void OnIsTranscribingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsSubtitlesBusy));
+        OnPropertyChanged(nameof(IsTranscriptionProgressVisible));
+        OnPropertyChanged(nameof(SubtitlesLoadingTitle));
+    }
+
+    partial void OnIsApplyingSubtitlesChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsSubtitlesBusy));
+        OnPropertyChanged(nameof(SubtitlesLoadingTitle));
+    }
+
+    partial void OnTranscriptionProgressChanged(double value)
+    {
+        OnPropertyChanged(nameof(IsTranscriptionProgressVisible));
+    }
+
     partial void OnNewPresetNameChanged(string value)
     {
         if (!string.IsNullOrWhiteSpace(PresetSaveStatus))

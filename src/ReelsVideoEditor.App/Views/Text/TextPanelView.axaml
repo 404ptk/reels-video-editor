@@ -85,9 +85,10 @@
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="12">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="12">
             <StackPanel Spacing="12"
                         IsVisible="{Binding IsPresetVisible}">
             <TextBlock Text="{Binding Title}"
@@ -558,7 +559,48 @@
                 </StackPanel>
             </Border>
             </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border IsVisible="{Binding IsSubtitlesBusy}"
+                ZIndex="10"
+                Background="#AA101413"
+                CornerRadius="10"
+                Padding="18"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <Border HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    MinWidth="280"
+                    MaxWidth="380"
+                    Padding="16"
+                    CornerRadius="10"
+                    Background="#EE1B2520"
+                    BorderBrush="{DynamicResource AccentSubtle}"
+                    BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding SubtitlesLoadingTitle}"
+                               Foreground="{DynamicResource Accent}"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <ProgressBar IsIndeterminate="True"
+                                 Height="6"
+                                 IsVisible="{Binding IsApplyingSubtitles}" />
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding TranscriptionProgress}"
+                                 Height="6"
+                                 IsVisible="{Binding IsTranscriptionProgressVisible}" />
+                    <TextBlock Text="{Binding TranscriptionStatus}"
+                               Foreground="{DynamicResource AccentMuted}"
+                               FontSize="12"
+                               TextAlignment="Center"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
 
 </UserControl>
