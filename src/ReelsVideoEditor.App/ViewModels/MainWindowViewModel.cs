@@ -126,7 +126,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Preview.CurrentAudioVolume = audioVolume;
         };
 
-        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness, lineHeightMultiplier, letterSpacing) =>
+        Text.ApplySelectedTextSettingsRequested = (text, colorHex, fontSize, fontFamily, outlineColorHex, outlineThickness, lineHeightMultiplier, letterSpacing, textRevealEffect) =>
         {
             Timeline.UpdateSelectedTextClipSettings(
                 text,
@@ -136,7 +136,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 outlineColorHex,
                 outlineThickness,
                 lineHeightMultiplier,
-                letterSpacing);
+                letterSpacing,
+                textRevealEffect);
             Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
             Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         };

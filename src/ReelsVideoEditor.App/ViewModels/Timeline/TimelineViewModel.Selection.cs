@@ -31,7 +31,8 @@ public partial class TimelineViewModel
         double TextFontSize,
         string TextFontFamily,
         double TextLineHeightMultiplier,
-        double TextLetterSpacing);
+        double TextLetterSpacing,
+        string TextRevealEffect);
 
     public void CopySelectedClip()
     {
@@ -71,7 +72,8 @@ public partial class TimelineViewModel
             source.TextFontSize,
             source.TextFontFamily,
             source.TextLineHeightMultiplier,
-            source.TextLetterSpacing);
+            source.TextLetterSpacing,
+            source.TextRevealEffect);
             nextPasteStartSeconds = null;
     }
 
@@ -125,7 +127,8 @@ public partial class TimelineViewModel
             TextFontSize = copiedClipPayload.TextFontSize,
             TextFontFamily = copiedClipPayload.TextFontFamily,
             TextLineHeightMultiplier = copiedClipPayload.TextLineHeightMultiplier,
-            TextLetterSpacing = copiedClipPayload.TextLetterSpacing
+            TextLetterSpacing = copiedClipPayload.TextLetterSpacing,
+            TextRevealEffect = copiedClipPayload.TextRevealEffect
         };
 
         TimelineClipArrangementService.RebuildLayouts([pastedClip], TickWidth);

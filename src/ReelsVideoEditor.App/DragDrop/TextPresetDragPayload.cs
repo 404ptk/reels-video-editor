@@ -10,7 +10,7 @@ public static class TextPresetDragPayload
 
     public static string Build(TextPresetDefinition preset)
     {
-        return $"{Uri.EscapeDataString(preset.Name)}|{Uri.EscapeDataString(preset.FontFamily)}|{preset.FontSize.ToString(CultureInfo.InvariantCulture)}|{Uri.EscapeDataString(preset.ColorHex)}|{Uri.EscapeDataString(preset.OutlineColorHex)}|{preset.OutlineThickness.ToString(CultureInfo.InvariantCulture)}|{preset.LineHeightMultiplier.ToString(CultureInfo.InvariantCulture)}|{preset.LetterSpacing.ToString(CultureInfo.InvariantCulture)}|{(preset.IsAutoCaptions ? "1" : "0")}";
+        return $"{Uri.EscapeDataString(preset.Name)}|{Uri.EscapeDataString(preset.FontFamily)}|{preset.FontSize.ToString(CultureInfo.InvariantCulture)}|{Uri.EscapeDataString(preset.ColorHex)}|{Uri.EscapeDataString(preset.OutlineColorHex)}|{preset.OutlineThickness.ToString(CultureInfo.InvariantCulture)}|{preset.LineHeightMultiplier.ToString(CultureInfo.InvariantCulture)}|{preset.LetterSpacing.ToString(CultureInfo.InvariantCulture)}|{(preset.IsAutoCaptions ? "1" : "0")}|{Uri.EscapeDataString(Models.TextRevealEffect.Normalize(preset.TextRevealEffect))}";
     }
 
     public static bool TryParse(object? rawPayload, out TextPresetDefinition? preset)
@@ -23,7 +23,7 @@ public static class TextPresetDragPayload
         }
 
         var parts = payload.Split('|');
-        if (parts.Length != 4 && parts.Length != 6 && parts.Length != 7 && parts.Length != 9)
+        if (parts.Length != 4 && parts.Length != 6 && parts.Length != 7 && parts.Length != 9 && parts.Length != 10)
         {
             return false;
         }
@@ -41,6 +41,7 @@ public static class TextPresetDragPayload
         var lineHeightMultiplier = 1d;
         var letterSpacing = 0d;
         var isAutoCaptions = false;
+        var textRevealEffect = Models.TextRevealEffect.None;
 
         if (parts.Length >= 6)
         {
@@ -73,6 +74,11 @@ public static class TextPresetDragPayload
         {
             isAutoCaptions = parts[8] == "1";
         }
+        else if (parts.Length == 10)
+        {
+            isAutoCaptions = parts[8] == "1";
+            textRevealEffect = Models.TextRevealEffect.Normalize(Uri.UnescapeDataString(parts[9]));
+        }
 
         // Fallback safety check in case the flag was missing but it's the exact UI preset name:
         if (!isAutoCaptions && name == ReelsVideoEditor.App.ViewModels.Text.TextViewModel.AutoCaptionsPresetName)
@@ -97,6 +103,7 @@ public static class TextPresetDragPayload
             outlineThickness,
             lineHeightMultiplier,
             letterSpacing,
+            textRevealEffect,
             isAutoCaptions);
         return true;
     }

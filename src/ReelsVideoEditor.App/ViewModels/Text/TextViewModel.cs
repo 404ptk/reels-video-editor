@@ -22,7 +22,7 @@ public sealed partial class TextViewModel : ViewModelBase
 
     private static readonly Models.TextPresetDefinition[] DefaultSubtitlesPresets =
     [
-        new(AutoCaptionsPresetName, "Inter", 18, "#FFFFFF", "#000000", 3, IsAutoCaptions: true),
+        new(AutoCaptionsPresetName, "Inter", 18, "#FFFFFF", "#000000", 3, TextRevealEffect: Models.TextRevealEffect.Pop, IsAutoCaptions: true),
     ];
 
     private bool isSyncingFromTimeline;
@@ -68,7 +68,15 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public IReadOnlyList<string> AvailableFonts { get; }
 
-    public Action<string, string, double, string, string, double, double, double>? ApplySelectedTextSettingsRequested { get; set; }
+    public IReadOnlyList<string> AvailableTextRevealEffects { get; } =
+    [
+        Models.TextRevealEffect.None,
+        Models.TextRevealEffect.Pop
+    ];
+
+    public bool IsSubtitlesMode => autoCaptionsPresetMode;
+
+    public Action<string, string, double, string, string, double, double, double, string>? ApplySelectedTextSettingsRequested { get; set; }
 
     public Func<Models.TextPresetDefinition, double, string?, System.Threading.Tasks.Task>? AutoCaptionsRequested { get; set; }
 
@@ -98,6 +106,7 @@ public sealed partial class TextViewModel : ViewModelBase
         defaultPresets = autoCaptionsPresetMode ? DefaultSubtitlesPresets : DefaultTextPresets;
         presetStorage = CreatePresetStorageService(autoCaptionsPresetMode);
         AvailableFonts = RenderableFonts;
+        SelectedClipTextRevealEffect = autoCaptionsPresetMode ? Models.TextRevealEffect.Pop : Models.TextRevealEffect.None;
         Presets.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PresetTiles));
         LoadPresets();
     }
@@ -162,6 +171,9 @@ public sealed partial class TextViewModel : ViewModelBase
 
     [ObservableProperty]
     private double selectedClipLetterSpacing;
+
+    [ObservableProperty]
+    private string selectedClipTextRevealEffect = Models.TextRevealEffect.None;
 
     [ObservableProperty]
     private string newPresetName = string.Empty;

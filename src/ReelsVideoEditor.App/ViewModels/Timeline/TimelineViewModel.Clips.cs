@@ -70,6 +70,7 @@ public partial class TimelineViewModel
         clip.TextFontSize = preset.FontSize;
         clip.TextLineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
         clip.TextLetterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
+        clip.TextRevealEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
         clip.TransformY = -72;
         VideoClips.Add(clip);
 
@@ -127,6 +128,7 @@ public partial class TimelineViewModel
                 clip.TextFontSize = preset.FontSize;
                 clip.TextLineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
                 clip.TextLetterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
+                clip.TextRevealEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
                 clip.TransformY = 72;
 
                 TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
@@ -177,7 +179,8 @@ public partial class TimelineViewModel
         string outlineColorHex,
         double outlineThickness,
         double lineHeightMultiplier,
-        double letterSpacing)
+        double letterSpacing,
+        string textRevealEffect)
     {
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
@@ -206,6 +209,7 @@ public partial class TimelineViewModel
         var normalizedOutlineThickness = Math.Clamp(Math.Round(outlineThickness, MidpointRounding.AwayFromZero), 0, 24);
         var normalizedLineHeightMultiplier = Math.Clamp(Math.Round(lineHeightMultiplier, 2, MidpointRounding.AwayFromZero), 0.7, 2.5);
         var normalizedLetterSpacing = Math.Clamp(Math.Round(letterSpacing, 1, MidpointRounding.AwayFromZero), 0, 20);
+        var normalizedTextRevealEffect = Models.TextRevealEffect.Normalize(textRevealEffect);
 
         if (string.Equals(selectedTextClip.Name, normalizedDisplayName, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextContent, normalizedTextContent, StringComparison.Ordinal)
@@ -215,6 +219,7 @@ public partial class TimelineViewModel
             && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001
             && Math.Abs(selectedTextClip.TextLineHeightMultiplier - normalizedLineHeightMultiplier) < 0.001
             && Math.Abs(selectedTextClip.TextLetterSpacing - normalizedLetterSpacing) < 0.001
+            && string.Equals(selectedTextClip.TextRevealEffect, normalizedTextRevealEffect, StringComparison.Ordinal)
             && string.Equals(selectedTextClip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
         {
             return;
@@ -229,6 +234,7 @@ public partial class TimelineViewModel
         selectedTextClip.TextFontFamily = normalizedFontFamily;
         selectedTextClip.TextLineHeightMultiplier = normalizedLineHeightMultiplier;
         selectedTextClip.TextLetterSpacing = normalizedLetterSpacing;
+        selectedTextClip.TextRevealEffect = normalizedTextRevealEffect;
 
         NotifyTextOverlayStateChanged();
     }

@@ -387,7 +387,7 @@ public partial class TimelineViewModel
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
         {
-            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, 1.0, 0, "#FFFFFF", "#000000", 0);
+            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, 1.0, 0, "#FFFFFF", "#000000", 0, Models.TextRevealEffect.None);
         }
 
         return new TimelineSelectedTextClipState(
@@ -399,7 +399,8 @@ public partial class TimelineViewModel
             selectedTextClip.TextLetterSpacing,
             selectedTextClip.TextColorHex,
             selectedTextClip.TextOutlineColorHex,
-            selectedTextClip.TextOutlineThickness);
+            selectedTextClip.TextOutlineThickness,
+            selectedTextClip.TextRevealEffect);
     }
 
     private TimelineClipItem? ResolvePreviewClip()
@@ -560,22 +561,27 @@ public partial class TimelineViewModel
             // Draw order: bottom-to-top so the visually higher lane is rendered last.
             .OrderByDescending(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
             .ThenBy(clip => clip.StartSeconds)
-            .Select(clip => new TimelineTextOverlayLayer(
-                clip.TextContent,
-                clip.TextFontFamily,
-                clip.TextFontSize,
-                clip.TextLineHeightMultiplier,
-                clip.TextLetterSpacing,
-                clip.TextColorHex,
-                clip.TextOutlineColorHex,
-                clip.TextOutlineThickness,
-                clip.TransformX,
-                clip.TransformY,
-                clip.TransformScale,
-                clip.CropLeft,
-                clip.CropTop,
-                clip.CropRight,
-                clip.CropBottom))
+            .Select(clip =>
+            {
+                var animationScale = ResolveTextAnimationScale(clip, timelineSeconds);
+                return new TimelineTextOverlayLayer(
+                    clip.TextContent,
+                    clip.TextFontFamily,
+                    clip.TextFontSize,
+                    clip.TextLineHeightMultiplier,
+                    clip.TextLetterSpacing,
+                    clip.TextColorHex,
+                    clip.TextOutlineColorHex,
+                    clip.TextOutlineThickness,
+                    clip.TransformX,
+                    clip.TransformY,
+                    clip.TransformScale,
+                    animationScale,
+                    clip.CropLeft,
+                    clip.CropTop,
+                    clip.CropRight,
+                    clip.CropBottom);
+            })
             .ToList();
 
         if (activeTextLayers.Count == 0)
@@ -598,6 +604,26 @@ public partial class TimelineViewModel
     private static bool IsTextTimelineClip(TimelineClipItem clip)
     {
         return string.IsNullOrWhiteSpace(clip.Path);
+    }
+
+    private static double ResolveTextAnimationScale(TimelineClipItem clip, double timelineSeconds)
+    {
+        if (!string.Equals(Models.TextRevealEffect.Normalize(clip.TextRevealEffect), Models.TextRevealEffect.Pop, StringComparison.Ordinal))
+        {
+            return 1.0;
+        }
+
+        var elapsedSeconds = Math.Max(0, timelineSeconds - clip.StartSeconds);
+        const double animationDurationSeconds = 0.22;
+        const double peakScaleBoost = 0.14;
+        if (elapsedSeconds >= animationDurationSeconds)
+        {
+            return 1.0;
+        }
+
+        var t = elapsedSeconds / animationDurationSeconds;
+        var eased = 1.0 - Math.Pow(1.0 - t, 3);
+        return 1.0 + (peakScaleBoost * (1.0 - eased));
     }
 
     private double ResolveAudioVolumeAt(double seconds)

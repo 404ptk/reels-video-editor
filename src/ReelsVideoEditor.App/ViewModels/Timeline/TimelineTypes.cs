@@ -101,6 +101,7 @@ public sealed record TimelineTextOverlayLayer(
     double TransformX,
     double TransformY,
     double TransformScale,
+    double AnimationScale,
     double CropLeft,
     double CropTop,
     double CropRight,
@@ -121,4 +122,5 @@ public sealed record TimelineSelectedTextClipState(
     double LetterSpacing,
     string ColorHex,
     string OutlineColorHex,
-    double OutlineThickness);
+    double OutlineThickness,
+    string TextRevealEffect);

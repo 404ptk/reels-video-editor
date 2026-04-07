@@ -25,6 +25,7 @@ public sealed partial class TextViewModel
                 SelectedClipFontFamily = ResolveAvailableFontFamily(state.FontFamily);
                 SelectedClipLineHeightMultiplier = NormalizeLineHeightMultiplier(state.LineHeightMultiplier);
                 SelectedClipLetterSpacing = NormalizeLetterSpacing(state.LetterSpacing);
+                SelectedClipTextRevealEffect = NormalizeTextRevealEffect(state.TextRevealEffect);
                 IsEditorVisible = true;
             }
             else
@@ -180,6 +181,18 @@ public sealed partial class TextViewModel
         ApplySelectedTextSettings();
     }
 
+    partial void OnSelectedClipTextRevealEffectChanged(string value)
+    {
+        var normalized = NormalizeTextRevealEffect(value);
+        if (!string.Equals(value, normalized, System.StringComparison.Ordinal))
+        {
+            SelectedClipTextRevealEffect = normalized;
+            return;
+        }
+
+        ApplySelectedTextSettings();
+    }
+
     private void ApplySelectedTextSettings()
     {
         if (isSyncingFromTimeline || IsEditingPreset || !HasSelectedTextClip || !IsEditorVisible)
@@ -195,6 +208,7 @@ public sealed partial class TextViewModel
             SelectedOutlineColorHex,
             NormalizeOutlineThickness(SelectedClipOutlineThickness),
             NormalizeLineHeightMultiplier(SelectedClipLineHeightMultiplier),
-            NormalizeLetterSpacing(SelectedClipLetterSpacing));
+            NormalizeLetterSpacing(SelectedClipLetterSpacing),
+            NormalizeTextRevealEffect(SelectedClipTextRevealEffect));
     }
 }

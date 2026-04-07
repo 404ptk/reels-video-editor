@@ -75,7 +75,8 @@ public sealed class TextPresetStorageService
                     preset.OutlineColorHex,
                     preset.OutlineThickness,
                     preset.LineHeightMultiplier,
-                    preset.LetterSpacing))
+                    preset.LetterSpacing,
+                    Models.TextRevealEffect.Normalize(preset.TextRevealEffect)))
                 .ToArray();
 
             var directoryPath = Path.GetDirectoryName(presetsFilePath);
@@ -108,7 +109,8 @@ public sealed class TextPresetStorageService
             stored.OutlineColorHex,
             stored.OutlineThickness,
             stored.LineHeightMultiplier,
-            stored.LetterSpacing));
+            stored.LetterSpacing,
+            stored.TextRevealEffect));
     }
 
     private static TextPresetDefinition? CreateValidatedPreset(TextPresetDefinition? preset)
@@ -126,6 +128,7 @@ public sealed class TextPresetStorageService
         var outlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
         var lineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
         var letterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
+        var textRevealEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
 
         if (string.IsNullOrWhiteSpace(name)
             || string.IsNullOrWhiteSpace(fontFamily)
@@ -151,7 +154,8 @@ public sealed class TextPresetStorageService
             normalizedOutlineHex,
             outlineThickness,
             lineHeightMultiplier,
-            letterSpacing);
+            letterSpacing,
+            textRevealEffect);
     }
 
     private static string ResolveDefaultPath()
@@ -173,5 +177,6 @@ public sealed class TextPresetStorageService
         string OutlineColorHex = "#000000",
         double OutlineThickness = 0,
         double LineHeightMultiplier = 1.0,
-        double LetterSpacing = 0);
+        double LetterSpacing = 0,
+        string TextRevealEffect = Models.TextRevealEffect.None);
 }

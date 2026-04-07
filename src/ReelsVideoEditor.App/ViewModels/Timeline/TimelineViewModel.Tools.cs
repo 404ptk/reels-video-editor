@@ -329,7 +329,8 @@ public partial class TimelineViewModel
             TextFontSize = source.TextFontSize,
             TextFontFamily = source.TextFontFamily,
             TextLineHeightMultiplier = source.TextLineHeightMultiplier,
-            TextLetterSpacing = source.TextLetterSpacing
+            TextLetterSpacing = source.TextLetterSpacing,
+            TextRevealEffect = source.TextRevealEffect
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -395,7 +396,8 @@ public partial class TimelineViewModel
             clip.TextFontSize,
             clip.TextFontFamily,
             clip.TextLineHeightMultiplier,
-            clip.TextLetterSpacing)).ToList();
+            clip.TextLetterSpacing,
+            clip.TextRevealEffect)).ToList();
     }
 
     private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
@@ -442,7 +444,8 @@ public partial class TimelineViewModel
             TextFontSize = snapshot.TextFontSize,
             TextFontFamily = snapshot.TextFontFamily,
             TextLineHeightMultiplier = snapshot.TextLineHeightMultiplier,
-            TextLetterSpacing = snapshot.TextLetterSpacing
+            TextLetterSpacing = snapshot.TextLetterSpacing,
+            TextRevealEffect = snapshot.TextRevealEffect
         };
 
         clip.Left = clip.StartSeconds * TickWidth;
@@ -515,7 +518,8 @@ public partial class TimelineViewModel
         double TextFontSize,
         string TextFontFamily,
         double TextLineHeightMultiplier,
-        double TextLetterSpacing);
+        double TextLetterSpacing,
+        string TextRevealEffect);
 }
 
 public enum TimelineTool

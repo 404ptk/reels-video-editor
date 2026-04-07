@@ -86,7 +86,7 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
         rawOutlineThickness = Math.Clamp(source.OutlineThickness, 0, 24);
         rawLineHeightMultiplier = Math.Clamp(source.LineHeightMultiplier, 0.7, 2.5);
         rawLetterSpacing = Math.Clamp(source.LetterSpacing, 0, 20);
-        rawTransformScale = Math.Max(0.1, source.TransformScale);
+        rawTransformScale = Math.Max(0.1, source.TransformScale * source.AnimationScale);
         rawCropLeft = Math.Clamp(source.CropLeft, 0.0, 0.95);
         rawCropTop = Math.Clamp(source.CropTop, 0.0, 0.95);
         rawCropRight = Math.Clamp(source.CropRight, 0.0, 0.95);

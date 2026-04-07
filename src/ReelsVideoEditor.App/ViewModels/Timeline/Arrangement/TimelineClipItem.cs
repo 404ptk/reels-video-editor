@@ -93,6 +93,9 @@ public sealed partial class TimelineClipItem : ObservableObject
     private double textLetterSpacing;
 
     [ObservableProperty]
+    private string textRevealEffect = Models.TextRevealEffect.None;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]

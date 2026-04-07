@@ -48,6 +48,7 @@ public sealed partial class TextViewModel
             NormalizeOutlineThickness(SelectedClipOutlineThickness),
             NormalizeLineHeightMultiplier(SelectedClipLineHeightMultiplier),
             NormalizeLetterSpacing(SelectedClipLetterSpacing),
+            NormalizeTextRevealEffect(SelectedClipTextRevealEffect),
             IsAutoCaptions: autoCaptionsPresetMode);
 
         UpsertPreset(preset, isBuiltIn: false);

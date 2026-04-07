@@ -534,6 +534,18 @@
                         </Grid>
                     </Border>
 
+                    <StackPanel Spacing="4"
+                                IsVisible="{Binding IsSubtitlesMode}">
+                        <TextBlock Text="Subtitles effect"
+                                   Foreground="{DynamicResource AccentMuted}"
+                                   FontSize="12" />
+                        <ComboBox ItemsSource="{Binding AvailableTextRevealEffects}"
+                                  SelectedItem="{Binding SelectedClipTextRevealEffect, Mode=TwoWay}"
+                                  Classes="accentInput"
+                                  Width="180"
+                                  HorizontalAlignment="Left" />
+                    </StackPanel>
+
                     <StackPanel Spacing="6">
                         <TextBlock Text="Preset"
                                    Foreground="{DynamicResource AccentMuted}"

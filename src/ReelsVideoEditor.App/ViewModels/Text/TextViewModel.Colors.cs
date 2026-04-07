@@ -91,4 +91,9 @@ public sealed partial class TextViewModel
     {
         return Math.Clamp(Math.Round(spacing, 1, MidpointRounding.AwayFromZero), 0, 20);
     }
+
+    private static string NormalizeTextRevealEffect(string? textRevealEffect)
+    {
+        return Models.TextRevealEffect.Normalize(textRevealEffect);
+    }
 }

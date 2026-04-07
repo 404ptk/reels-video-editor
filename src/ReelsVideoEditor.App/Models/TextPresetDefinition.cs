@@ -11,6 +11,7 @@ public sealed record TextPresetDefinition(
     double OutlineThickness = 0,
     double LineHeightMultiplier = 1.0,
     double LetterSpacing = 0,
+    string TextRevealEffect = Models.TextRevealEffect.None,
     bool IsAutoCaptions = false,
     bool IsAddTile = false)
 {
