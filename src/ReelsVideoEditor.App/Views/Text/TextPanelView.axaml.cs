@@ -1,6 +1,10 @@
 using System;
+using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.Models;
@@ -22,10 +26,67 @@ public partial class TextPanelView : UserControl
     private bool isLetterSpacingDragActive;
     private double letterSpacingDragStartX;
     private double letterSpacingDragStartValue;
+    private TopLevel? hostTopLevel;
 
     public TextPanelView()
     {
         InitializeComponent();
+        Focusable = true;
+        AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    private void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs eventArgs)
+    {
+        hostTopLevel = TopLevel.GetTopLevel(this);
+        hostTopLevel?.AddHandler(InputElement.PointerPressedEvent, OnHostPointerPressed, RoutingStrategies.Tunnel);
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs eventArgs)
+    {
+        if (hostTopLevel is not null)
+        {
+            hostTopLevel.RemoveHandler(InputElement.PointerPressedEvent, OnHostPointerPressed);
+            hostTopLevel = null;
+        }
+    }
+
+    private void OnHostPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (DataContext is not TextViewModel viewModel || !viewModel.IsFontDropdownOpen)
+        {
+            return;
+        }
+
+        if (eventArgs.Source is not Visual sourceVisual)
+        {
+            return;
+        }
+
+        if ((FontPickerRoot is not null && IsInsideVisual(sourceVisual, FontPickerRoot))
+            || (FontPickerPopupContent is not null && IsInsideVisual(sourceVisual, FontPickerPopupContent)))
+        {
+            return;
+        }
+
+        viewModel.IsFontDropdownOpen = false;
+        if (FontSearchTextBox?.IsFocused == true)
+        {
+            Focus();
+        }
+    }
+
+    private static bool IsInsideVisual(Visual source, Visual container)
+    {
+        for (var current = source; current is not null; current = current.GetVisualParent())
+        {
+            if (ReferenceEquals(current, container))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async void PresetTile_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
@@ -346,6 +407,58 @@ public partial class TextPanelView : UserControl
         if (pointer is not null)
         {
             pointer.Capture(null);
+        }
+    }
+
+    private void FontSearchTextBox_OnGotFocus(object? sender, GotFocusEventArgs eventArgs)
+    {
+        if (DataContext is TextViewModel viewModel && viewModel.IsEditorVisible)
+        {
+            viewModel.IsFontDropdownOpen = true;
+        }
+    }
+
+    private void FontSearchTextBox_OnKeyDown(object? sender, KeyEventArgs eventArgs)
+    {
+        if (DataContext is not TextViewModel viewModel)
+        {
+            return;
+        }
+
+        if (eventArgs.Key == Key.Down)
+        {
+            viewModel.IsFontDropdownOpen = true;
+            eventArgs.Handled = true;
+            return;
+        }
+
+        if (eventArgs.Key == Key.Escape)
+        {
+            viewModel.IsFontDropdownOpen = false;
+            eventArgs.Handled = true;
+            return;
+        }
+
+        if (eventArgs.Key == Key.Enter)
+        {
+            var firstMatch = viewModel.FilteredAvailableFonts.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(firstMatch))
+            {
+                viewModel.SelectFilteredFontCommand.Execute(firstMatch);
+                if (sender is TextBox textBox)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        textBox.Focus();
+                        var caret = (textBox.Text ?? string.Empty).Length;
+                        textBox.CaretIndex = caret;
+                        textBox.SelectionStart = caret;
+                        textBox.SelectionEnd = caret;
+                    }, DispatcherPriority.Input);
+                }
+
+                eventArgs.Handled = true;
+            }
         }
     }
 }

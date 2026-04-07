@@ -6,6 +6,20 @@ namespace ReelsVideoEditor.App.ViewModels.Text;
 public sealed partial class TextViewModel
 {
     [RelayCommand]
+    private void SelectFilteredFont(string? fontFamily)
+    {
+        if (string.IsNullOrWhiteSpace(fontFamily))
+        {
+            return;
+        }
+
+        var resolved = ResolveAvailableFontFamily(fontFamily);
+        SelectedClipFontFamily = resolved;
+        FontSearchQuery = resolved;
+        IsFontDropdownOpen = false;
+    }
+
+    [RelayCommand]
     private void CreatePresetFromTile()
     {
         ClearDeleteConfirmation();

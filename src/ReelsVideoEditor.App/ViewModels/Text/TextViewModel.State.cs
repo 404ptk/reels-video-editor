@@ -163,7 +163,21 @@ public sealed partial class TextViewModel
 
     partial void OnSelectedClipFontFamilyChanged(string value)
     {
+        RefreshFilteredFonts();
+        if (!string.IsNullOrWhiteSpace(value)
+            && string.IsNullOrWhiteSpace(FontSearchQuery)
+            && IsFontDropdownOpen)
+        {
+            IsFontDropdownOpen = false;
+        }
+
         ApplySelectedTextSettings();
+    }
+
+    partial void OnFontSearchQueryChanged(string value)
+    {
+        RefreshFilteredFonts();
+        IsFontDropdownOpen = IsEditorVisible;
     }
 
     partial void OnSelectedClipOutlineThicknessChanged(double value)

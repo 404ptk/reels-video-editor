@@ -68,6 +68,8 @@ public sealed partial class TextViewModel : ViewModelBase
 
     public IReadOnlyList<string> AvailableFonts { get; }
 
+    public IReadOnlyList<string> FilteredAvailableFonts => filteredAvailableFonts;
+
     public IReadOnlyList<string> AvailableTextRevealEffects { get; } =
     [
         Models.TextRevealEffect.None,
@@ -106,9 +108,33 @@ public sealed partial class TextViewModel : ViewModelBase
         defaultPresets = autoCaptionsPresetMode ? DefaultSubtitlesPresets : DefaultTextPresets;
         presetStorage = CreatePresetStorageService(autoCaptionsPresetMode);
         AvailableFonts = RenderableFonts;
+        RefreshFilteredFonts();
         SelectedClipTextRevealEffect = autoCaptionsPresetMode ? Models.TextRevealEffect.Pop : Models.TextRevealEffect.None;
         Presets.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PresetTiles));
         LoadPresets();
+    }
+
+    private void RefreshFilteredFonts()
+    {
+        var query = FontSearchQuery.Trim();
+        var fonts = string.IsNullOrWhiteSpace(query)
+            ? AvailableFonts
+            : AvailableFonts
+                .Where(font => font.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+        var selected = ResolveAvailableFontFamily(SelectedClipFontFamily);
+        if (!string.IsNullOrWhiteSpace(selected)
+            && !fonts.Any(font => string.Equals(font, selected, StringComparison.OrdinalIgnoreCase)))
+        {
+            filteredAvailableFonts = [selected, .. fonts];
+        }
+        else
+        {
+            filteredAvailableFonts = fonts;
+        }
+
+        OnPropertyChanged(nameof(FilteredAvailableFonts));
     }
 
     private static TextPresetStorageService CreatePresetStorageService(bool subtitlesMode)
@@ -162,6 +188,14 @@ public sealed partial class TextViewModel : ViewModelBase
 
     [ObservableProperty]
     private string selectedClipFontFamily = "Inter";
+
+    [ObservableProperty]
+    private string fontSearchQuery = string.Empty;
+
+    [ObservableProperty]
+    private bool isFontDropdownOpen;
+
+    private IReadOnlyList<string> filteredAvailableFonts = [];
 
     [ObservableProperty]
     private double selectedClipOutlineThickness;

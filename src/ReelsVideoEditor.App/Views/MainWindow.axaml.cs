@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Controls.Shapes;
+using Avalonia.VisualTree;
 using ReelsVideoEditor.App.ViewModels;
 
 namespace ReelsVideoEditor.App.Views;
@@ -88,6 +89,11 @@ public partial class MainWindow : Window
         }
 
         var focusedElement = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+        if (IsTextInputFocused(focusedElement))
+        {
+            return;
+        }
+
         if (focusedElement is Button)
         {
             return;
@@ -105,6 +111,33 @@ public partial class MainWindow : Window
         }
 
         eventArgs.Handled = true;
+    }
+
+    private static bool IsTextInputFocused(object? focusedElement)
+    {
+        if (focusedElement is TextBox textBox && !textBox.IsReadOnly)
+        {
+            return true;
+        }
+
+        if (focusedElement is ComboBox comboBox && comboBox.IsEditable)
+        {
+            return true;
+        }
+
+        if (focusedElement is not Visual focusedVisual)
+        {
+            return false;
+        }
+
+        var textBoxAncestor = focusedVisual.FindAncestorOfType<TextBox>();
+        if (textBoxAncestor is not null && !textBoxAncestor.IsReadOnly)
+        {
+            return true;
+        }
+
+        var editableComboAncestor = focusedVisual.FindAncestorOfType<ComboBox>();
+        return editableComboAncestor?.IsEditable == true;
     }
 }
 

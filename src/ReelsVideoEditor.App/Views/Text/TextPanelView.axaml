@@ -246,20 +246,53 @@
                         <TextBlock Text="Font"
                                    Foreground="{DynamicResource AccentMuted}"
                                    FontSize="12" />
-                        <ComboBox ItemsSource="{Binding AvailableFonts}"
-                                  Classes="accentInput"
-                                  SelectedItem="{Binding SelectedClipFontFamily, Mode=TwoWay}"
-                                  Width="280"
-                                  HorizontalAlignment="Left"
-                                  MaxDropDownHeight="300">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding .}"
-                                               Width="248"
-                                               TextTrimming="CharacterEllipsis" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                        <Grid x:Name="FontPickerRoot"
+                              Width="280"
+                              HorizontalAlignment="Left">
+                            <TextBox x:Name="FontSearchTextBox"
+                                     Classes="accentInput"
+                                     Text="{Binding FontSearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     KeyDown="FontSearchTextBox_OnKeyDown"
+                                     GotFocus="FontSearchTextBox_OnGotFocus" />
+
+                            <Popup x:Name="FontPickerPopup"
+                                IsOpen="{Binding IsFontDropdownOpen, Mode=TwoWay}"
+                                   Placement="BottomEdgeAlignedLeft"
+                                   PlacementTarget="{Binding #FontSearchTextBox}"
+                                   VerticalOffset="4">
+                                <Border x:Name="FontPickerPopupContent"
+                                    Width="280"
+                                        MaxHeight="300"
+                                        Background="#111318"
+                                        BorderBrush="{DynamicResource AccentSubtle}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsControl ItemsSource="{Binding FilteredAvailableFonts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Command="{Binding $parent[UserControl].DataContext.SelectFilteredFontCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Background="Transparent"
+                                                            BorderBrush="Transparent"
+                                                            BorderThickness="0"
+                                                            HorizontalAlignment="Stretch"
+                                                            HorizontalContentAlignment="Left"
+                                                            Padding="8,6"
+                                                            Margin="0,1,0,1">
+                                                        <TextBlock Text="{Binding .}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{DynamicResource Accent}" />
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
                     </StackPanel>
 
                     <StackPanel Spacing="4">
