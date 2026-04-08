@@ -218,7 +218,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             Subtitles.SyncSelectedTextClip(selectedTextState);
             if (selectedTextState.HasSelection)
             {
-                SelectedSection = SidebarSection.Text;
+                SelectedSection = selectedTextState.IsSubtitle ? SidebarSection.Subtitles : SidebarSection.Text;
             }
             if (!Preview.IsPlaying)
             {

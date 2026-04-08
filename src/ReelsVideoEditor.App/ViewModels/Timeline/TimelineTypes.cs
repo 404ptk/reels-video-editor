@@ -123,4 +123,5 @@ public sealed record TimelineSelectedTextClipState(
     string ColorHex,
     string OutlineColorHex,
     double OutlineThickness,
-    string TextRevealEffect);
+    string TextRevealEffect,
+    bool IsSubtitle);

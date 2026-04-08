@@ -387,7 +387,7 @@ public partial class TimelineViewModel
         var selectedTextClip = ResolveSelectedTextClip();
         if (selectedTextClip is null)
         {
-            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, 1.0, 0, "#FFFFFF", "#000000", 0, Models.TextRevealEffect.None);
+            return new TimelineSelectedTextClipState(false, string.Empty, "Inter", 14, 1.0, 0, "#FFFFFF", "#000000", 0, Models.TextRevealEffect.None, false);
         }
 
         return new TimelineSelectedTextClipState(
@@ -400,7 +400,8 @@ public partial class TimelineViewModel
             selectedTextClip.TextColorHex,
             selectedTextClip.TextOutlineColorHex,
             selectedTextClip.TextOutlineThickness,
-            selectedTextClip.TextRevealEffect);
+            selectedTextClip.TextRevealEffect,
+            selectedTextClip.IsSubtitle);
     }
 
     private TimelineClipItem? ResolvePreviewClip()

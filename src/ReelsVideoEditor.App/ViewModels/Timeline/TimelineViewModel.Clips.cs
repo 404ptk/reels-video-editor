@@ -120,6 +120,7 @@ public partial class TimelineViewModel
                     durationSeconds);
 
                 clip.VideoLaneLabel = laneLabel;
+                clip.IsSubtitle = true;
                 clip.TextContent = chunk.Text;
                 clip.TextColorHex = preset.ColorHex;
                 clip.TextOutlineColorHex = preset.OutlineColorHex;

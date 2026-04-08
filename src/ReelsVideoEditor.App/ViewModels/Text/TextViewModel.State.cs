@@ -14,8 +14,9 @@ public sealed partial class TextViewModel
         isSyncingFromTimeline = true;
         try
         {
-            HasSelectedTextClip = state.HasSelection;
-            if (state.HasSelection)
+            var isCorrectMode = state.HasSelection && state.IsSubtitle == IsSubtitlesMode;
+            HasSelectedTextClip = isCorrectMode;
+            if (isCorrectMode)
             {
                 SelectedClipText = state.Text;
                 ApplyColorFromHex(state.ColorHex);

@@ -96,6 +96,9 @@ public sealed partial class TimelineClipItem : ObservableObject
     private string textRevealEffect = Models.TextRevealEffect.None;
 
     [ObservableProperty]
+    private bool isSubtitle;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]
