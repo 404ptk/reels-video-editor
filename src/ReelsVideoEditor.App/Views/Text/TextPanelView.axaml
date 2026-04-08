@@ -126,7 +126,8 @@
                                       RowSpacing="4"
                                       IsVisible="{Binding IsRegularTile}">
                                     <Grid ColumnDefinitions="*,Auto"
-                                          ColumnSpacing="4">
+                                          ColumnSpacing="4"
+                                          MinHeight="22">
                                         <TextBlock Text="{Binding Name}"
                                                    Foreground="{DynamicResource AccentMuted}"
                                                    FontSize="11"
