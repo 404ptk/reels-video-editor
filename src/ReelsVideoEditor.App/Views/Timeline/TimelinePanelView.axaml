@@ -143,7 +143,8 @@
                                 BorderBrush="{DynamicResource AccentSubtle}"
                                 BorderThickness="1"
                             CornerRadius="8"
-                            Tag="{Binding}">
+                            Tag="{Binding}"
+                            PointerPressed="VideoLaneHeader_OnPointerPressed">
                             <Border.ContextMenu>
                                 <ContextMenu Classes="timeline-context-menu">
                                     <MenuItem Header="Add new line"

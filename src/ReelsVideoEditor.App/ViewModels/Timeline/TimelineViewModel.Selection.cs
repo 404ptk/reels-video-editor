@@ -264,6 +264,36 @@ public partial class TimelineViewModel
         }
     }
 
+    public void SelectClipsInLane(string laneLabel)
+    {
+        var changed = false;
+
+        foreach (var clip in VideoClips)
+        {
+            var nextValue = string.Equals(clip.VideoLaneLabel, laneLabel, StringComparison.Ordinal);
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
+        }
+
+        foreach (var clip in AudioClips)
+        {
+            var nextValue = string.Equals(clip.VideoLaneLabel, laneLabel, StringComparison.Ordinal);
+            if (clip.IsSelected != nextValue)
+            {
+                clip.IsSelected = nextValue;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            PreviewSelectionChanged?.Invoke();
+        }
+    }
+
     public void SelectSingleVideoClip(TimelineClipItem selectedClip)
     {
         var changed = false;

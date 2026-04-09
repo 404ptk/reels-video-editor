@@ -293,6 +293,30 @@ public partial class TimelinePanelView : UserControl
         }
     }
 
+    private void VideoLaneHeader_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (_isAdjustingAudioLevel)
+        {
+            return;
+        }
+
+        if (DataContext is not TimelineViewModel viewModel
+            || sender is not Control control
+            || control.DataContext is not VideoLaneItem lane)
+        {
+            return;
+        }
+
+        var point = eventArgs.GetCurrentPoint(control);
+        if (!point.Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        viewModel.SelectClipsInLane(lane.Label);
+        eventArgs.Handled = true;
+    }
+
     private void VideoClip_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
     {
         if (_isAdjustingAudioLevel)

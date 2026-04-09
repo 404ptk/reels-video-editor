@@ -189,61 +189,73 @@ public partial class TimelineViewModel
         double letterSpacing,
         string textRevealEffect)
     {
-        var selectedTextClip = ResolveSelectedTextClip();
-        if (selectedTextClip is null)
+        var selectedTextClips = VideoClips
+            .Where(clip => clip.IsSelected && IsTextTimelineClip(clip))
+            .ToList();
+
+        if (selectedTextClips.Count == 0)
         {
             return;
         }
 
-        var normalizedTextContent = NormalizeTextContent(text);
-        var normalizedDisplayName = BuildDisplayName(normalizedTextContent);
         var normalizedFontSize = Math.Clamp(fontSize, 10, 180);
-        var normalizedFontFamily = string.IsNullOrWhiteSpace(fontFamily)
-            ? selectedTextClip.TextFontFamily
-            : fontFamily.Trim();
-        var normalizedColorHex = selectedTextClip.TextColorHex;
-        if (!string.IsNullOrWhiteSpace(colorHex) && Color.TryParse(colorHex.Trim(), out var parsedColor))
-        {
-            normalizedColorHex = parsedColor.ToString();
-        }
-
-        var normalizedOutlineColorHex = selectedTextClip.TextOutlineColorHex;
-        if (!string.IsNullOrWhiteSpace(outlineColorHex) && Color.TryParse(outlineColorHex.Trim(), out var parsedOutlineColor))
-        {
-            normalizedOutlineColorHex = parsedOutlineColor.ToString();
-        }
-
         var normalizedOutlineThickness = Math.Clamp(Math.Round(outlineThickness, MidpointRounding.AwayFromZero), 0, 24);
         var normalizedLineHeightMultiplier = Math.Clamp(Math.Round(lineHeightMultiplier, 2, MidpointRounding.AwayFromZero), 0.7, 2.5);
         var normalizedLetterSpacing = Math.Clamp(Math.Round(letterSpacing, 1, MidpointRounding.AwayFromZero), 0, 20);
         var normalizedTextRevealEffect = Models.TextRevealEffect.Normalize(textRevealEffect);
 
-        if (string.Equals(selectedTextClip.Name, normalizedDisplayName, StringComparison.Ordinal)
-            && string.Equals(selectedTextClip.TextContent, normalizedTextContent, StringComparison.Ordinal)
-            && string.Equals(selectedTextClip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
-            && string.Equals(selectedTextClip.TextOutlineColorHex, normalizedOutlineColorHex, StringComparison.Ordinal)
-            && Math.Abs(selectedTextClip.TextOutlineThickness - normalizedOutlineThickness) < 0.001
-            && Math.Abs(selectedTextClip.TextFontSize - normalizedFontSize) < 0.001
-            && Math.Abs(selectedTextClip.TextLineHeightMultiplier - normalizedLineHeightMultiplier) < 0.001
-            && Math.Abs(selectedTextClip.TextLetterSpacing - normalizedLetterSpacing) < 0.001
-            && string.Equals(selectedTextClip.TextRevealEffect, normalizedTextRevealEffect, StringComparison.Ordinal)
-            && string.Equals(selectedTextClip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
+        var changed = false;
+
+        foreach (var clip in selectedTextClips)
         {
-            return;
+            var normalizedTextContent = selectedTextClips.Count == 1 ? NormalizeTextContent(text) : clip.TextContent;
+            var normalizedDisplayName = selectedTextClips.Count == 1 ? BuildDisplayName(normalizedTextContent) : clip.Name;
+            var normalizedFontFamily = string.IsNullOrWhiteSpace(fontFamily) ? clip.TextFontFamily : fontFamily.Trim();
+
+            var normalizedColorHex = clip.TextColorHex;
+            if (!string.IsNullOrWhiteSpace(colorHex) && Color.TryParse(colorHex.Trim(), out var parsedColor))
+            {
+                normalizedColorHex = parsedColor.ToString();
+            }
+
+            var normalizedOutlineColorHex = clip.TextOutlineColorHex;
+            if (!string.IsNullOrWhiteSpace(outlineColorHex) && Color.TryParse(outlineColorHex.Trim(), out var parsedOutlineColor))
+            {
+                normalizedOutlineColorHex = parsedOutlineColor.ToString();
+            }
+
+            if (string.Equals(clip.Name, normalizedDisplayName, StringComparison.Ordinal)
+                && string.Equals(clip.TextContent, normalizedTextContent, StringComparison.Ordinal)
+                && string.Equals(clip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
+                && string.Equals(clip.TextOutlineColorHex, normalizedOutlineColorHex, StringComparison.Ordinal)
+                && Math.Abs(clip.TextOutlineThickness - normalizedOutlineThickness) < 0.001
+                && Math.Abs(clip.TextFontSize - normalizedFontSize) < 0.001
+                && Math.Abs(clip.TextLineHeightMultiplier - normalizedLineHeightMultiplier) < 0.001
+                && Math.Abs(clip.TextLetterSpacing - normalizedLetterSpacing) < 0.001
+                && string.Equals(clip.TextRevealEffect, normalizedTextRevealEffect, StringComparison.Ordinal)
+                && string.Equals(clip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            clip.Name = normalizedDisplayName;
+            clip.TextContent = normalizedTextContent;
+            clip.TextColorHex = normalizedColorHex;
+            clip.TextOutlineColorHex = normalizedOutlineColorHex;
+            clip.TextOutlineThickness = normalizedOutlineThickness;
+            clip.TextFontSize = normalizedFontSize;
+            clip.TextFontFamily = normalizedFontFamily;
+            clip.TextLineHeightMultiplier = normalizedLineHeightMultiplier;
+            clip.TextLetterSpacing = normalizedLetterSpacing;
+            clip.TextRevealEffect = normalizedTextRevealEffect;
+
+            changed = true;
         }
 
-        selectedTextClip.Name = normalizedDisplayName;
-        selectedTextClip.TextContent = normalizedTextContent;
-        selectedTextClip.TextColorHex = normalizedColorHex;
-        selectedTextClip.TextOutlineColorHex = normalizedOutlineColorHex;
-        selectedTextClip.TextOutlineThickness = normalizedOutlineThickness;
-        selectedTextClip.TextFontSize = normalizedFontSize;
-        selectedTextClip.TextFontFamily = normalizedFontFamily;
-        selectedTextClip.TextLineHeightMultiplier = normalizedLineHeightMultiplier;
-        selectedTextClip.TextLetterSpacing = normalizedLetterSpacing;
-        selectedTextClip.TextRevealEffect = normalizedTextRevealEffect;
-
-        NotifyTextOverlayStateChanged();
+        if (changed)
+        {
+            NotifyTextOverlayStateChanged();
+        }
     }
 
     private static string NormalizeTextContent(string? text)
