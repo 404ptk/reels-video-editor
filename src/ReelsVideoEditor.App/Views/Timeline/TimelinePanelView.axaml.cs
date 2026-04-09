@@ -223,7 +223,7 @@ public partial class TimelinePanelView : UserControl
     {
         var hasTextPreset = TryGetTextPresetPayload(eventArgs, out var preset);
         var isSubtitlePreset = hasTextPreset && preset!.IsAutoCaptions;
-        var hasSubtitles = isSubtitlePreset && DataContext is TimelineViewModel vm && vm.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
+        var hasSubtitles = isSubtitlePreset && DataContext is TimelineViewModel vm && vm.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase)) && vm.VideoClips.Any(c => string.Equals(c.VideoLaneLabel, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
 
         var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _)
             || (hasTextPreset && !hasSubtitles);
@@ -269,7 +269,7 @@ public partial class TimelinePanelView : UserControl
         if (TryGetTextPresetPayload(eventArgs, out var preset))
         {
             var isSubtitlePreset = preset.IsAutoCaptions;
-            var hasSubtitles = isSubtitlePreset && viewModel.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
+            var hasSubtitles = isSubtitlePreset && viewModel.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase)) && viewModel.VideoClips.Any(c => string.Equals(c.VideoLaneLabel, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
 
             if (hasSubtitles)
             {

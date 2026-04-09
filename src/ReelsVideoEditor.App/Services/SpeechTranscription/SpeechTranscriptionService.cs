@@ -241,29 +241,47 @@ public sealed class SpeechTranscriptionService
         }
 
         var chunks = new List<TranscriptionChunk>();
+        var currentGroup = new List<TranscriptionWord> { words[0] };
 
-        for (var i = 0; i < words.Count; i += WordsPerChunk)
+        for (var i = 1; i < words.Count; i++)
         {
-            var group = words.Skip(i).Take(WordsPerChunk).ToList();
-            if (group.Count == 0)
+            var gap = words[i].Start - words[i - 1].End;
+
+            // If there's a significant silence gap or we've hit the word limit,
+            // emit the current group as a chunk and start a new one.
+            if (gap > TimeSpan.FromMilliseconds(300) || currentGroup.Count >= WordsPerChunk)
             {
-                continue;
+                EmitChunk(chunks, currentGroup);
+                currentGroup = [];
             }
 
-            var chunkText = string.Join(" ", group.Select(w => w.Word));
-            var chunkStart = group[0].Start;
-            var chunkEnd = group[^1].End;
-
-            // Ensure minimum duration of 200ms
-            if (chunkEnd - chunkStart < TimeSpan.FromMilliseconds(200))
-            {
-                chunkEnd = chunkStart + TimeSpan.FromMilliseconds(500);
-            }
-
-            chunks.Add(new TranscriptionChunk(chunkText, chunkStart, chunkEnd));
+            currentGroup.Add(words[i]);
         }
 
+        // Emit any remaining words.
+        EmitChunk(chunks, currentGroup);
+
         return chunks;
+    }
+
+    private static void EmitChunk(List<TranscriptionChunk> chunks, List<TranscriptionWord> group)
+    {
+        if (group.Count == 0)
+        {
+            return;
+        }
+
+        var chunkText = string.Join(" ", group.Select(w => w.Word));
+        var chunkStart = group[0].Start;
+        var chunkEnd = group[^1].End;
+
+        // Ensure minimum duration of 200ms
+        if (chunkEnd - chunkStart < TimeSpan.FromMilliseconds(200))
+        {
+            chunkEnd = chunkStart + TimeSpan.FromMilliseconds(500);
+        }
+
+        chunks.Add(new TranscriptionChunk(chunkText, chunkStart, chunkEnd));
     }
 
     private static string? ResolveFFmpegPath()

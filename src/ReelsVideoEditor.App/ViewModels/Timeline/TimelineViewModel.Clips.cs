@@ -109,6 +109,12 @@ public partial class TimelineViewModel
 
         try
         {
+            var oldSubtitles = VideoClips.Where(c => string.Equals(c.VideoLaneLabel, laneLabel, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var old in oldSubtitles)
+            {
+                VideoClips.Remove(old);
+            }
+
             foreach (var chunk in chunks)
             {
                 var startSeconds = chunk.Start.TotalSeconds;
