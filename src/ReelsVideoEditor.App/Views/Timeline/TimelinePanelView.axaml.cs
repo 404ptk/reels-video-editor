@@ -221,8 +221,12 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineTrack_OnDragOver(object? sender, DragEventArgs eventArgs)
     {
+        var hasTextPreset = TryGetTextPresetPayload(eventArgs, out var preset);
+        var isSubtitlePreset = hasTextPreset && preset!.IsAutoCaptions;
+        var hasSubtitles = isSubtitlePreset && DataContext is TimelineViewModel vm && vm.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
+
         var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _)
-            || TryGetTextPresetPayload(eventArgs, out _);
+            || (hasTextPreset && !hasSubtitles);
         eventArgs.DragEffects = hasPayload ? DragDropEffects.Copy : DragDropEffects.None;
 
         if (hasPayload)
@@ -264,6 +268,15 @@ public partial class TimelinePanelView : UserControl
 
         if (TryGetTextPresetPayload(eventArgs, out var preset))
         {
+            var isSubtitlePreset = preset.IsAutoCaptions;
+            var hasSubtitles = isSubtitlePreset && viewModel.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
+
+            if (hasSubtitles)
+            {
+                eventArgs.Handled = true;
+                return;
+            }
+
             var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
             var referenceControl = timelineCanvas as Control ?? trackControl;
             var dropCanvasX = eventArgs.GetPosition(referenceControl).X;

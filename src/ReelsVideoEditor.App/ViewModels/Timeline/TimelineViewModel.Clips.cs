@@ -95,8 +95,14 @@ public partial class TimelineViewModel
             return;
         }
 
-        var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
-        var laneLabel = targetLane?.Label ?? string.Empty;
+        var subtitlesLane = ResolveLaneByLabel("SUBTITLES");
+        if (subtitlesLane == null)
+        {
+            subtitlesLane = new VideoLaneItem("SUBTITLES", false, false, false);
+            VideoLanes.Insert(0, subtitlesLane);
+        }
+
+        var laneLabel = subtitlesLane.Label;
 
         isBatchUpdatingClips = true;
         var addedClips = new List<TimelineClipItem>(chunks.Count);
