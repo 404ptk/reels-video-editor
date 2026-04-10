@@ -70,7 +70,6 @@ public sealed class SpeechTranscriptionService
             }
             catch
             {
-                // Best-effort cleanup.
             }
         }
     }
@@ -247,8 +246,6 @@ public sealed class SpeechTranscriptionService
         {
             var gap = words[i].Start - words[i - 1].End;
 
-            // If there's a significant silence gap or we've hit the word limit,
-            // emit the current group as a chunk and start a new one.
             if (gap > TimeSpan.FromMilliseconds(300) || currentGroup.Count >= WordsPerChunk)
             {
                 EmitChunk(chunks, currentGroup);
@@ -258,7 +255,6 @@ public sealed class SpeechTranscriptionService
             currentGroup.Add(words[i]);
         }
 
-        // Emit any remaining words.
         EmitChunk(chunks, currentGroup);
 
         return chunks;
@@ -275,7 +271,6 @@ public sealed class SpeechTranscriptionService
         var chunkStart = group[0].Start;
         var chunkEnd = group[^1].End;
 
-        // Ensure minimum duration of 200ms
         if (chunkEnd - chunkStart < TimeSpan.FromMilliseconds(200))
         {
             chunkEnd = chunkStart + TimeSpan.FromMilliseconds(500);

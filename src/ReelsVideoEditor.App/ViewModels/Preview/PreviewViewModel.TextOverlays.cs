@@ -40,5 +40,6 @@ public sealed partial class PreviewViewModel
         {
             TextOverlays[i].RecomputeLayout(safeWidth, safeHeight);
         }
+        // TODO: Only update the visible layers.
     }
 }
