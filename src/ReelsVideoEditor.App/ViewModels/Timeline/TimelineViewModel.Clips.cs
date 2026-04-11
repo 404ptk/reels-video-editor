@@ -704,7 +704,8 @@ public partial class TimelineViewModel
 
     private static bool IsSourceBoundedClip(TimelineClipItem clip)
     {
-        return !string.IsNullOrWhiteSpace(clip.Path);
+        return !string.IsNullOrWhiteSpace(clip.Path)
+            && !IsStillImagePath(clip.Path);
     }
 
     private void UpdateAudioClipLevelLine(TimelineClipItem clip)
