@@ -22,6 +22,11 @@ public sealed class TimelineCompositionPlanner
         var visibleClips = new List<VisibleVideoClip>(videoClips.Count);
         foreach (var clip in videoClips)
         {
+            if (clip.IsMediaMissing)
+            {
+                continue;
+            }
+
             if (string.IsNullOrWhiteSpace(clip.Path))
             {
                 continue;
@@ -124,6 +129,7 @@ public sealed class TimelineCompositionPlanner
         }
 
         var activeAudio = audioClips
+            .Where(clip => !clip.IsMediaMissing)
             .OrderByDescending(clip => clip.StartSeconds)
             .FirstOrDefault(clip =>
                 timelineSeconds >= clip.StartSeconds
@@ -194,6 +200,7 @@ public sealed class TimelineCompositionPlanner
     public IReadOnlyList<ExportAudioClipInput> BuildExportAudioInputs(IReadOnlyList<TimelineClipItem> audioClips)
     {
         return audioClips
+            .Where(clip => !clip.IsMediaMissing)
             .OrderBy(clip => clip.StartSeconds)
             .Select(clip => new ExportAudioClipInput(
                 clip.Path,

@@ -19,6 +19,7 @@ public partial class TimelineViewModel
     public void AddClipFromExplorer(string name, string path, double durationSeconds, double dropX, string? targetLaneLabel = null)
     {
         var clip = TimelineClipArrangementService.BuildClip(name, path, durationSeconds, dropX, TickWidth, TimelineDurationSeconds);
+        clip.IsMediaMissing = !string.IsNullOrWhiteSpace(path) && !System.IO.File.Exists(path);
         var targetLane = ResolveLaneByLabel(targetLaneLabel) ?? ResolvePrimaryVideoLane();
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
         VideoClips.Add(clip);
@@ -487,6 +488,56 @@ public partial class TimelineViewModel
         }
     }
 
+    public void MarkMediaAsMissing(IReadOnlyList<string> removedPaths)
+    {
+        if (removedPaths.Count == 0)
+        {
+            return;
+        }
+
+        var removed = new HashSet<string>(removedPaths, StringComparer.OrdinalIgnoreCase);
+        var changed = false;
+
+        foreach (var clip in VideoClips)
+        {
+            if (string.IsNullOrWhiteSpace(clip.Path))
+            {
+                continue;
+            }
+
+            if (!removed.Contains(clip.Path))
+            {
+                continue;
+            }
+
+            if (!clip.IsMediaMissing)
+            {
+                clip.IsMediaMissing = true;
+                changed = true;
+            }
+        }
+
+        foreach (var audioClip in AudioClips)
+        {
+            if (string.IsNullOrWhiteSpace(audioClip.Path) || !removed.Contains(audioClip.Path))
+            {
+                continue;
+            }
+
+            audioClip.IsMediaMissing = true;
+            audioClip.WaveformImage = null;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        NotifyPreviewClipIfChanged();
+        UpdatePreviewLevels();
+        NotifyTextOverlayStateChanged();
+    }
+
     private void OnVideoClipsChanged(object? sender, NotifyCollectionChangedEventArgs eventArgs)
     {
         if (isBatchUpdatingClips)
@@ -543,6 +594,7 @@ public partial class TimelineViewModel
             }
 
             var audioClip = TimelineClipArrangementService.BuildLinkedAudioClip(videoClip);
+            audioClip.IsMediaMissing = videoClip.IsMediaMissing;
 
             var key = BuildAudioClipKey(audioClip);
             if (volumeByKey.TryGetValue(key, out var volumeLevel))

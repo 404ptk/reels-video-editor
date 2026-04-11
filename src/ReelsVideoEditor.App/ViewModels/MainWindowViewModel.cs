@@ -104,6 +104,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Export.PreviewContext = Preview;
 
+        VideoFiles.FilesRemoved = removedPaths =>
+        {
+            Timeline.MarkMediaAsMissing(removedPaths);
+            Preview.RefreshRenderAvailability();
+        };
+
         Timeline.PropertyChanged += (sender, args) =>
         {
             if (args.PropertyName == nameof(TimelineViewModel.IsAudioMuted))

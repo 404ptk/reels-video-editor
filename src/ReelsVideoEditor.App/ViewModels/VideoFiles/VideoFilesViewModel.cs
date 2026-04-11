@@ -30,9 +30,15 @@ public sealed class VideoFilesViewModel : ViewModelBase
 
     public ObservableCollection<VideoFileItem> Files { get; } = [];
 
+    public Action<IReadOnlyList<string>>? FilesRemoved { get; set; }
+
+    public bool HasSelection => Files.Any(file => file.IsSelected);
+
     public bool HasFiles => Files.Count > 0;
 
     public bool NoFiles => !HasFiles;
+
+    private int _lastSelectionIndex = -1;
 
     public VideoFilesViewModel()
     {
@@ -124,6 +130,85 @@ public sealed class VideoFilesViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasFiles));
         OnPropertyChanged(nameof(NoFiles));
+        OnPropertyChanged(nameof(HasSelection));
+
+        if (eventArgs.Action == NotifyCollectionChangedAction.Remove || eventArgs.Action == NotifyCollectionChangedAction.Reset)
+        {
+            var selectedIndexes = Files
+                .Select((file, index) => new { file.IsSelected, Index = index })
+                .Where(item => item.IsSelected)
+                .Select(item => item.Index)
+                .ToList();
+            _lastSelectionIndex = selectedIndexes.Count > 0 ? selectedIndexes[^1] : -1;
+        }
+    }
+
+    public void SelectFile(VideoFileItem file, bool extendSelection, bool toggleSelection)
+    {
+        var index = Files.IndexOf(file);
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (extendSelection && _lastSelectionIndex >= 0)
+        {
+            var from = Math.Min(_lastSelectionIndex, index);
+            var to = Math.Max(_lastSelectionIndex, index);
+
+            for (var i = 0; i < Files.Count; i++)
+            {
+                Files[i].IsSelected = i >= from && i <= to;
+            }
+
+            OnPropertyChanged(nameof(HasSelection));
+            return;
+        }
+
+        if (toggleSelection)
+        {
+            file.IsSelected = !file.IsSelected;
+            _lastSelectionIndex = index;
+            OnPropertyChanged(nameof(HasSelection));
+            return;
+        }
+
+        for (var i = 0; i < Files.Count; i++)
+        {
+            Files[i].IsSelected = i == index;
+        }
+
+        _lastSelectionIndex = index;
+        OnPropertyChanged(nameof(HasSelection));
+    }
+
+    public bool DeleteSelectedFiles()
+    {
+        var selectedFiles = Files.Where(file => file.IsSelected).ToList();
+        if (selectedFiles.Count == 0)
+        {
+            return false;
+        }
+
+        var removedPaths = selectedFiles
+            .Select(file => file.Path)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var file in selectedFiles)
+        {
+            Files.Remove(file);
+        }
+
+        _lastSelectionIndex = -1;
+        OnPropertyChanged(nameof(HasSelection));
+        if (removedPaths.Count > 0)
+        {
+            FilesRemoved?.Invoke(removedPaths);
+        }
+
+        return true;
     }
 
     public static bool IsSupportedImageExtension(string extension)
@@ -506,6 +591,9 @@ public sealed partial class VideoFileItem : ObservableObject
     [ObservableProperty]
     private double durationSeconds = 5;
 
+    [ObservableProperty]
+    private bool isSelected;
+
     public bool HasThumbnail => Thumbnail is not null;
 
     public VideoFileItem(string name, string path)
@@ -517,5 +605,9 @@ public sealed partial class VideoFileItem : ObservableObject
     partial void OnThumbnailChanged(Bitmap? value)
     {
         OnPropertyChanged(nameof(HasThumbnail));
+    }
+
+    partial void OnIsSelectedChanged(bool value)
+    {
     }
 }

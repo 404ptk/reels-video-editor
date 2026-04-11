@@ -139,6 +139,11 @@ public partial class TimelineViewModel
         return AudioClips
             .Where(clip =>
             {
+                if (clip.IsMediaMissing)
+                {
+                    return false;
+                }
+
                 var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
                 if (lane is null)
                 {
@@ -179,6 +184,11 @@ public partial class TimelineViewModel
         return AudioClips
             .Where(clip =>
             {
+                if (clip.IsMediaMissing)
+                {
+                    return false;
+                }
+
                 var lane = ResolveAudioLaneByVideoLabel(clip.VideoLaneLabel);
                 if (lane is null)
                 {

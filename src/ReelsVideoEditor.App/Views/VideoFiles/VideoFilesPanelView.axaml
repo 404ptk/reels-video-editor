@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.VideoFiles"
              x:Class="ReelsVideoEditor.App.Views.VideoFiles.VideoFilesPanelView"
-             x:DataType="vm:VideoFilesViewModel">
+             x:DataType="vm:VideoFilesViewModel"
+             Focusable="True"
+             KeyDown="VideoFilesPanelView_OnKeyDown">
 
     <Grid RowDefinitions="Auto,*">
         <TextBlock Foreground="{DynamicResource AccentMuted}"
@@ -57,7 +59,18 @@
                                         Background="#55222222"
                                         BorderBrush="{DynamicResource AccentSubtle}"
                                     BorderThickness="1"
-                                    PointerPressed="FileTile_OnPointerPressed">
+                                    PointerPressed="FileTile_OnPointerPressed"
+                                    PointerMoved="FileTile_OnPointerMoved"
+                                    PointerReleased="FileTile_OnPointerReleased"
+                                    PointerCaptureLost="FileTile_OnPointerCaptureLost"
+                                    Classes.selected="{Binding IsSelected}">
+                                    <Border.Styles>
+                                        <Style Selector="Border.selected">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                            <Setter Property="BorderThickness" Value="2" />
+                                            <Setter Property="Background" Value="#664A586E" />
+                                        </Style>
+                                    </Border.Styles>
                                     <Grid RowDefinitions="*,Auto,Auto"
                                           RowSpacing="8">
                                         <Border CornerRadius="6"

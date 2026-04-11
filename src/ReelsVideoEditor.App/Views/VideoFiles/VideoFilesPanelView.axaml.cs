@@ -13,6 +13,10 @@ namespace ReelsVideoEditor.App.Views.VideoFiles;
 public partial class VideoFilesPanelView : UserControl
 {
     private VideoFilesViewModel? _boundViewModel;
+    private VideoFileItem? _dragCandidate;
+    private Point _dragStartPoint;
+    private IPointer? _dragPointer;
+    private bool _isDragOperationStarted;
 
     public VideoFilesPanelView()
     {
@@ -125,9 +129,9 @@ public partial class VideoFilesPanelView : UserControl
                || extension.Equals(".m4v", StringComparison.OrdinalIgnoreCase);
     }
 
-    private async void FileTile_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    private void FileTile_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
     {
-        if (sender is not Control { DataContext: VideoFileItem fileItem })
+        if (sender is not Control { DataContext: VideoFileItem fileItem } tile)
         {
             return;
         }
@@ -137,15 +141,92 @@ public partial class VideoFilesPanelView : UserControl
             return;
         }
 
-        var payload = VideoClipDragPayload.Build(fileItem.Path, fileItem.Name, fileItem.DurationSeconds);
+        Focus();
+
+        if (DataContext is VideoFilesViewModel viewModel)
+        {
+            var keyModifiers = eventArgs.KeyModifiers;
+            var extendSelection = keyModifiers.HasFlag(KeyModifiers.Shift);
+            var toggleSelection = keyModifiers.HasFlag(KeyModifiers.Control);
+            viewModel.SelectFile(fileItem, extendSelection, toggleSelection);
+        }
+
+        _dragCandidate = fileItem;
+        _dragStartPoint = eventArgs.GetPosition(this);
+        _dragPointer = eventArgs.Pointer;
+        _isDragOperationStarted = false;
+        _dragPointer.Capture(tile);
+        eventArgs.Handled = true;
+    }
+
+    private async void FileTile_OnPointerMoved(object? sender, PointerEventArgs eventArgs)
+    {
+        if (_dragCandidate is null || _isDragOperationStarted || _dragPointer is null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(eventArgs.Pointer, _dragPointer))
+        {
+            return;
+        }
+
+        var point = eventArgs.GetPosition(this);
+        var deltaX = Math.Abs(point.X - _dragStartPoint.X);
+        var deltaY = Math.Abs(point.Y - _dragStartPoint.Y);
+        const double dragThreshold = 5;
+        if (deltaX < dragThreshold && deltaY < dragThreshold)
+        {
+            return;
+        }
+
+        _isDragOperationStarted = true;
+
+        var payload = VideoClipDragPayload.Build(_dragCandidate.Path, _dragCandidate.Name, _dragCandidate.DurationSeconds);
 #pragma warning disable CS0618
         var dataObject = new DataObject();
 #pragma warning restore CS0618
         dataObject.Set(VideoClipDragPayload.Format, payload);
 
-    #pragma warning disable CS0618
+#pragma warning disable CS0618
         await Avalonia.Input.DragDrop.DoDragDrop(eventArgs, dataObject, DragDropEffects.Copy);
-    #pragma warning restore CS0618
+#pragma warning restore CS0618
+        ResetDragState();
         eventArgs.Handled = true;
+    }
+
+    private void FileTile_OnPointerReleased(object? sender, PointerReleasedEventArgs eventArgs)
+    {
+        ResetDragState();
+    }
+
+    private void FileTile_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs eventArgs)
+    {
+        ResetDragState();
+    }
+
+    private void VideoFilesPanelView_OnKeyDown(object? sender, KeyEventArgs eventArgs)
+    {
+        if (eventArgs.Key != Key.Delete || DataContext is not VideoFilesViewModel viewModel)
+        {
+            return;
+        }
+
+        if (viewModel.DeleteSelectedFiles())
+        {
+            eventArgs.Handled = true;
+        }
+    }
+
+    private void ResetDragState()
+    {
+        if (_dragPointer is not null)
+        {
+            _dragPointer.Capture(null);
+        }
+
+        _dragCandidate = null;
+        _dragPointer = null;
+        _isDragOperationStarted = false;
     }
 }

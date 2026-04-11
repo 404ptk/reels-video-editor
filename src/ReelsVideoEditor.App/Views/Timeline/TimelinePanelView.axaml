@@ -496,8 +496,8 @@
                                                             Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
                                                             Margin="10,6,0,6"
                                                             CornerRadius="6"
-                                                            Background="#66C2D8C4"
-                                                            BorderBrush="{DynamicResource AccentSubtle}"
+                                                            Background="{Binding ClipBackground}"
+                                                            BorderBrush="{Binding ClipBorderBrush}"
                                                             BorderThickness="1"
                                                             PointerPressed="VideoClip_OnPointerPressed"
                                                             PointerMoved="VideoClip_OnPointerMoved"
@@ -532,9 +532,9 @@
                                                                 IsVisible="{Binding IsRightTrimMarkerVisible}" />
                                                             <TextBlock Margin="8,0"
                                                                        VerticalAlignment="Center"
-                                                                       Foreground="#222222"
+                                                                       Foreground="{Binding ClipTextBrush}"
                                                                        FontWeight="SemiBold"
-                                                                       Text="{Binding Name}"
+                                                                       Text="{Binding DisplayName}"
                                                                        TextTrimming="CharacterEllipsis" />
                                                         </Grid>
                                                     </Border>
@@ -603,8 +603,8 @@
                                                             Height="{Binding $parent[UserControl].DataContext.ClipVisualHeight}"
                                                             Margin="10,6,0,6"
                                                             CornerRadius="6"
-                                                            Background="{DynamicResource AccentSubtle}"
-                                                            BorderBrush="{DynamicResource AccentSubtle}"
+                                                            Background="{Binding ClipBackground}"
+                                                            BorderBrush="{Binding ClipBorderBrush}"
                                                             BorderThickness="1"
                                                             PointerPressed="AudioClipLevel_OnPointerPressed"
                                                             PointerMoved="AudioClipLevel_OnPointerMoved"

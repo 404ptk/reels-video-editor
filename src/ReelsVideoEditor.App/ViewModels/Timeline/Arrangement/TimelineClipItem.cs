@@ -99,6 +99,13 @@ public sealed partial class TimelineClipItem : ObservableObject
     private bool isSubtitle;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
+    [NotifyPropertyChangedFor(nameof(ClipBackground))]
+    [NotifyPropertyChangedFor(nameof(ClipBorderBrush))]
+    [NotifyPropertyChangedFor(nameof(ClipTextBrush))]
+    private bool isMediaMissing;
+
+    [ObservableProperty]
     private double transformX;
 
     [ObservableProperty]
@@ -135,5 +142,24 @@ public sealed partial class TimelineClipItem : ObservableObject
         DurationSeconds = durationSeconds;
         SourceStartSeconds = Math.Max(0, sourceStartSeconds);
         SourceDurationSeconds = Math.Max(DurationSeconds, sourceDurationSeconds);
+    }
+
+    public string DisplayName => IsMediaMissing ? "Media Lost" : Name;
+
+    public IBrush ClipBackground => IsMediaMissing
+        ? new SolidColorBrush(Color.Parse("#AA9E2A2A"))
+        : new SolidColorBrush(Color.Parse("#66C2D8C4"));
+
+    public IBrush ClipBorderBrush => IsMediaMissing
+        ? new SolidColorBrush(Color.Parse("#FFCF4A4A"))
+        : new SolidColorBrush(Color.Parse("#33464A4F"));
+
+    public IBrush ClipTextBrush => IsMediaMissing
+        ? Brushes.White
+        : new SolidColorBrush(Color.Parse("#222222"));
+
+    partial void OnNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(DisplayName));
     }
 }
