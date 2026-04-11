@@ -502,18 +502,17 @@
                                                             PointerPressed="VideoClip_OnPointerPressed"
                                                             PointerMoved="VideoClip_OnPointerMoved"
                                                             PointerExited="VideoClip_OnPointerExited"
-                                                            PointerReleased="VideoClip_OnPointerReleased"
-                                                            Classes.selected="{Binding IsSelected}">
+                                                            PointerReleased="VideoClip_OnPointerReleased">
                                                         <Border.RenderTransform>
                                                             <TranslateTransform X="{Binding Left}" />
                                                         </Border.RenderTransform>
-                                                        <Border.Styles>
-                                                            <Style Selector="Border.selected">
-                                                                <Setter Property="BorderBrush" Value="White" />
-                                                                <Setter Property="BorderThickness" Value="2" />
-                                                            </Style>
-                                                        </Border.Styles>
                                                         <Grid>
+                                                            <Border CornerRadius="6"
+                                                                    BorderBrush="#C2D8C4"
+                                                                    BorderThickness="2"
+                                                                    Background="#22C2D8C4"
+                                                                    IsHitTestVisible="False"
+                                                                    IsVisible="{Binding IsSelected}" />
                                                             <Border Width="2"
                                                                 HorizontalAlignment="Left"
                                                                 VerticalAlignment="Stretch"
@@ -613,6 +612,12 @@
                                                             <TranslateTransform X="{Binding Left}" />
                                                         </Border.RenderTransform>
                                                         <Grid ClipToBounds="True">
+                                                            <Border CornerRadius="6"
+                                                                    BorderBrush="#C2D8C4"
+                                                                    BorderThickness="2"
+                                                                    Background="#22C2D8C4"
+                                                                    IsHitTestVisible="False"
+                                                                    IsVisible="{Binding IsSelected}" />
                                                                 <Border HorizontalAlignment="Left"
                                                                     VerticalAlignment="Top"
                                                                     Width="{Binding AudioWaveformVisualWidth}"
