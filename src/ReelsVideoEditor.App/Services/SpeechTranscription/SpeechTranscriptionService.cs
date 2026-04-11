@@ -196,7 +196,6 @@ public sealed class SpeechTranscriptionService
                 continue;
             }
 
-            // Split segment text into individual words with interpolated timestamps
             var segmentWords = SplitSegmentIntoWords(text, result.Start, result.End);
             words.AddRange(segmentWords);
         }
@@ -222,8 +221,6 @@ public sealed class SpeechTranscriptionService
             totalDuration = TimeSpan.FromMilliseconds(100);
         }
 
-        // Whisper segment boundaries can include leading silence.
-        // Anchor interpolated words near segment end so captions don't appear far too early.
         var speechSpan = ResolveSpeechSpan(rawWords.Length, totalDuration);
         var interpolationStart = segEnd - speechSpan;
         if (interpolationStart < segStart)

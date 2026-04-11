@@ -486,7 +486,8 @@ public class TimelineExportService
                 TextAlign = SKTextAlign.Center,
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = outlineThickness,
-                StrokeJoin = SKStrokeJoin.Round
+                StrokeJoin = SKStrokeJoin.Round,
+                StrokeCap = SKStrokeCap.Round
             };
 
             var lines = layerState.Text

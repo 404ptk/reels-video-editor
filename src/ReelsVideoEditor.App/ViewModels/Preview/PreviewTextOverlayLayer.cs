@@ -1,6 +1,7 @@
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
+using System.Globalization;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Preview;
@@ -41,10 +42,10 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
     private double scaledLetterSpacing;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(OutlineOffsetPx))]
-    [NotifyPropertyChangedFor(nameof(OutlineOffsetNegPx))]
-    [NotifyPropertyChangedFor(nameof(HasOutline))]
     private double scaledOutlineThickness;
+
+    [ObservableProperty]
+    private Geometry? textGeometry;
 
     [ObservableProperty]
     private double transformX;
@@ -66,12 +67,6 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
 
     [ObservableProperty]
     private double cropHeight;
-
-    public double OutlineOffsetPx => ScaledOutlineThickness;
-
-    public double OutlineOffsetNegPx => -ScaledOutlineThickness;
-
-    public bool HasOutline => ScaledOutlineThickness > 0.01;
 
     public void Apply(TimelineTextOverlayLayer source, double frameWidth, double frameHeight)
     {
@@ -110,6 +105,37 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
         CropTopPx = safeHeight * rawCropTop;
         CropWidth = Math.Max(0.0, safeWidth * (1.0 - rawCropLeft - rawCropRight));
         CropHeight = Math.Max(0.0, safeHeight * (1.0 - rawCropTop - rawCropBottom));
+        UpdateTextGeometry();
+    }
+
+    private void UpdateTextGeometry()
+    {
+        if (string.IsNullOrWhiteSpace(Text) || CropWidth < 1.0 || CropHeight < 1.0)
+        {
+            TextGeometry = null;
+            return;
+        }
+
+        var typeface = new Typeface(FontFamily, FontStyle.Normal, FontWeight.SemiBold);
+        var formatted = new FormattedText(
+            Text,
+            CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            ScaledFontSize,
+            Brushes.White)
+        {
+            TextAlignment = TextAlignment.Center,
+            LineHeight = ScaledLineHeight,
+            MaxTextWidth = CropWidth,
+            Trimming = TextTrimming.None
+        };
+
+        var origin = new Avalonia.Point(
+            Math.Max(0, (CropWidth - formatted.Width) / 2.0),
+            Math.Max(0, (CropHeight - formatted.Height) / 2.0));
+
+        TextGeometry = formatted.BuildGeometry(origin);
     }
 
     private static FontFamily ResolveFontFamily(string fontFamily)
