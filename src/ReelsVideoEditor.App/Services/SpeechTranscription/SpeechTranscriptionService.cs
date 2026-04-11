@@ -17,6 +17,9 @@ public sealed record TranscriptionChunk(string Text, TimeSpan Start, TimeSpan En
 public sealed class SpeechTranscriptionService
 {
     private const int WordsPerChunk = 3;
+    private const double EstimatedSpeechWordsPerSecond = 2.8;
+    private const double MinWordDurationMs = 170;
+    private const double MaxWordDurationMs = 420;
     private readonly WhisperModelManager modelManager = new();
 
     public async Task<IReadOnlyList<TranscriptionChunk>> TranscribeAsync(
@@ -219,17 +222,59 @@ public sealed class SpeechTranscriptionService
             totalDuration = TimeSpan.FromMilliseconds(100);
         }
 
-        var wordDuration = totalDuration / rawWords.Length;
+        // Whisper segment boundaries can include leading silence.
+        // Anchor interpolated words near segment end so captions don't appear far too early.
+        var speechSpan = ResolveSpeechSpan(rawWords.Length, totalDuration);
+        var interpolationStart = segEnd - speechSpan;
+        if (interpolationStart < segStart)
+        {
+            interpolationStart = segStart;
+        }
+
+        var interpolationDuration = segEnd - interpolationStart;
+        if (interpolationDuration <= TimeSpan.Zero)
+        {
+            interpolationDuration = TimeSpan.FromMilliseconds(100);
+        }
+
+        var wordDuration = interpolationDuration / rawWords.Length;
         var words = new List<TranscriptionWord>(rawWords.Length);
 
         for (var i = 0; i < rawWords.Length; i++)
         {
-            var wordStart = segStart + wordDuration * i;
-            var wordEnd = segStart + wordDuration * (i + 1);
+            var wordStart = interpolationStart + wordDuration * i;
+            var wordEnd = i == rawWords.Length - 1
+                ? segEnd
+                : interpolationStart + wordDuration * (i + 1);
             words.Add(new TranscriptionWord(rawWords[i], wordStart, wordEnd));
         }
 
         return words;
+    }
+
+    private static TimeSpan ResolveSpeechSpan(int wordCount, TimeSpan segmentDuration)
+    {
+        var estimatedSpan = TimeSpan.FromSeconds(wordCount / EstimatedSpeechWordsPerSecond);
+        var minimumSpan = TimeSpan.FromMilliseconds(MinWordDurationMs * wordCount);
+        var maximumSpan = TimeSpan.FromMilliseconds(MaxWordDurationMs * wordCount);
+
+        var boundedEstimated = estimatedSpan;
+        if (boundedEstimated < minimumSpan)
+        {
+            boundedEstimated = minimumSpan;
+        }
+
+        if (boundedEstimated > maximumSpan)
+        {
+            boundedEstimated = maximumSpan;
+        }
+
+        if (boundedEstimated > segmentDuration)
+        {
+            return segmentDuration;
+        }
+
+        return boundedEstimated;
     }
 
     private static IReadOnlyList<TranscriptionChunk> GroupIntoChunks(List<TranscriptionWord> words)
