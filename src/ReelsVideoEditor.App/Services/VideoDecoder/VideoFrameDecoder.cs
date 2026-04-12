@@ -146,8 +146,34 @@ public sealed class VideoFrameDecoder : IDisposable
 
     private TimeSpan ClampPosition(TimeSpan position)
     {
-        if (position < TimeSpan.Zero) return TimeSpan.Zero;
-        if (position > Duration) return Duration;
+        if (position <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        if (Duration <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var fallbackFps = FrameRate > 0 ? FrameRate : 30.0;
+        var frameStep = TimeSpan.FromSeconds(1.0 / fallbackFps);
+        var maxSafePosition = Duration - frameStep;
+        if (maxSafePosition < TimeSpan.Zero)
+        {
+            maxSafePosition = TimeSpan.Zero;
+        }
+
+        if (position >= Duration)
+        {
+            return maxSafePosition;
+        }
+
+        if (position > maxSafePosition)
+        {
+            return maxSafePosition;
+        }
+
         return position;
     }
 

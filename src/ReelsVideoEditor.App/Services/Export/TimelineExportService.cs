@@ -19,6 +19,17 @@ public class TimelineExportService
 {
     private const int AccurateExportFps = 30;
 
+    private sealed class AccurateExportDecoderState
+    {
+        public required VideoFrameDecoder Decoder { get; init; }
+
+        public long LastRequestedMs { get; set; } = -1;
+
+        public long LastSourceFrameIndex { get; set; } = -1;
+    }
+
+    private readonly record struct QuantizedFrameRequest(long TimestampMs, long FrameIndex, double FrameStepMs);
+
     public async Task ExportAccurateAsync(
         IReadOnlyList<ExportAudioClipInput> audioClips,
         bool isAudioMuted,
@@ -335,7 +346,7 @@ public class TimelineExportService
         });
         var stdoutDrain = process.StandardOutput.ReadToEndAsync();
 
-        var decoderByPath = new Dictionary<string, VideoFrameDecoder>(StringComparer.OrdinalIgnoreCase);
+        var decoderByPath = new Dictionary<string, AccurateExportDecoderState>(StringComparer.OrdinalIgnoreCase);
         using var compositor = new FrameCompositor();
         byte[]? frameBuffer = null;
         var safePreviewWidth = Math.Max(1.0, previewFrameWidth);
@@ -357,18 +368,68 @@ public class TimelineExportService
                         continue;
                     }
 
-                    if (!decoderByPath.TryGetValue(layer.Path, out var decoder))
+                    if (!decoderByPath.TryGetValue(layer.Path, out var decoderState))
                     {
-                        decoder = new VideoFrameDecoder();
-                        decoder.Open(layer.Path);
-                        decoderByPath[layer.Path] = decoder;
+                        var openedDecoder = new VideoFrameDecoder();
+                        openedDecoder.Open(layer.Path);
+                        decoderState = new AccurateExportDecoderState
+                        {
+                            Decoder = openedDecoder
+                        };
+                        decoderByPath[layer.Path] = decoderState;
                     }
 
-                    var frameBytes = decoder.SeekAndRead(TimeSpan.FromMilliseconds(Math.Max(0, layer.PlaybackMilliseconds)));
+                    var decoder = decoderState.Decoder;
+
+                    var quantizedRequest = QuantizeToSourceFrameRequest(
+                        Math.Max(0, layer.PlaybackMilliseconds),
+                        decoder.FrameRate,
+                        decoder.Duration);
+                    var quantizedLayerPlaybackMs = quantizedRequest.TimestampMs;
+
+                    byte[]? frameBytes;
+                    if (decoderState.LastSourceFrameIndex == quantizedRequest.FrameIndex)
+                    {
+                        frameBytes = decoder.GetCurrentFrame()
+                            ?? decoder.SeekAndRead(TimeSpan.FromMilliseconds(quantizedLayerPlaybackMs));
+                    }
+                    else
+                    {
+                        var forwardFrameDelta = quantizedRequest.FrameIndex - decoderState.LastSourceFrameIndex;
+                        var canReadSequentially = decoderState.LastSourceFrameIndex >= 0
+                            && forwardFrameDelta > 0
+                            && forwardFrameDelta <= 8;
+
+                        if (canReadSequentially)
+                        {
+                            frameBytes = null;
+                            for (var step = 0L; step < forwardFrameDelta; step++)
+                            {
+                                var stepFrameIndex = decoderState.LastSourceFrameIndex + step + 1;
+                                var stepTimestampMs = (long)Math.Round(
+                                    stepFrameIndex * quantizedRequest.FrameStepMs,
+                                    MidpointRounding.AwayFromZero);
+                                frameBytes = decoder.ReadNextFrame(TimeSpan.FromMilliseconds(stepTimestampMs));
+                            }
+
+                            if (frameBytes is null)
+                            {
+                                frameBytes = decoder.SeekAndRead(TimeSpan.FromMilliseconds(quantizedLayerPlaybackMs));
+                            }
+                        }
+                        else
+                        {
+                            frameBytes = decoder.SeekAndRead(TimeSpan.FromMilliseconds(quantizedLayerPlaybackMs));
+                        }
+                    }
+
                     if (frameBytes is null)
                     {
                         continue;
                     }
+
+                    decoderState.LastRequestedMs = quantizedLayerPlaybackMs;
+                    decoderState.LastSourceFrameIndex = quantizedRequest.FrameIndex;
 
                     var renderOffsetX = (float)(layer.TransformX * (width / safePreviewWidth));
                     var renderOffsetY = (float)(layer.TransformY * (height / safePreviewHeight));
@@ -420,11 +481,45 @@ public class TimelineExportService
         }
         finally
         {
-            foreach (var decoder in decoderByPath.Values)
+            foreach (var decoderState in decoderByPath.Values)
             {
-                decoder.Dispose();
+                decoderState.Decoder.Dispose();
             }
         }
+    }
+
+    private static double ResolveFrameStepMilliseconds(double sourceFps)
+    {
+        var safeFps = sourceFps > 0.001 ? sourceFps : 30.0;
+        return 1000.0 / safeFps;
+    }
+
+    private static QuantizedFrameRequest QuantizeToSourceFrameRequest(long requestedMs, double sourceFps, TimeSpan sourceDuration)
+    {
+        if (requestedMs <= 0)
+        {
+            return new QuantizedFrameRequest(0, 0, ResolveFrameStepMilliseconds(sourceFps));
+        }
+
+        var frameStepMs = ResolveFrameStepMilliseconds(sourceFps);
+        if (frameStepMs <= 0.001)
+        {
+            return new QuantizedFrameRequest(requestedMs, requestedMs, frameStepMs);
+        }
+
+        var maxSafeMs = Math.Max(0.0, sourceDuration.TotalMilliseconds - frameStepMs);
+        var clampedMs = Math.Min(requestedMs, maxSafeMs);
+        var frameIndex = (long)Math.Max(0, Math.Round(clampedMs / frameStepMs, MidpointRounding.AwayFromZero));
+        var quantizedMs = frameIndex * frameStepMs;
+        if (quantizedMs > maxSafeMs)
+        {
+            quantizedMs = maxSafeMs;
+        }
+
+        return new QuantizedFrameRequest(
+            (long)Math.Max(0, Math.Round(quantizedMs, MidpointRounding.AwayFromZero)),
+            frameIndex,
+            frameStepMs);
     }
 
     private async Task RenderMixedAudioAsync(IReadOnlyList<ExportAudioClipInput> audios, string outputAudioPath, double totalDurationSeconds)

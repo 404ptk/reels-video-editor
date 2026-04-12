@@ -48,6 +48,7 @@ public partial class TimelineViewModel : ViewModelBase
     private long lastPlaybackMilliseconds = -1;
     private double playbackMaxSeconds = TimelineDurationSeconds;
     private TimelineClipItem? lastPreviewClip;
+    private bool isSubtitleBatchTransformEnabled;
 
     public Action<long>? PlaybackSeekRequested { get; set; }
 
@@ -60,6 +61,17 @@ public partial class TimelineViewModel : ViewModelBase
     public Action<TimelineTextOverlayState>? TextOverlayStateChanged { get; set; }
 
     public Action<Models.TextPresetDefinition, double, string?>? AutoCaptionsRequested { get; set; }
+
+    public void SetSubtitleBatchTransformEnabled(bool enabled)
+    {
+        if (isSubtitleBatchTransformEnabled == enabled)
+        {
+            return;
+        }
+
+        isSubtitleBatchTransformEnabled = enabled;
+        NotifyTextOverlayStateChanged();
+    }
 
     public ObservableCollection<TimelineMinorTick> MinorTicks { get; } = [];
 

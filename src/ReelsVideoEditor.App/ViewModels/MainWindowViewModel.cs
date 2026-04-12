@@ -197,7 +197,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.TextOverlayStateChanged = state =>
         {
             Preview.RefreshRenderAvailability();
-            Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
+            if (!Preview.IsPlaying)
+            {
+                Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
+            }
         };
 
         Timeline.PreviewClipChanged = () =>
@@ -234,6 +237,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         };
 
         SyncPreviewTransformFromTimelineTarget();
+        Timeline.SetSubtitleBatchTransformEnabled(IsSubtitlesSection);
         Timeline.RefreshPreviewLevels();
         Timeline.RefreshTextOverlayState();
         Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
@@ -305,6 +309,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsSubtitlesSection));
         OnPropertyChanged(nameof(IsExportSection));
         OnPropertyChanged(nameof(IsEditorLayoutVisible));
+
+        Timeline.SetSubtitleBatchTransformEnabled(IsSubtitlesSection);
+        SyncPreviewTransformFromTimelineTarget();
     }
 }
 

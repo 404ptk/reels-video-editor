@@ -159,6 +159,11 @@ public partial class TimelineViewModel
 
     public bool HasActiveTransformTargetAt(long playbackMilliseconds)
     {
+        if (isSubtitleBatchTransformEnabled)
+        {
+            return IsTextTransformTargetAt(playbackMilliseconds);
+        }
+
         var selectedClip = ResolveSelectedVideoClip();
         if (selectedClip is null)
         {
@@ -170,6 +175,11 @@ public partial class TimelineViewModel
 
     public bool IsTextTransformTargetAt(long playbackMilliseconds)
     {
+        if (isSubtitleBatchTransformEnabled)
+        {
+            return ResolveSubtitleTransformTargets().Count > 0;
+        }
+
         var selectedClip = ResolveSelectedVideoClip();
         if (selectedClip is null || !IsTextTimelineClip(selectedClip))
         {
@@ -243,6 +253,35 @@ public partial class TimelineViewModel
         double cropRight,
         double cropBottom)
     {
+        if (isSubtitleBatchTransformEnabled)
+        {
+            var subtitleTargets = ResolveSubtitleTransformTargets();
+            if (subtitleTargets.Count == 0)
+            {
+                return;
+            }
+
+            var normalizedTransformScale = Math.Max(0.1, transformScale);
+            var normalizedCropLeft = Math.Clamp(cropLeft, 0.0, 0.95);
+            var normalizedCropTop = Math.Clamp(cropTop, 0.0, 0.95);
+            var normalizedCropRight = Math.Clamp(cropRight, 0.0, 0.95);
+            var normalizedCropBottom = Math.Clamp(cropBottom, 0.0, 0.95);
+
+            foreach (var clip in subtitleTargets)
+            {
+                clip.TransformX = transformX;
+                clip.TransformY = transformY;
+                clip.TransformScale = normalizedTransformScale;
+                clip.CropLeft = normalizedCropLeft;
+                clip.CropTop = normalizedCropTop;
+                clip.CropRight = normalizedCropRight;
+                clip.CropBottom = normalizedCropBottom;
+            }
+
+            NotifyTextOverlayStateChanged();
+            return;
+        }
+
         var targetClip = ResolveTransformTargetClip();
         if (targetClip is null)
         {
@@ -417,6 +456,17 @@ public partial class TimelineViewModel
 
     private TimelineClipItem? ResolveTransformTargetClip()
     {
+        if (isSubtitleBatchTransformEnabled)
+        {
+            var subtitleTarget = ResolveSubtitleTransformTargets()
+                .OrderBy(clip => clip.StartSeconds)
+                .FirstOrDefault();
+            if (subtitleTarget is not null)
+            {
+                return subtitleTarget;
+            }
+        }
+
         var selectedClip = ResolveSelectedVideoClip();
         if (selectedClip is not null)
         {
@@ -605,6 +655,35 @@ public partial class TimelineViewModel
     private static bool IsTextTimelineClip(TimelineClipItem clip)
     {
         return string.IsNullOrWhiteSpace(clip.Path);
+    }
+
+    private IReadOnlyList<TimelineClipItem> ResolveSubtitleTransformTargets()
+    {
+        var hasSoloLanes = VideoLanes.Any(lane => lane.IsSolo);
+
+        return VideoClips
+            .Where(clip => clip.IsSubtitle)
+            .Where(clip =>
+            {
+                var lane = ResolveLaneByLabel(clip.VideoLaneLabel) ?? ResolvePrimaryVideoLane();
+                if (lane is null)
+                {
+                    return false;
+                }
+
+                if (lane.IsHidden)
+                {
+                    return false;
+                }
+
+                if (hasSoloLanes && !lane.IsSolo)
+                {
+                    return false;
+                }
+
+                return true;
+            })
+            .ToList();
     }
 
     private static double ResolveTextAnimationScale(TimelineClipItem clip, double timelineSeconds)
