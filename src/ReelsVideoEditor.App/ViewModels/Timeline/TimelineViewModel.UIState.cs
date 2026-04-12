@@ -17,6 +17,7 @@ public partial class TimelineViewModel
         RebuildMajorTicks();
         TimelineClipArrangementService.RebuildLayouts(VideoClips, TickWidth);
         TimelineClipArrangementService.RebuildLayouts(AudioClips, TickWidth);
+        RefreshClipLevelLines();
     }
 
     partial void OnLaneContentHeightChanged(int value)
