@@ -1,8 +1,9 @@
 using Avalonia.Media;
+using System.Text.Json.Serialization;
 
 namespace ReelsVideoEditor.App.Models;
 
-public sealed record TextPresetDefinition(
+public sealed partial record TextPresetDefinition(
     string Name,
     string FontFamily,
     double FontSize,
@@ -24,6 +25,9 @@ public sealed record TextPresetDefinition(
     public IBrush OutlineColorBrush { get; } = Brush.Parse(OutlineColorHex);
 
     public Avalonia.Media.FontFamily PreviewFontFamily { get; } = BuildPreviewFontFamily(FontFamily);
+
+    [JsonIgnore]
+    public IImage? PreviewImage => Services.Text.TextPresetTilePreviewService.GetOrCreate(this);
 
     private static Avalonia.Media.FontFamily BuildPreviewFontFamily(string fontFamily)
     {
