@@ -59,6 +59,6 @@ public sealed class TimelineClipArrangementService
     private static void ApplyLayout(TimelineClipItem clip, double tickWidth)
     {
         clip.Left = clip.StartSeconds * tickWidth;
-        clip.Width = Math.Max(24, clip.DurationSeconds * tickWidth);
+        clip.Width = Math.Max(1, clip.DurationSeconds * tickWidth);
     }
 }
