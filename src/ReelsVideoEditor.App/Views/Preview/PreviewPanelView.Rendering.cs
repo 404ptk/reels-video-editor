@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ReelsVideoEditor.App.Services.Compositor;
+using ReelsVideoEditor.App.Services.Text;
 using ReelsVideoEditor.App.Services.VideoDecoder;
 using ReelsVideoEditor.App.ViewModels.Preview;
 using ReelsVideoEditor.App.ViewModels.Timeline;
@@ -81,8 +82,26 @@ public partial class PreviewPanelView
 
         if (composed is not null)
         {
+            ApplyTextOverlaysToBitmap(composed, viewModel, (long)position.TotalMilliseconds);
             CopyToWriteableBitmap(composed, viewModel);
         }
+    }
+
+    private void ApplyTextOverlaysToBitmap(SKBitmap bitmap, PreviewViewModel viewModel, long playbackMilliseconds)
+    {
+        var resolveTextOverlayState = viewModel.ResolveTextOverlayState;
+        if (resolveTextOverlayState is null)
+        {
+            return;
+        }
+
+        var state = resolveTextOverlayState(playbackMilliseconds);
+        TimelineTextOverlayRenderer.Draw(
+            bitmap,
+            state,
+            bitmap.Height,
+            Math.Max(1.0, viewModel.PreviewFrameWidth),
+            Math.Max(1.0, viewModel.PreviewFrameHeight));
     }
 
     private SKBitmap ComposeBlackFrame(PreviewViewModel viewModel)

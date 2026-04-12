@@ -59,6 +59,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             ResolveVideoPath = () => Timeline.ResolvePreviewClipPath(),
             ResolveVideoLayers = playbackMilliseconds => Timeline.ResolvePreviewVideoLayers(playbackMilliseconds),
+            ResolveTextOverlayState = playbackMilliseconds => Timeline.ResolveTextOverlayStateAt(playbackMilliseconds),
             ResolveAudioState = playbackMilliseconds => Timeline.ResolvePreviewAudioState(playbackMilliseconds),
             HasSyntheticVideoContent = () => Timeline.HasVisibleTextOnlyPlaybackContent(),
             HasSelectedVideoClip = () => Timeline.HasSelectedVideoClip(),
@@ -195,8 +196,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Timeline.TextOverlayStateChanged = state =>
         {
-            Preview.UpdateTextOverlayState(state);
             Preview.RefreshRenderAvailability();
+            Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
         };
 
         Timeline.PreviewClipChanged = () =>

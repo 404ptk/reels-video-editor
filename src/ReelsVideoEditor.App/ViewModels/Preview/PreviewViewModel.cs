@@ -23,6 +23,8 @@ public sealed partial class PreviewViewModel : ViewModelBase
 
     public Func<long, IReadOnlyList<PreviewVideoLayer>>? ResolveVideoLayers { get; set; }
 
+    public Func<long, TimelineTextOverlayState>? ResolveTextOverlayState { get; set; }
+
     public Func<long, PreviewAudioState>? ResolveAudioState { get; set; }
 
     public Func<bool>? HasSyntheticVideoContent { get; set; }

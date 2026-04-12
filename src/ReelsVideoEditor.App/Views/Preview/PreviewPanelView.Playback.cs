@@ -395,6 +395,7 @@ public partial class PreviewPanelView
 
                 if (composed != null && !token.IsCancellationRequested)
                 {
+                    ApplyTextOverlaysToBitmap(composed, viewModel, currentMs);
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         if (!token.IsCancellationRequested)
