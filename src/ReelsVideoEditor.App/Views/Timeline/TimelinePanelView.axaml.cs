@@ -69,8 +69,25 @@ public partial class TimelinePanelView : UserControl
         UpdateVerticalScrollBarMetrics();
 
         AddHandler(KeyDownEvent, TimelinePanelView_OnKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(PointerWheelChangedEvent, TimelinePanelView_OnPointerWheelChangedTunnel, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, TimelineSeekSurface_OnPointerMoved, RoutingStrategies.Bubble);
         AddHandler(PointerReleasedEvent, TimelineSeekSurface_OnPointerReleased, RoutingStrategies.Bubble);
+    }
+
+    private void TimelinePanelView_OnPointerWheelChangedTunnel(object? sender, PointerWheelEventArgs eventArgs)
+    {
+        if (DataContext is not TimelineViewModel viewModel)
+        {
+            return;
+        }
+
+        if (!eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control)
+            && !eventArgs.KeyModifiers.HasFlag(KeyModifiers.Alt))
+        {
+            return;
+        }
+
+        HandleModifiedWheelGesture(viewModel, eventArgs, sender as ScrollViewer);
     }
 
     private void TimelinePanelView_OnKeyDown(object? sender, KeyEventArgs e)
@@ -103,26 +120,40 @@ public partial class TimelinePanelView : UserControl
 
     private void TimelineScrollViewer_OnPointerWheelChanged(object? sender, PointerWheelEventArgs eventArgs)
     {
+        if (eventArgs.Handled)
+        {
+            return;
+        }
+
         if (DataContext is TimelineViewModel viewModel)
         {
-            if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Alt)
+                || eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control))
             {
-                viewModel.ChangeLaneHeightFromWheel(eventArgs.Delta.Y);
-                eventArgs.Handled = true;
-                return;
-            }
-
-            if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control))
-            {
-                var viewportWidth = _timelineScrollViewer?.Bounds.Width ?? (sender as ScrollViewer)?.Bounds.Width ?? Bounds.Width;
-                viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y, viewportWidth);
-                eventArgs.Handled = true;
+                HandleModifiedWheelGesture(viewModel, eventArgs, sender as ScrollViewer);
                 return;
             }
 
             var currentOffsetY = _timelineScrollViewer?.Offset.Y ?? _laneHeaderScrollViewer?.Offset.Y ?? 0;
             var targetOffsetY = currentOffsetY - (eventArgs.Delta.Y * MouseWheelVerticalStep);
             SetVerticalOffset(targetOffsetY);
+            eventArgs.Handled = true;
+        }
+    }
+
+    private void HandleModifiedWheelGesture(TimelineViewModel viewModel, PointerWheelEventArgs eventArgs, ScrollViewer? senderScrollViewer)
+    {
+        if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Alt))
+        {
+            viewModel.ChangeLaneHeightFromWheel(eventArgs.Delta.Y);
+            eventArgs.Handled = true;
+            return;
+        }
+
+        if (eventArgs.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            var viewportWidth = _timelineScrollViewer?.Bounds.Width ?? senderScrollViewer?.Bounds.Width ?? Bounds.Width;
+            viewModel.ChangeZoomFromWheel(eventArgs.Delta.Y, viewportWidth);
             eventArgs.Handled = true;
         }
     }
