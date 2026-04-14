@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ReelsVideoEditor.App.DragDrop;
@@ -140,6 +141,87 @@ public partial class TextPanelView : UserControl
         await Avalonia.Input.DragDrop.DoDragDrop(eventArgs, dataObject, DragDropEffects.Copy);
 #pragma warning restore CS0618
         eventArgs.Handled = true;
+    }
+
+    private void PresetTile_OnPointerEntered(object? sender, PointerEventArgs eventArgs)
+    {
+        if (sender is not Control { DataContext: TextPresetDefinition preset })
+        {
+            return;
+        }
+
+        if (preset.IsAddTile)
+        {
+            return;
+        }
+
+        var normalizedEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
+        if (string.Equals(normalizedEffect, Models.TextRevealEffect.None, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (sender is not Visual senderVisual)
+        {
+            return;
+        }
+
+        var previewImage = senderVisual
+            .GetVisualDescendants()
+            .OfType<Avalonia.Controls.Image>()
+            .FirstOrDefault();
+
+        if (previewImage is null)
+        {
+            return;
+        }
+
+        RunPopAnimation(previewImage);
+    }
+
+    private static void RunPopAnimation(Avalonia.Controls.Image target)
+    {
+        const double peakScaleBoost = 0.14;
+        const double animationDurationMs = 220.0;
+        const double frameIntervalMs = 16.0;
+
+        var scaleTransform = target.RenderTransform as ScaleTransform;
+        if (scaleTransform is null)
+        {
+            scaleTransform = new ScaleTransform(1.0, 1.0);
+            target.RenderTransform = scaleTransform;
+        }
+
+        scaleTransform.ScaleX = 1.0 + peakScaleBoost;
+        scaleTransform.ScaleY = 1.0 + peakScaleBoost;
+
+        var startTime = Environment.TickCount64;
+
+        DispatcherTimer? timer = null;
+        timer = new DispatcherTimer(DispatcherPriority.Render)
+        {
+            Interval = TimeSpan.FromMilliseconds(frameIntervalMs)
+        };
+
+        timer.Tick += (_, _) =>
+        {
+            var elapsed = Environment.TickCount64 - startTime;
+            if (elapsed >= animationDurationMs)
+            {
+                scaleTransform.ScaleX = 1.0;
+                scaleTransform.ScaleY = 1.0;
+                timer.Stop();
+                return;
+            }
+
+            var t = elapsed / animationDurationMs;
+            var eased = 1.0 - Math.Pow(1.0 - t, 3);
+            var scale = 1.0 + (peakScaleBoost * (1.0 - eased));
+            scaleTransform.ScaleX = scale;
+            scaleTransform.ScaleY = scale;
+        };
+
+        timer.Start();
     }
 
     private void SizeValue_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
