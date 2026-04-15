@@ -294,6 +294,31 @@ public partial class TimelineViewModel
         VideoClips.RemoveAt(clipIndex);
         VideoClips.Insert(clipIndex, leftClip);
         VideoClips.Insert(clipIndex + 1, rightClip);
+
+        var originalLinkId = targetClip.LinkId;
+        var targetAudio = AudioClips.FirstOrDefault(a => a.LinkId == originalLinkId);
+        if (targetAudio != null)
+        {
+            var audioIndex = AudioClips.IndexOf(targetAudio);
+            var leftAudio = BuildClipFragment(
+                targetAudio,
+                leftClip.StartSeconds,
+                leftClip.DurationSeconds,
+                leftClip.SourceStartSeconds,
+                leftClip.SourceDurationSeconds,
+                leftClip.LinkId);
+            var rightAudio = BuildClipFragment(
+                targetAudio,
+                rightClip.StartSeconds,
+                rightClip.DurationSeconds,
+                rightClip.SourceStartSeconds,
+                rightClip.SourceDurationSeconds,
+                rightClip.LinkId);
+
+            AudioClips.RemoveAt(audioIndex);
+            AudioClips.Insert(audioIndex, leftAudio);
+            AudioClips.Insert(audioIndex + 1, rightAudio);
+        }
     }
 
     private TimelineClipItem BuildClipFragment(
@@ -301,14 +326,15 @@ public partial class TimelineViewModel
         double startSeconds,
         double durationSeconds,
         double sourceStartSeconds,
-        double sourceDurationSeconds)
+        double sourceDurationSeconds,
+        Guid? linkId = null)
     {
         var clip = new TimelineClipItem(
             source.Name,
             source.Path,
             startSeconds,
             durationSeconds,
-            null,
+            linkId,
             sourceStartSeconds,
             sourceDurationSeconds)
         {

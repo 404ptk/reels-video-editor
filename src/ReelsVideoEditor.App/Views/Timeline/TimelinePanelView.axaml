@@ -503,6 +503,13 @@
                                                             PointerMoved="VideoClip_OnPointerMoved"
                                                             PointerExited="VideoClip_OnPointerExited"
                                                             PointerReleased="VideoClip_OnPointerReleased">
+                                                        <Border.ContextMenu>
+                                                            <ContextMenu Classes="timeline-context-menu">
+                                                                <MenuItem Header="Delete"
+                                                                          Command="{Binding $parent[UserControl].DataContext.DeleteSelectedClipsCommand}"
+                                                                          CommandParameter="{Binding}" />
+                                                            </ContextMenu>
+                                                        </Border.ContextMenu>
                                                         <Border.RenderTransform>
                                                             <TranslateTransform X="{Binding Left}" />
                                                         </Border.RenderTransform>
@@ -608,6 +615,13 @@
                                                             PointerPressed="AudioClipLevel_OnPointerPressed"
                                                             PointerMoved="AudioClipLevel_OnPointerMoved"
                                                             PointerReleased="ClipLevel_OnPointerReleased">
+                                                        <Border.ContextMenu>
+                                                            <ContextMenu Classes="timeline-context-menu">
+                                                                <MenuItem Header="Delete"
+                                                                          Command="{Binding $parent[UserControl].DataContext.DeleteSelectedClipsCommand}"
+                                                                          CommandParameter="{Binding}" />
+                                                            </ContextMenu>
+                                                        </Border.ContextMenu>
                                                         <Border.RenderTransform>
                                                             <TranslateTransform X="{Binding Left}" />
                                                         </Border.RenderTransform>

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using CommunityToolkit.Mvvm.Input;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
 
 namespace ReelsVideoEditor.App.ViewModels.Timeline;
@@ -202,22 +203,40 @@ public partial class TimelineViewModel
         }
     }
 
+    [RelayCommand]
     public void DeleteSelectedClips()
     {
-        var videoToRemove = VideoClips.Where(c => c.IsSelected).ToList();
-        var audioToRemoveNames = AudioClips.Where(c => c.IsSelected).Select(c => c.Name).ToList();
+        var selectedVideo = VideoClips.Where(c => c.IsSelected).ToList();
+        var selectedAudio = AudioClips.Where(c => c.IsSelected).ToList();
 
-        var combinedToRemove = VideoClips
-            .Where(c => c.IsSelected || audioToRemoveNames.Contains(c.Name))
+        // Find video clips linked to selected audio clips
+        var videoToRemoveByAudio = selectedAudio
+            .SelectMany(a => VideoClips.Where(v => v.LinkId == a.LinkId))
             .ToList();
 
-        if (combinedToRemove.Count == 0) return;
+        var videoToRemove = selectedVideo
+            .Concat(videoToRemoveByAudio)
+            .Distinct()
+            .ToList();
 
-        var removedClips = combinedToRemove.ToList();
+        // Find audio clips linked to selected video clips
+        var audioToRemoveByVideo = selectedVideo
+            .SelectMany(v => AudioClips.Where(a => a.LinkId == v.LinkId))
+            .ToList();
+
+        var audioToRemove = selectedAudio
+            .Concat(audioToRemoveByVideo)
+            .Distinct()
+            .ToList();
+
+        if (videoToRemove.Count == 0 && audioToRemove.Count == 0) return;
+
+        var removedVideoClips = videoToRemove.ToList();
+        var removedAudioClips = audioToRemove.ToList();
 
         undoStack.Push(() =>
         {
-            foreach (var clip in removedClips)
+            foreach (var clip in removedVideoClips)
             {
                 clip.IsSelected = false;
                 VideoClips.Add(clip);
@@ -229,11 +248,22 @@ public partial class TimelineViewModel
                     _ = LoadAudioWaveformAsync(linkedAudio);
                 }
             }
+
+            foreach (var clip in removedAudioClips)
+            {
+                clip.IsSelected = false;
+                AudioClips.Add(clip);
+            }
         });
 
-        foreach (var clip in combinedToRemove)
+        foreach (var clip in videoToRemove)
         {
             VideoClips.Remove(clip);
+        }
+
+        foreach (var clip in audioToRemove)
+        {
+            AudioClips.Remove(clip);
         }
     }
 

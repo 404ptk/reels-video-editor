@@ -363,6 +363,13 @@ public partial class TimelinePanelView : UserControl
         }
 
         var point = eventArgs.GetCurrentPoint(control);
+        
+        if (point.Properties.IsRightButtonPressed)
+        {
+            viewModel.SelectSingleVideoClip(clip);
+            return;
+        }
+        
         if (!point.Properties.IsLeftButtonPressed)
         {
             return;
@@ -672,6 +679,20 @@ public partial class TimelinePanelView : UserControl
 
     private void AudioClipLevel_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
     {
+        if (sender is Control control && control.DataContext is TimelineClipItem clip)
+        {
+            var point = eventArgs.GetCurrentPoint(control);
+            
+            if (point.Properties.IsRightButtonPressed)
+            {
+                if (DataContext is TimelineViewModel viewModel)
+                {
+                    viewModel.SelectSingleVideoClip(clip);
+                }
+                return;
+            }
+        }
+        
         BeginAudioClipLevelAdjustment(sender, eventArgs);
     }
 
