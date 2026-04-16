@@ -151,6 +151,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Subtitles.ApplySelectedTextSettingsRequested = Text.ApplySelectedTextSettingsRequested;
 
+        Watermarks.ApplySelectedWatermarkSettingsRequested = (imagePath, opacity) =>
+        {
+            Timeline.UpdateSelectedWatermarkClipSettings(imagePath, opacity);
+            Watermarks.SyncSelectedWatermarkClip(Timeline.ResolveSelectedWatermarkClipState());
+        };
+
         Timeline.AutoCaptionsRequested = async (preset, dropX, targetLaneLabel) =>
         {
             var audioInputs = Timeline.ResolveAudioInputsForTranscription();
@@ -224,11 +230,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             SyncPreviewTransformFromTimelineTarget();
             var selectedTextState = Timeline.ResolveSelectedTextClipState();
+            var selectedWatermarkState = Timeline.ResolveSelectedWatermarkClipState();
             Text.SyncSelectedTextClip(selectedTextState);
             Subtitles.SyncSelectedTextClip(selectedTextState);
+            Watermarks.SyncSelectedWatermarkClip(selectedWatermarkState);
             if (selectedTextState.HasSelection)
             {
                 SelectedSection = selectedTextState.IsSubtitle ? SidebarSection.Subtitles : SidebarSection.Text;
+            }
+            else if (selectedWatermarkState.HasSelection)
+            {
+                SelectedSection = SidebarSection.Watermarks;
             }
             if (!Preview.IsPlaying)
             {
@@ -242,6 +254,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.RefreshTextOverlayState();
         Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
+        Watermarks.SyncSelectedWatermarkClip(Timeline.ResolveSelectedWatermarkClipState());
     }
 
     private void SyncPreviewTransformFromTimelineTarget()
@@ -279,6 +292,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void ShowWatermarks()
     {
+        Watermarks.SyncSelectedWatermarkClip(Timeline.ResolveSelectedWatermarkClipState());
         SelectedSection = SidebarSection.Watermarks;
     }
 

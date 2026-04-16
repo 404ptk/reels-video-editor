@@ -444,6 +444,20 @@ public partial class TimelineViewModel
             selectedTextClip.IsSubtitle);
     }
 
+    public TimelineSelectedWatermarkClipState ResolveSelectedWatermarkClipState()
+    {
+        var selectedWatermarkClip = ResolveSelectedWatermarkClip();
+        if (selectedWatermarkClip is null)
+        {
+            return new TimelineSelectedWatermarkClipState(false, string.Empty, 1.0);
+        }
+
+        return new TimelineSelectedWatermarkClipState(
+            true,
+            selectedWatermarkClip.Path,
+            Math.Clamp(selectedWatermarkClip.Opacity, 0.0, 1.0));
+    }
+
     private TimelineClipItem? ResolvePreviewClip()
     {
         if (VideoClips.Count == 0)
@@ -648,6 +662,15 @@ public partial class TimelineViewModel
     {
         return VideoClips
             .Where(clip => clip.IsSelected && IsTextTimelineClip(clip))
+            .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
+            .ThenByDescending(clip => clip.StartSeconds)
+            .FirstOrDefault();
+    }
+
+    private TimelineClipItem? ResolveSelectedWatermarkClip()
+    {
+        return VideoClips
+            .Where(clip => clip.IsSelected && clip.IsWatermark)
             .OrderBy(clip => ResolveLaneLayerIndex(clip.VideoLaneLabel))
             .ThenByDescending(clip => clip.StartSeconds)
             .FirstOrDefault();

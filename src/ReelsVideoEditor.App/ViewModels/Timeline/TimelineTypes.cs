@@ -126,3 +126,8 @@ public sealed record TimelineSelectedTextClipState(
     double OutlineThickness,
     string TextRevealEffect,
     bool IsSubtitle);
+
+public sealed record TimelineSelectedWatermarkClipState(
+    bool HasSelection,
+    string ImagePath,
+    double Opacity);

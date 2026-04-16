@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ReelsVideoEditor.App.Models;
 using ReelsVideoEditor.App.Services.Watermarks;
+using ReelsVideoEditor.App.ViewModels.Timeline;
 
 namespace ReelsVideoEditor.App.ViewModels.Watermarks;
 
@@ -16,6 +17,7 @@ public sealed partial class WatermarksViewModel : ViewModelBase
 
     private readonly HashSet<string> builtInPresetNames = new(StringComparer.OrdinalIgnoreCase);
     private readonly WatermarkPresetStorageService presetStorage = new();
+    private bool isSyncingFromTimeline;
 
     public string Title { get; } = "Watermarks";
 
@@ -49,6 +51,8 @@ public sealed partial class WatermarksViewModel : ViewModelBase
 
     private bool CanDeletePreset => IsEditingPreset && !string.IsNullOrWhiteSpace(EditingPresetSourceName);
 
+    public Action<string, double>? ApplySelectedWatermarkSettingsRequested { get; set; }
+
     public WatermarksViewModel()
     {
         Presets.CollectionChanged += (_, _) => OnPropertyChanged(nameof(PresetTiles));
@@ -78,6 +82,9 @@ public sealed partial class WatermarksViewModel : ViewModelBase
 
     [ObservableProperty]
     private string pendingDeletePresetName = string.Empty;
+
+    [ObservableProperty]
+    private bool hasSelectedWatermarkClip;
 
     [RelayCommand]
     private void CreatePresetFromTile()
@@ -208,6 +215,34 @@ public sealed partial class WatermarksViewModel : ViewModelBase
         SelectedOpacity = Math.Clamp(preset.Opacity, 0.0, 1.0);
         IsEditorVisible = true;
         PresetSaveStatus = string.Empty;
+    }
+
+    public void SyncSelectedWatermarkClip(TimelineSelectedWatermarkClipState state)
+    {
+        if (IsEditingPreset)
+        {
+            return;
+        }
+
+        isSyncingFromTimeline = true;
+        try
+        {
+            HasSelectedWatermarkClip = state.HasSelection;
+            if (state.HasSelection)
+            {
+                SelectedImagePath = state.ImagePath;
+                SelectedOpacity = Math.Clamp(state.Opacity, 0.0, 1.0);
+                IsEditorVisible = true;
+                PresetSaveStatus = string.Empty;
+                return;
+            }
+
+            IsEditorVisible = false;
+        }
+        finally
+        {
+            isSyncingFromTimeline = false;
+        }
     }
 
     private void SavePresetEdits()
@@ -496,6 +531,7 @@ public sealed partial class WatermarksViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(HasSelectedImage));
         OnPropertyChanged(nameof(SelectedImagePreview));
+        ApplySelectedWatermarkSettings();
     }
 
     partial void OnSelectedOpacityChanged(double value)
@@ -508,5 +544,18 @@ public sealed partial class WatermarksViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(SelectedOpacityPercent));
+        ApplySelectedWatermarkSettings();
+    }
+
+    private void ApplySelectedWatermarkSettings()
+    {
+        if (isSyncingFromTimeline || IsEditingPreset || !HasSelectedWatermarkClip || !IsEditorVisible)
+        {
+            return;
+        }
+
+        ApplySelectedWatermarkSettingsRequested?.Invoke(
+            SelectedImagePath,
+            Math.Clamp(SelectedOpacity, 0.0, 1.0));
     }
 }

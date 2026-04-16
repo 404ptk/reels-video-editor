@@ -303,6 +303,51 @@ public partial class TimelineViewModel
         }
     }
 
+    public void UpdateSelectedWatermarkClipSettings(string imagePath, double opacity)
+    {
+        var selectedWatermarkClips = VideoClips
+            .Where(clip => clip.IsSelected && clip.IsWatermark)
+            .ToList();
+
+        if (selectedWatermarkClips.Count == 0)
+        {
+            return;
+        }
+
+        var normalizedOpacity = Math.Clamp(opacity, 0.0, 1.0);
+        var normalizedImagePath = imagePath?.Trim() ?? string.Empty;
+        var changed = false;
+
+        foreach (var clip in selectedWatermarkClips)
+        {
+            var clipChanged = false;
+
+            if (!string.IsNullOrWhiteSpace(normalizedImagePath)
+                && !string.Equals(clip.Path, normalizedImagePath, StringComparison.Ordinal))
+            {
+                clip.Path = normalizedImagePath;
+                clip.IsMediaMissing = !System.IO.File.Exists(normalizedImagePath);
+                clipChanged = true;
+            }
+
+            if (Math.Abs(clip.Opacity - normalizedOpacity) >= 0.0001)
+            {
+                clip.Opacity = normalizedOpacity;
+                clipChanged = true;
+            }
+
+            if (clipChanged)
+            {
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            PreviewClipChanged?.Invoke();
+        }
+    }
+
     private static string NormalizeTextContent(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))

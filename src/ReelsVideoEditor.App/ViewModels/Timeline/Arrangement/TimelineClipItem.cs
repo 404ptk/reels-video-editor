@@ -12,7 +12,8 @@ public sealed partial class TimelineClipItem : ObservableObject
     [ObservableProperty]
     private string name;
 
-    public string Path { get; }
+    [ObservableProperty]
+    private string path;
 
     [ObservableProperty]
     private double startSeconds;
