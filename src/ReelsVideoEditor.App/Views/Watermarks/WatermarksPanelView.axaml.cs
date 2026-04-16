@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using ReelsVideoEditor.App.ViewModels.Watermarks;
@@ -8,6 +9,10 @@ namespace ReelsVideoEditor.App.Views.Watermarks;
 
 public partial class WatermarksPanelView : UserControl
 {
+    private bool isOpacityDragActive;
+    private double opacityDragStartX;
+    private double opacityDragStartValue;
+
     public WatermarksPanelView()
     {
         InitializeComponent();
@@ -49,6 +54,17 @@ public partial class WatermarksPanelView : UserControl
         {
             viewModel.SelectImagePathCommand.Execute(selectedPath);
         }
+    }
+
+    private void LoadImageActionButton_OnPointerPressed(object? sender, PointerPressedEventArgs eventArgs)
+    {
+        if (!eventArgs.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        BrowseImageButton_OnClick(sender, new RoutedEventArgs());
+        eventArgs.Handled = true;
     }
 
     private async void PresetTile_OnPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs eventArgs)
@@ -106,5 +122,69 @@ public partial class WatermarksPanelView : UserControl
 
     private void PresetTile_OnPointerEntered(object? sender, Avalonia.Input.PointerEventArgs eventArgs)
     {
+    }
+
+    private void OpacityValue_OnPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs eventArgs)
+    {
+        if (sender is not InputElement dragElement)
+        {
+            return;
+        }
+
+        if (!eventArgs.GetCurrentPoint(dragElement).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        if (DataContext is not WatermarksViewModel viewModel)
+        {
+            return;
+        }
+
+        isOpacityDragActive = true;
+        opacityDragStartX = eventArgs.GetPosition(this).X;
+        opacityDragStartValue = viewModel.SelectedOpacity;
+        eventArgs.Pointer.Capture(dragElement);
+        eventArgs.Handled = true;
+    }
+
+    private void OpacityValue_OnPointerMoved(object? sender, Avalonia.Input.PointerEventArgs eventArgs)
+    {
+        if (!isOpacityDragActive)
+        {
+            return;
+        }
+
+        if (DataContext is not WatermarksViewModel viewModel)
+        {
+            return;
+        }
+
+        var deltaX = eventArgs.GetPosition(this).X - opacityDragStartX;
+        var nextOpacity = Math.Clamp(opacityDragStartValue + (deltaX * 0.003), 0.0, 1.0);
+        viewModel.SelectedOpacity = Math.Round(nextOpacity, 2, MidpointRounding.AwayFromZero);
+        eventArgs.Handled = true;
+    }
+
+    private void OpacityValue_OnPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs eventArgs)
+    {
+        EndOpacityDrag(eventArgs.Pointer);
+        eventArgs.Handled = true;
+    }
+
+    private void OpacityValue_OnPointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs eventArgs)
+    {
+        EndOpacityDrag(eventArgs.Pointer);
+    }
+
+    private void EndOpacityDrag(Avalonia.Input.IPointer? pointer)
+    {
+        if (!isOpacityDragActive)
+        {
+            return;
+        }
+
+        isOpacityDragActive = false;
+        pointer?.Capture(null);
     }
 }

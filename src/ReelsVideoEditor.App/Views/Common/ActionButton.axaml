@@ -20,8 +20,9 @@
     </UserControl.Styles>
 
     <Button Classes="actionButton"
-            Width="120"
+            Width="{Binding ButtonWidth, ElementName=Root}"
             Height="36"
+            HorizontalContentAlignment="{Binding LabelHorizontalAlignment, ElementName=Root}"
             Command="{Binding Command, ElementName=Root}"
             CommandParameter="{Binding CommandParameter, ElementName=Root}">
         <TextBlock Text="{Binding Label, ElementName=Root}"

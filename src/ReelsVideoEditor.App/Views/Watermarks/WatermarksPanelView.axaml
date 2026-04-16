@@ -7,6 +7,21 @@
              x:DataType="vm:WatermarksViewModel">
 
     <UserControl.Styles>
+        <Style Selector="TextBox.accentInput">
+            <Setter Property="Background" Value="#111318" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentSubtle}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="TextBox.accentInput:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="TextBox.accentInput:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
         <Style Selector="Button.presetIconBtn">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
@@ -214,9 +229,11 @@
                                 </Grid>
                             </Border>
 
-                            <Button Content="Load image from computer"
-                                    HorizontalAlignment="Left"
-                                    Click="BrowseImageButton_OnClick" />
+                                <commonViews:ActionButton Label="Load image from computer"
+                                                          ButtonWidth="210"
+                                                          LabelHorizontalAlignment="Left"
+                                                          HorizontalAlignment="Left"
+                                                          PointerPressed="LoadImageActionButton_OnPointerPressed" />
 
                         </StackPanel>
 
@@ -224,17 +241,22 @@
                             <TextBlock Text="Opacity"
                                        Foreground="{DynamicResource AccentMuted}"
                                        FontSize="12" />
-                            <Grid ColumnDefinitions="*,Auto"
-                                  ColumnSpacing="10">
-                                <Slider Minimum="0"
-                                        Maximum="1"
-                                        Value="{Binding SelectedOpacity, Mode=TwoWay}"
-                                        TickFrequency="0.01" />
-                                <TextBlock Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           Text="{Binding SelectedOpacityPercent}"
-                                           Foreground="{DynamicResource Accent}" />
-                            </Grid>
+                            <Border Padding="10,6"
+                                    Background="#112EC4B6"
+                                    BorderBrush="{DynamicResource AccentSubtle}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    HorizontalAlignment="Left"
+                                    Cursor="SizeWestEast"
+                                    PointerPressed="OpacityValue_OnPointerPressed"
+                                    PointerMoved="OpacityValue_OnPointerMoved"
+                                    PointerReleased="OpacityValue_OnPointerReleased"
+                                    PointerCaptureLost="OpacityValue_OnPointerCaptureLost">
+                                <TextBlock Text="{Binding SelectedOpacityPercent}"
+                                           Foreground="{DynamicResource Accent}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold" />
+                            </Border>
                         </StackPanel>
 
                         <StackPanel Spacing="6">
@@ -244,6 +266,7 @@
                             <Grid ColumnDefinitions="*,Auto,Auto"
                                   ColumnSpacing="8">
                                 <TextBox Text="{Binding NewPresetName, Mode=TwoWay}"
+                                                                                 Classes="accentInput"
                                          Watermark="Preset name (optional)" />
                                 <commonViews:ActionButton Grid.Column="1"
                                                           Label="{Binding SavePresetButtonLabel}"

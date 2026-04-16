@@ -1,6 +1,7 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Layout;
 
 namespace ReelsVideoEditor.App.Views.Common;
 
@@ -14,6 +15,12 @@ public partial class ActionButton : UserControl
 
     public static readonly StyledProperty<string> LabelProperty =
         AvaloniaProperty.Register<ActionButton, string>(nameof(Label), "Action");
+
+    public static readonly StyledProperty<double> ButtonWidthProperty =
+        AvaloniaProperty.Register<ActionButton, double>(nameof(ButtonWidth), 120);
+
+    public static readonly StyledProperty<HorizontalAlignment> LabelHorizontalAlignmentProperty =
+        AvaloniaProperty.Register<ActionButton, HorizontalAlignment>(nameof(LabelHorizontalAlignment), HorizontalAlignment.Center);
 
     public ActionButton()
     {
@@ -36,5 +43,17 @@ public partial class ActionButton : UserControl
     {
         get => GetValue(LabelProperty);
         set => SetValue(LabelProperty, value);
+    }
+
+    public double ButtonWidth
+    {
+        get => GetValue(ButtonWidthProperty);
+        set => SetValue(ButtonWidthProperty, value);
+    }
+
+    public HorizontalAlignment LabelHorizontalAlignment
+    {
+        get => GetValue(LabelHorizontalAlignmentProperty);
+        set => SetValue(LabelHorizontalAlignmentProperty, value);
     }
 }
