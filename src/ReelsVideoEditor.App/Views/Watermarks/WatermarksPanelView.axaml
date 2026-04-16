@@ -131,10 +131,6 @@
                                                    VerticalAlignment="Center" />
                                         </Border>
 
-                                        <TextBlock Grid.Row="2"
-                                                   Text="Opacity: {Binding OpacityLabel}"
-                                                   Foreground="{DynamicResource AccentMuted}"
-                                                   FontSize="11" />
                                     </Grid>
 
                                     <Button IsVisible="{Binding IsAddTile}"
@@ -222,10 +218,6 @@
                                     HorizontalAlignment="Left"
                                     Click="BrowseImageButton_OnClick" />
 
-                            <TextBlock Text="{Binding SelectedImagePath}"
-                                       Foreground="{DynamicResource AccentMuted}"
-                                       FontSize="11"
-                                       TextWrapping="Wrap" />
                         </StackPanel>
 
                         <StackPanel Spacing="6">
