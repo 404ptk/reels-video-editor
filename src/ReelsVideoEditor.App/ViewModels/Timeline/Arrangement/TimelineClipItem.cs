@@ -99,6 +99,12 @@ public sealed partial class TimelineClipItem : ObservableObject
     private bool isSubtitle;
 
     [ObservableProperty]
+    private bool isWatermark;
+
+    [ObservableProperty]
+    private double opacity = 1.0;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayName))]
     [NotifyPropertyChangedFor(nameof(ClipBackground))]
     [NotifyPropertyChangedFor(nameof(ClipBorderBrush))]

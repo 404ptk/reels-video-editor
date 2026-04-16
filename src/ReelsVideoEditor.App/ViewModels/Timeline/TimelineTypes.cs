@@ -68,7 +68,8 @@ public sealed record PreviewVideoLayer(
     double CropLeft,
     double CropTop,
     double CropRight,
-    double CropBottom);
+    double CropBottom,
+    double Opacity = 1.0);
 
 public sealed record PreviewClipTransform(
     double TransformX,

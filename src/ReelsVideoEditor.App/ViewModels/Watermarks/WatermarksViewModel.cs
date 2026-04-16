@@ -187,7 +187,7 @@ public sealed partial class WatermarksViewModel : ViewModelBase
         PresetSaveStatus = string.Empty;
     }
 
-    private void BeginPresetEdit(WatermarkPresetDefinition preset)
+    public void BeginPresetEdit(WatermarkPresetDefinition preset)
     {
         if (preset is null)
         {

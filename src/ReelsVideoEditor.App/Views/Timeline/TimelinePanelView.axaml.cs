@@ -256,8 +256,11 @@ public partial class TimelinePanelView : UserControl
         var isSubtitlePreset = hasTextPreset && preset!.IsAutoCaptions;
         var hasSubtitles = isSubtitlePreset && DataContext is TimelineViewModel vm && vm.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase)) && vm.VideoClips.Any(c => string.Equals(c.VideoLaneLabel, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
 
+        var hasWatermarkPreset = TryGetWatermarkPresetPayload(eventArgs, out _);
+
         var hasPayload = TryGetClipPayload(eventArgs, out _, out _, out _)
-            || (hasTextPreset && !hasSubtitles);
+            || (hasTextPreset && !hasSubtitles)
+            || hasWatermarkPreset;
         eventArgs.DragEffects = hasPayload ? DragDropEffects.Copy : DragDropEffects.None;
 
         if (hasPayload)
@@ -279,46 +282,43 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
-        if (TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out var path))
+        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
+        var referenceControl = timelineCanvas as Control ?? trackControl;
+        var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
+        if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
         {
-            var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
-            var referenceControl = timelineCanvas as Control ?? trackControl;
-            var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
-            if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
-            {
-                dropCanvasX = _lastDragOverCanvasX.Value;
-            }
-
-            var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
-            var targetLaneLabel = ResolveLaneLabel(trackControl);
-            viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX, targetLaneLabel);
-            _lastDragOverCanvasX = null;
-            eventArgs.Handled = true;
-            return;
+            dropCanvasX = _lastDragOverCanvasX.Value;
         }
 
-        if (TryGetTextPresetPayload(eventArgs, out var preset))
+        var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
+        var targetLaneLabel = ResolveLaneLabel(trackControl);
+        var handled = true;
+
+        if (TryGetClipPayload(eventArgs, out var name, out var durationSeconds, out var path))
+        {
+            viewModel.AddClipFromExplorer(name, path, durationSeconds, dropPositionX, targetLaneLabel);
+        }
+        else if (TryGetTextPresetPayload(eventArgs, out var preset))
         {
             var isSubtitlePreset = preset.IsAutoCaptions;
             var hasSubtitles = isSubtitlePreset && viewModel.VideoLanes.Any(l => string.Equals(l.Label, "SUBTITLES", StringComparison.OrdinalIgnoreCase)) && viewModel.VideoClips.Any(c => string.Equals(c.VideoLaneLabel, "SUBTITLES", StringComparison.OrdinalIgnoreCase));
 
-            if (hasSubtitles)
+            if (!hasSubtitles)
             {
-                eventArgs.Handled = true;
-                return;
+                viewModel.AddTextPresetClip(preset, dropPositionX, targetLaneLabel);
             }
+        }
+        else if (TryGetWatermarkPresetPayload(eventArgs, out var watermarkPreset))
+        {
+            viewModel.AddWatermarkPresetClip(watermarkPreset, dropPositionX, targetLaneLabel);
+        }
+        else
+        {
+            handled = false;
+        }
 
-            var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
-            var referenceControl = timelineCanvas as Control ?? trackControl;
-            var dropCanvasX = eventArgs.GetPosition(referenceControl).X;
-            if (dropCanvasX <= 0 && _lastDragOverCanvasX.HasValue)
-            {
-                dropCanvasX = _lastDragOverCanvasX.Value;
-            }
-
-            var dropPositionX = Math.Max(0, dropCanvasX - ClipLeftInset);
-            var targetLaneLabel = ResolveLaneLabel(trackControl);
-            viewModel.AddTextPresetClip(preset, dropPositionX, targetLaneLabel);
+        if (handled)
+        {
             _lastDragOverCanvasX = null;
             eventArgs.Handled = true;
         }
@@ -1000,6 +1000,29 @@ public partial class TimelinePanelView : UserControl
 
         var rawPayload = data.Get(TextPresetDragPayload.Format);
         var parsed = TextPresetDragPayload.TryParse(rawPayload, out var parsedPreset);
+        if (!parsed || parsedPreset is null)
+        {
+            return false;
+        }
+
+        preset = parsedPreset;
+        return true;
+    }
+
+    private static bool TryGetWatermarkPresetPayload(DragEventArgs eventArgs, out WatermarkPresetDefinition preset)
+    {
+        preset = null!;
+
+#pragma warning disable CS0618
+        var data = eventArgs.Data;
+#pragma warning restore CS0618
+        if (!data.Contains(WatermarkPresetDragPayload.Format))
+        {
+            return false;
+        }
+
+        var rawPayload = data.Get(WatermarkPresetDragPayload.Format);
+        var parsed = WatermarkPresetDragPayload.TryParse(rawPayload, out var parsedPreset);
         if (!parsed || parsedPreset is null)
         {
             return false;

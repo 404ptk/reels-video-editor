@@ -86,6 +86,50 @@ public partial class TimelineViewModel
         });
     }
 
+    private VideoLaneItem GetOrCreateSpecialLane(string laneLabel, int insertIndex = 0)
+    {
+        var lane = ResolveLaneByLabel(laneLabel);
+        if (lane == null)
+        {
+            lane = new VideoLaneItem(laneLabel, false, false, false);
+            VideoLanes.Insert(insertIndex, lane);
+        }
+
+        return lane;
+    }
+
+    public void AddWatermarkPresetClip(WatermarkPresetDefinition preset, double dropX, string? targetLaneLabel = null)
+    {
+        var watermarksLane = GetOrCreateSpecialLane("WATERMARKS");
+        var laneLabel = watermarksLane.Label;
+        
+        var duration = Math.Max(TextClipDefaultDurationSeconds, TimelineDurationSeconds);
+
+        var clip = TimelineClipArrangementService.BuildClip(
+            preset.Name,
+            preset.ImagePath,
+            duration,
+            dropX,
+            TickWidth,
+            TimelineDurationSeconds);
+
+        clip.VideoLaneLabel = laneLabel;
+        clip.IsWatermark = true;
+        clip.Opacity = preset.Opacity;
+        
+        VideoClips.Add(clip);
+
+        if (VideoClips.Count == 1)
+        {
+            PlayheadSeconds = clip.StartSeconds;
+        }
+
+        undoStack.Push(() =>
+        {
+            VideoClips.Remove(clip);
+        });
+    }
+
     public void AddAutoCaptionClips(
         IReadOnlyList<Services.SpeechTranscription.TranscriptionChunk> chunks,
         TextPresetDefinition preset,
@@ -96,13 +140,7 @@ public partial class TimelineViewModel
             return;
         }
 
-        var subtitlesLane = ResolveLaneByLabel("SUBTITLES");
-        if (subtitlesLane == null)
-        {
-            subtitlesLane = new VideoLaneItem("SUBTITLES", false, false, false);
-            VideoLanes.Insert(0, subtitlesLane);
-        }
-
+        var subtitlesLane = GetOrCreateSpecialLane("SUBTITLES");
         var laneLabel = subtitlesLane.Label;
 
         isBatchUpdatingClips = true;

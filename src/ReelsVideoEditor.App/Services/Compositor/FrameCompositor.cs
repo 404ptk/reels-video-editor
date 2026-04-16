@@ -29,7 +29,8 @@ public sealed class FrameCompositor : IDisposable
         float CropTop,
         float CropRight,
         float CropBottom,
-        bool DrawBlurredBackground);
+        bool DrawBlurredBackground,
+        float Opacity = 1.0f);
 
     public SKBitmap ComposeFrame(
         byte[] sourcePixels,
@@ -47,7 +48,7 @@ public sealed class FrameCompositor : IDisposable
         bool drawBlurredBackground = true)
     {
         return ComposeLayers(
-            [new FrameLayer(sourcePixels, sourceWidth, sourceHeight, offsetX, offsetY, scale, cropLeft, cropTop, cropRight, cropBottom, drawBlurredBackground)],
+            [new FrameLayer(sourcePixels, sourceWidth, sourceHeight, offsetX, offsetY, scale, cropLeft, cropTop, cropRight, cropBottom, drawBlurredBackground, 1.0f)],
             targetWidth,
             targetHeight);
     }
@@ -117,7 +118,8 @@ public sealed class FrameCompositor : IDisposable
             layer.CropLeft,
             layer.CropTop,
             layer.CropRight,
-            layer.CropBottom);
+            layer.CropBottom,
+            layer.Opacity);
     }
 
     private void DrawBlurredBackground(SKCanvas canvas, SKBitmap source, int targetWidth, int targetHeight)
@@ -191,7 +193,8 @@ public sealed class FrameCompositor : IDisposable
         float cropLeft,
         float cropTop,
         float cropRight,
-        float cropBottom)
+        float cropBottom,
+        float opacity)
     {
         cropLeft = Math.Clamp(cropLeft, 0f, 0.95f);
         cropTop = Math.Clamp(cropTop, 0f, 0.95f);
@@ -228,6 +231,11 @@ public sealed class FrameCompositor : IDisposable
             IsAntialias = false,
             FilterQuality = SKFilterQuality.Low
         };
+
+        if (opacity < 1.0f)
+        {
+            paint.Color = new SKColor(255, 255, 255, (byte)Math.Clamp((int)(opacity * 255f), 0, 255));
+        }
 
         canvas.DrawBitmap(source, sourceRect, fgRect, paint);
     }

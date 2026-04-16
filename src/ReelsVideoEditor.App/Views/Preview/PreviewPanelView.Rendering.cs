@@ -112,6 +112,61 @@ public partial class PreviewPanelView
         return compositor.ComposeLayers(Array.Empty<FrameCompositor.FrameLayer>(), targetW, targetH);
     }
 
+    private readonly Dictionary<string, (byte[] Pixels, int Width, int Height)> imagePixelsCache = new(StringComparer.OrdinalIgnoreCase);
+
+    private (byte[] Pixels, int Width, int Height)? ResolveImagePixels(string path)
+    {
+        if (imagePixelsCache.TryGetValue(path, out var cached))
+        {
+            return cached;
+        }
+
+        try
+        {
+            if (!System.IO.File.Exists(path)) return null;
+
+            using var bitmap = SKBitmap.Decode(path);
+            if (bitmap is null) return null;
+            
+            byte[] pixels;
+            if (bitmap.ColorType == SKColorType.Bgra8888)
+            {
+                var size = bitmap.ByteCount;
+                pixels = new byte[size];
+                Marshal.Copy(bitmap.GetPixels(), pixels, 0, size);
+            }
+            else
+            {
+                using var bgraBitmap = new SKBitmap(bitmap.Width, bitmap.Height, SKColorType.Bgra8888, SKAlphaType.Premul);
+                using var canvas = new SKCanvas(bgraBitmap);
+                canvas.Clear(SKColors.Transparent);
+                canvas.DrawBitmap(bitmap, 0, 0);
+                
+                var size = bgraBitmap.ByteCount;
+                pixels = new byte[size];
+                Marshal.Copy(bgraBitmap.GetPixels(), pixels, 0, size);
+            }
+
+            var result = (pixels, bitmap.Width, bitmap.Height);
+            imagePixelsCache[path] = result;
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsImagePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        var ext = System.IO.Path.GetExtension(path);
+        return ext.Equals(".png", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".webp", StringComparison.OrdinalIgnoreCase);
+    }
+
     private SKBitmap? ComposeMultipleLayers(PreviewViewModel viewModel, IReadOnlyList<PreviewVideoLayer> layers)
     {
         var frameLayers = new List<FrameCompositor.FrameLayer>(layers.Count);
@@ -124,6 +179,37 @@ public partial class PreviewPanelView
             var layer = layers[i];
             if (string.IsNullOrWhiteSpace(layer.Path))
             {
+                continue;
+            }
+
+            if (IsImagePath(layer.Path))
+            {
+                var imageInfo = ResolveImagePixels(layer.Path);
+                if (imageInfo is null)
+                {
+                    continue;
+                }
+
+                if (sourceWidthForTarget == 0 || sourceHeightForTarget == 0)
+                {
+                    sourceWidthForTarget = imageInfo.Value.Width;
+                    sourceHeightForTarget = imageInfo.Value.Height;
+                }
+
+                frameLayers.Add(new FrameCompositor.FrameLayer(
+                    imageInfo.Value.Pixels,
+                    imageInfo.Value.Width,
+                    imageInfo.Value.Height,
+                    0f,
+                    0f,
+                    1f,
+                    0f,
+                    0f,
+                    0f,
+                    0f,
+                    layer.DrawBlurredBackground,
+                    (float)layer.Opacity));
+                sourceLayers.Add(layer);
                 continue;
             }
 
@@ -165,7 +251,8 @@ public partial class PreviewPanelView
                     0f,
                     0f,
                     0f,
-                    layer.DrawBlurredBackground));
+                    layer.DrawBlurredBackground,
+                    (float)layer.Opacity));
                 sourceLayers.Add(layer);
             }
         }
@@ -196,7 +283,8 @@ public partial class PreviewPanelView
                 CropLeft = (float)sourceLayer.CropLeft,
                 CropTop = (float)sourceLayer.CropTop,
                 CropRight = (float)sourceLayer.CropRight,
-                CropBottom = (float)sourceLayer.CropBottom
+                CropBottom = (float)sourceLayer.CropBottom,
+                Opacity = (float)sourceLayer.Opacity
             };
         }
 
