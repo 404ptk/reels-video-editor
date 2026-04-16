@@ -120,6 +120,7 @@
                                 BorderBrush="{DynamicResource AccentSubtle}"
                                 BorderThickness="1"
                                 Cursor="Hand"
+                                PointerEntered="PresetTile_OnPointerEntered"
                                 PointerPressed="PresetTile_OnPointerPressed">
                             <Grid>
                                 <Grid RowDefinitions="Auto,*,Auto"
