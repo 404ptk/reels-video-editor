@@ -242,6 +242,7 @@
                                        Foreground="{DynamicResource AccentMuted}"
                                        FontSize="12" />
                             <Border Padding="10,6"
+                                    Width="76"
                                     Background="#112EC4B6"
                                     BorderBrush="{DynamicResource AccentSubtle}"
                                     BorderThickness="1"
@@ -255,7 +256,9 @@
                                 <TextBlock Text="{Binding SelectedOpacityPercent}"
                                            Foreground="{DynamicResource Accent}"
                                            FontSize="13"
-                                           FontWeight="SemiBold" />
+                                           FontWeight="SemiBold"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center" />
                             </Border>
                         </StackPanel>
 
