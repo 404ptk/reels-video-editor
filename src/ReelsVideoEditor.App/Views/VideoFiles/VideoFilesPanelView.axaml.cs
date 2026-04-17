@@ -183,14 +183,7 @@ public partial class VideoFilesPanelView : UserControl
         _isDragOperationStarted = true;
 
         var payload = VideoClipDragPayload.Build(_dragCandidate.Path, _dragCandidate.Name, _dragCandidate.DurationSeconds);
-#pragma warning disable CS0618
-        var dataObject = new DataObject();
-#pragma warning restore CS0618
-        dataObject.Set(VideoClipDragPayload.Format, payload);
-
-#pragma warning disable CS0618
-        await Avalonia.Input.DragDrop.DoDragDrop(eventArgs, dataObject, DragDropEffects.Copy);
-#pragma warning restore CS0618
+        await DragDropInterop.StartCopyDragAsync(eventArgs, VideoClipDragPayload.Format, payload);
         ResetDragState();
         eventArgs.Handled = true;
     }

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using ReelsVideoEditor.App.DragDrop;
 using ReelsVideoEditor.App.ViewModels.Watermarks;
 
 namespace ReelsVideoEditor.App.Views.Watermarks;
@@ -108,20 +109,9 @@ public partial class WatermarksPanelView : UserControl
             return;
         }
 
-        var payload = ReelsVideoEditor.App.DragDrop.WatermarkPresetDragPayload.Build(preset);
-#pragma warning disable CS0618
-        var dataObject = new Avalonia.Input.DataObject();
-#pragma warning restore CS0618
-        dataObject.Set(ReelsVideoEditor.App.DragDrop.WatermarkPresetDragPayload.Format, payload);
-
-#pragma warning disable CS0618
-        await Avalonia.Input.DragDrop.DoDragDrop(eventArgs, dataObject, Avalonia.Input.DragDropEffects.Copy);
-#pragma warning restore CS0618
+        var payload = WatermarkPresetDragPayload.Build(preset);
+        await DragDropInterop.StartCopyDragAsync(eventArgs, WatermarkPresetDragPayload.Format, payload);
         eventArgs.Handled = true;
-    }
-
-    private void PresetTile_OnPointerEntered(object? sender, Avalonia.Input.PointerEventArgs eventArgs)
-    {
     }
 
     private void OpacityValue_OnPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs eventArgs)
