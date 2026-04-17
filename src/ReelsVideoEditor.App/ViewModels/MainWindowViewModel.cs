@@ -224,6 +224,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 Preview.SourceVideoPath = resolvedPath;
             }
+
+            if (!Preview.IsPlaying)
+            {
+                Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
+            }
         };
 
         Timeline.PreviewSelectionChanged = () =>
