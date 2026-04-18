@@ -15,6 +15,7 @@ namespace ReelsVideoEditor.App.ViewModels;
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private bool isSyncingPreviewTransformFromTimeline;
+    private bool? lastHasSyntheticVideoContent;
 
     [ObservableProperty]
     private SidebarSection selectedSection = SidebarSection.Explorer;
@@ -108,7 +109,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         VideoFiles.FilesRemoved = removedPaths =>
         {
             Timeline.MarkMediaAsMissing(removedPaths);
-            Preview.RefreshRenderAvailability();
+            RefreshPreviewRenderAvailabilityIfNeeded(force: true);
         };
 
         Timeline.PropertyChanged += (sender, args) =>
@@ -202,7 +203,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         Timeline.TextOverlayStateChanged = state =>
         {
-            Preview.RefreshRenderAvailability();
+            RefreshPreviewRenderAvailabilityIfNeeded();
             if (!Preview.IsPlaying)
             {
                 Preview.SeekToPlaybackPosition(Preview.CurrentPlaybackMilliseconds);
@@ -214,7 +215,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             var resolvedPath = Timeline.ResolvePreviewClipPath();
             Preview.UseBlurredBackground = Timeline.ShouldPreviewClipUseBlurredBackground();
             SyncPreviewTransformFromTimelineTarget();
-            Preview.RefreshRenderAvailability();
+            RefreshPreviewRenderAvailabilityIfNeeded(force: true);
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
                 Preview.Stop();
@@ -257,9 +258,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Timeline.SetSubtitleBatchTransformEnabled(IsSubtitlesSection);
         Timeline.RefreshPreviewLevels();
         Timeline.RefreshTextOverlayState();
+        RefreshPreviewRenderAvailabilityIfNeeded(force: true);
         Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         Watermarks.SyncSelectedWatermarkClip(Timeline.ResolveSelectedWatermarkClipState());
+    }
+
+    private void RefreshPreviewRenderAvailabilityIfNeeded(bool force = false)
+    {
+        var hasSyntheticVideoContent = Timeline.HasVisibleTextOnlyPlaybackContent();
+        if (!force && lastHasSyntheticVideoContent == hasSyntheticVideoContent)
+        {
+            return;
+        }
+
+        lastHasSyntheticVideoContent = hasSyntheticVideoContent;
+        Preview.RefreshRenderAvailability();
     }
 
     private void SyncPreviewTransformFromTimelineTarget()
