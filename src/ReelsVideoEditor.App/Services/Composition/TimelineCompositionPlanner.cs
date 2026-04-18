@@ -168,6 +168,7 @@ public sealed class TimelineCompositionPlanner
         var maxAudioSeconds = isAudioMuted
             ? 0
             : audioClips
+                .Where(clip => !clip.IsMediaMissing)
                 .Select(clip => clip.StartSeconds + clip.DurationSeconds)
                 .DefaultIfEmpty(0)
                 .Max();

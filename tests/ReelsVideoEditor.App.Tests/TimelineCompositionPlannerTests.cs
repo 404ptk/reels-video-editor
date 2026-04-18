@@ -83,12 +83,61 @@ public class TimelineCompositionPlannerTests
         Assert.Equal(2, mutedDuration);
     }
 
-    private static TimelineClipItem BuildClip(string name, string laneLabel, double startSeconds, double durationSeconds)
+    [Fact]
+    public void ResolvePlaybackDurationSeconds_IgnoresMediaMissingAudioClips()
+    {
+        var planner = new TimelineCompositionPlanner();
+        var lanes = new ObservableCollection<VideoLaneItem>
+        {
+            new("VIDEO", true, false, false)
+        };
+        var videos = new ObservableCollection<TimelineClipItem>();
+        var audios = new ObservableCollection<TimelineClipItem>
+        {
+            BuildClip("a_missing", "AUDIO", 0, 12, isMediaMissing: true),
+            BuildClip("a_ok", "AUDIO", 0, 3)
+        };
+
+        var plan = planner.BuildPlan(videos, lanes);
+        var duration = planner.ResolvePlaybackDurationSeconds(plan, audios, isAudioMuted: false, timelineDurationSeconds: 300);
+
+        Assert.Equal(3, duration);
+    }
+
+    [Fact]
+    public void ResolveActiveVideoLayers_AtClipEnd_UsesClampedSourceTimeForShortClip()
+    {
+        var planner = new TimelineCompositionPlanner();
+        var lanes = new ObservableCollection<VideoLaneItem>
+        {
+            new("VIDEO", true, false, false)
+        };
+        var clips = new ObservableCollection<TimelineClipItem>
+        {
+            BuildClip("short", "VIDEO", 10, 0.25, sourceStartSeconds: 1.5)
+        };
+
+        var plan = planner.BuildPlan(clips, lanes);
+        var layers = planner.ResolveActiveVideoLayers(plan, timelineSeconds: 10.25);
+
+        Assert.Single(layers);
+        Assert.Equal(1750, layers[0].PlaybackMilliseconds);
+    }
+
+    private static TimelineClipItem BuildClip(
+        string name,
+        string laneLabel,
+        double startSeconds,
+        double durationSeconds,
+        bool isMediaMissing = false,
+        double sourceStartSeconds = 0)
     {
         return new TimelineClipItem(name, name, startSeconds, durationSeconds)
         {
             VideoLaneLabel = laneLabel,
-            TransformScale = 1.0
+            TransformScale = 1.0,
+            IsMediaMissing = isMediaMissing,
+            SourceStartSeconds = sourceStartSeconds
         };
     }
 }
