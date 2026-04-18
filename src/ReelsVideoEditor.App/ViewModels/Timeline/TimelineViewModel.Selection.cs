@@ -206,6 +206,10 @@ public partial class TimelineViewModel
     [RelayCommand]
     public void DeleteSelectedClips()
     {
+        var previousVideo = CaptureClipSnapshots(VideoClips);
+        var previousAudio = CaptureClipSnapshots(AudioClips);
+        var previousPlayhead = PlayheadSeconds;
+
         var selectedVideo = VideoClips.Where(c => c.IsSelected).ToList();
         var selectedAudio = AudioClips.Where(c => c.IsSelected).ToList();
 
@@ -231,31 +235,6 @@ public partial class TimelineViewModel
 
         if (videoToRemove.Count == 0 && audioToRemove.Count == 0) return;
 
-        var removedVideoClips = videoToRemove.ToList();
-        var removedAudioClips = audioToRemove.ToList();
-
-        undoStack.Push(() =>
-        {
-            foreach (var clip in removedVideoClips)
-            {
-                clip.IsSelected = false;
-                VideoClips.Add(clip);
-
-                if (ShouldCreateLinkedAudio(clip.Path))
-                {
-                    var linkedAudio = TimelineClipArrangementService.BuildLinkedAudioClip(clip);
-                    AudioClips.Add(linkedAudio);
-                    _ = LoadAudioWaveformAsync(linkedAudio);
-                }
-            }
-
-            foreach (var clip in removedAudioClips)
-            {
-                clip.IsSelected = false;
-                AudioClips.Add(clip);
-            }
-        });
-
         foreach (var clip in videoToRemove)
         {
             VideoClips.Remove(clip);
@@ -265,6 +244,9 @@ public partial class TimelineViewModel
         {
             AudioClips.Remove(clip);
         }
+
+        nextPasteStartSeconds = null;
+        undoStack.Push(() => RestoreClipSnapshots(previousVideo, previousAudio, previousPlayhead));
     }
 
     public void ClearSelection()
