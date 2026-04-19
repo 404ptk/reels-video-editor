@@ -90,7 +90,7 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
         RecomputeLayout(frameWidth, frameHeight);
     }
 
-    public void RecomputeLayout(double frameWidth, double frameHeight)
+    public void RecomputeLayout(double frameWidth, double frameHeight, bool includeGeometry = true)
     {
         var safeWidth = Math.Max(1.0, frameWidth);
         var safeHeight = Math.Max(1.0, frameHeight);
@@ -105,6 +105,18 @@ public sealed partial class PreviewTextOverlayLayer : ObservableObject
         CropTopPx = safeHeight * rawCropTop;
         CropWidth = Math.Max(0.0, safeWidth * (1.0 - rawCropLeft - rawCropRight));
         CropHeight = Math.Max(0.0, safeHeight * (1.0 - rawCropTop - rawCropBottom));
+        if (includeGeometry)
+        {
+            UpdateTextGeometry();
+        }
+        else
+        {
+            TextGeometry = null;
+        }
+    }
+
+    public void RebuildTextGeometry()
+    {
         UpdateTextGeometry();
     }
 
