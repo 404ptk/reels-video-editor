@@ -120,16 +120,9 @@ public class TimelineExportService
             throw new InvalidOperationException("No visible or unmuted clips to export.");
         }
 
-        double totalDuration = 0;
-
-        foreach (var v in videos) 
-        {
-            totalDuration = Math.Max(totalDuration, v.StartSeconds + v.DurationSeconds);
-        }
-        foreach (var a in audios) 
-        {
-            totalDuration = Math.Max(totalDuration, a.StartSeconds + a.DurationSeconds);
-        }
+        var maxVideo = videos.Count > 0 ? videos.Max(v => v.StartSeconds + v.DurationSeconds) : 0;
+        var maxAudio = audios.Count > 0 ? audios.Max(a => a.StartSeconds + a.DurationSeconds) : 0;
+        var totalDuration = Math.Max(maxVideo, maxAudio);
 
         if (totalDuration == 0) totalDuration = 5;
 
@@ -171,15 +164,15 @@ public class TimelineExportService
             var sourceDuration = Math.Max(0.001, v.DurationSeconds).ToString(CultureInfo.InvariantCulture);
 
             int extWidth = (int)(width * 1.3);
-            extWidth = extWidth % 2 == 0 ? extWidth : extWidth + 1;
+            extWidth += extWidth % 2;
             int extHeight = (int)(height * 1.3);
-            extHeight = extHeight % 2 == 0 ? extHeight : extHeight + 1;
+            extHeight += extHeight % 2;
 
             var transformScale = Math.Max(0.1, v.TransformScale);
             int scaledWidth = (int)(width * transformScale);
-            scaledWidth = scaledWidth % 2 == 0 ? scaledWidth : scaledWidth + 1;
+            scaledWidth += scaledWidth % 2;
             int scaledHeight = (int)(height * transformScale);
-            scaledHeight = scaledHeight % 2 == 0 ? scaledHeight : scaledHeight + 1;
+            scaledHeight += scaledHeight % 2;
 
             var safePreviewWidth = Math.Max(1.0, previewFrameWidth);
             var safePreviewHeight = Math.Max(1.0, previewFrameHeight);
