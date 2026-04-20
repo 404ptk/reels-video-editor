@@ -10,6 +10,7 @@ public sealed partial class TimelineClipItem : ObservableObject
     public Guid LinkId { get; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayName))]
     private string name;
 
     [ObservableProperty]
@@ -165,8 +166,4 @@ public sealed partial class TimelineClipItem : ObservableObject
         ? Brushes.White
         : new SolidColorBrush(Color.Parse("#222222"));
 
-    partial void OnNameChanged(string value)
-    {
-        OnPropertyChanged(nameof(DisplayName));
-    }
 }
