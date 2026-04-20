@@ -63,8 +63,9 @@ public sealed class AudioPlaybackService : IDisposable
             waveOut.Init(audioReader);
             waveOut.Volume = isMuted ? 0f : volume;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Failed to open audio playback for '{path}': {ex.Message}");
             Close();
         }
     }
