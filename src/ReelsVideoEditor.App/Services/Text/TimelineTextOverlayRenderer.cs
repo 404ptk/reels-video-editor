@@ -38,7 +38,7 @@ public static class TimelineTextOverlayRenderer
                 continue;
             }
 
-            var textScale = Math.Max(0.1, layerState.TransformScale);
+            var textScale = Math.Max(0.1, layerState.TransformScale * layerState.AnimationScale);
             var fontSize = Math.Max(1f, (float)(layerState.FontSize * scale * textScale));
             var offsetX = (float)(layerState.TransformX * offsetScaleX);
             var offsetY = (float)(layerState.TransformY * offsetScaleY);
