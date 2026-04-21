@@ -104,6 +104,7 @@ public partial class PreviewPanelView
 
             isPanning = true;
             lastPanPosition = pointer.Position;
+            e.Pointer.Capture(previewViewport);
             e.Handled = true;
         }
     }
@@ -165,6 +166,7 @@ public partial class PreviewPanelView
 
     private void OnPreviewPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        e.Pointer.Capture(null);
         EndTransformCropEditSession();
         isPanning = false;
         isScaling = false;
@@ -285,7 +287,7 @@ public partial class PreviewPanelView
 
     private void ConstrainPan()
     {
-        if (previewFrame is null)
+        if (previewFrame is null || previewViewport is null)
         {
             return;
         }
@@ -304,9 +306,18 @@ public partial class PreviewPanelView
 
         var scaledWidth = previewFrame.Width * currentZoom;
         var scaledHeight = previewFrame.Height * currentZoom;
+        var viewportWidth = Math.Max(1.0, previewViewport.Bounds.Width);
+        var viewportHeight = Math.Max(1.0, previewViewport.Bounds.Height);
 
-        var maxPanX = Math.Max(0, (scaledWidth - previewFrame.Width) / 2);
-        var maxPanY = Math.Max(0, (scaledHeight - previewFrame.Height) / 2);
+        var baseMaxPanX = Math.Max(0, (scaledWidth - viewportWidth) / 2);
+        var baseMaxPanY = Math.Max(0, (scaledHeight - viewportHeight) / 2);
+
+        var overscrollX = viewportWidth * 0.18;
+        var overscrollY = viewportHeight * 0.32;
+        var zoomSlackX = Math.Max(0, (scaledWidth - previewFrame.Width) / 2) * 0.35;
+        var zoomSlackY = Math.Max(0, (scaledHeight - previewFrame.Height) / 2) * 0.75;
+        var maxPanX = baseMaxPanX + overscrollX + zoomSlackX;
+        var maxPanY = baseMaxPanY + overscrollY + zoomSlackY;
 
         panX = Math.Clamp(panX, -maxPanX, maxPanX);
         panY = Math.Clamp(panY, -maxPanY, maxPanY);
