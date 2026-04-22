@@ -24,6 +24,7 @@ public partial class TimelinePanelView
 
     private const double ClipCornerFadeHorizontalThreshold = 12;
     private const double ClipCornerFadeVerticalThreshold = 12;
+    private const double ClipFadeStrokeHitThreshold = 6;
 
     private void StartVideoClipFade(TimelineViewModel viewModel, TimelineClipItem clip, ClipFadeCorner fadeCorner)
     {
@@ -94,13 +95,40 @@ public partial class TimelinePanelView
         }
     }
 
-    private static ClipFadeCorner ResolveClipFadeCorner(Control control, Point localPosition)
+    private static ClipFadeCorner ResolveClipFadeCorner(Control control, TimelineClipItem clip, Point localPosition)
     {
         var width = Math.Max(0, control.Bounds.Width);
         var height = Math.Max(0, control.Bounds.Height);
         if (width <= 0 || height <= 0)
         {
             return ClipFadeCorner.None;
+        }
+
+        var fadeInWidth = Math.Clamp(clip.FadeInVisualWidth, 0, width);
+        if (fadeInWidth >= 2)
+        {
+            var fadeInDistance = DistanceToSegment(
+                localPosition,
+                new Point(0, height),
+                new Point(fadeInWidth, 0));
+            if (fadeInDistance <= ClipFadeStrokeHitThreshold)
+            {
+                return ClipFadeCorner.TopLeft;
+            }
+        }
+
+        var fadeOutWidth = Math.Clamp(clip.FadeOutVisualWidth, 0, width);
+        if (fadeOutWidth >= 2)
+        {
+            var fadeOutStartX = width - fadeOutWidth;
+            var fadeOutDistance = DistanceToSegment(
+                localPosition,
+                new Point(fadeOutStartX, 0),
+                new Point(width, height));
+            if (fadeOutDistance <= ClipFadeStrokeHitThreshold)
+            {
+                return ClipFadeCorner.TopRight;
+            }
         }
 
         var horizontalThreshold = Math.Min(ClipCornerFadeHorizontalThreshold, Math.Max(4, width / 3));
@@ -121,5 +149,25 @@ public partial class TimelinePanelView
         }
 
         return ClipFadeCorner.None;
+    }
+
+    private static double DistanceToSegment(Point point, Point segmentStart, Point segmentEnd)
+    {
+        var dx = segmentEnd.X - segmentStart.X;
+        var dy = segmentEnd.Y - segmentStart.Y;
+        var segmentLengthSquared = (dx * dx) + (dy * dy);
+        if (segmentLengthSquared <= 0.0001)
+        {
+            return Math.Sqrt(Math.Pow(point.X - segmentStart.X, 2) + Math.Pow(point.Y - segmentStart.Y, 2));
+        }
+
+        var t = ((point.X - segmentStart.X) * dx + (point.Y - segmentStart.Y) * dy) / segmentLengthSquared;
+        var clampedT = Math.Clamp(t, 0, 1);
+
+        var projectionX = segmentStart.X + (clampedT * dx);
+        var projectionY = segmentStart.Y + (clampedT * dy);
+        var distanceX = point.X - projectionX;
+        var distanceY = point.Y - projectionY;
+        return Math.Sqrt((distanceX * distanceX) + (distanceY * distanceY));
     }
 }

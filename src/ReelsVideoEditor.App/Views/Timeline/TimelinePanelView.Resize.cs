@@ -104,7 +104,7 @@ public partial class TimelinePanelView
         }
 
         var localPosition = eventArgs.GetPosition(control);
-        var fadeCorner = ResolveClipFadeCorner(control, localPosition);
+        var fadeCorner = ResolveClipFadeCorner(control, clip, localPosition);
         if (fadeCorner is not ClipFadeCorner.None)
         {
             control.Cursor = fadeCorner == ClipFadeCorner.TopLeft
