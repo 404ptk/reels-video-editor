@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ReelsVideoEditor.App.ViewModels.Timeline"
              xmlns:arrangementVm="using:ReelsVideoEditor.App.ViewModels.Timeline.Arrangement"
+             xmlns:timelineViews="using:ReelsVideoEditor.App.Views.Timeline"
              x:Class="ReelsVideoEditor.App.Views.Timeline.TimelinePanelView"
              x:DataType="vm:TimelineViewModel"
              Focusable="True">
@@ -520,32 +521,7 @@
                                                                     Background="#22C2D8C4"
                                                                     IsHitTestVisible="False"
                                                                     IsVisible="{Binding IsSelected}" />
-                                                            <Border HorizontalAlignment="Left"
-                                                                    VerticalAlignment="Stretch"
-                                                                    Width="{Binding FadeInVisualWidth}"
-                                                                    Margin="0,0,0,0"
-                                                                    IsHitTestVisible="False"
-                                                                    IsVisible="{Binding IsFadeInVisualVisible}">
-                                                                <Border.Background>
-                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                        <GradientStop Color="#66000000" Offset="0" />
-                                                                        <GradientStop Color="#00000000" Offset="1" />
-                                                                    </LinearGradientBrush>
-                                                                </Border.Background>
-                                                            </Border>
-                                                            <Border HorizontalAlignment="Right"
-                                                                    VerticalAlignment="Stretch"
-                                                                    Width="{Binding FadeOutVisualWidth}"
-                                                                    Margin="0,0,0,0"
-                                                                    IsHitTestVisible="False"
-                                                                    IsVisible="{Binding IsFadeOutVisualVisible}">
-                                                                <Border.Background>
-                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                                                        <GradientStop Color="#00000000" Offset="0" />
-                                                                        <GradientStop Color="#66000000" Offset="1" />
-                                                                    </LinearGradientBrush>
-                                                                </Border.Background>
-                                                            </Border>
+                                                            <timelineViews:ClipFadeOverlayView />
                                                             <Border Width="2"
                                                                 HorizontalAlignment="Left"
                                                                 VerticalAlignment="Stretch"

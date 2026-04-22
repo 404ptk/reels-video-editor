@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:arrangementVm="using:ReelsVideoEditor.App.ViewModels.Timeline.Arrangement"
+             x:Class="ReelsVideoEditor.App.Views.Timeline.ClipFadeOverlayView"
+             x:DataType="arrangementVm:TimelineClipItem"
+             IsHitTestVisible="False">
+    <Grid>
+        <Border HorizontalAlignment="Left"
+                VerticalAlignment="Stretch"
+                Width="{Binding FadeInVisualWidth}"
+                IsVisible="{Binding IsFadeInVisualVisible}">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#66000000" Offset="0" />
+                    <GradientStop Color="#00000000" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Border HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Width="{Binding FadeOutVisualWidth}"
+                IsVisible="{Binding IsFadeOutVisualVisible}">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#00000000" Offset="0" />
+                    <GradientStop Color="#66000000" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+    </Grid>
+</UserControl>
