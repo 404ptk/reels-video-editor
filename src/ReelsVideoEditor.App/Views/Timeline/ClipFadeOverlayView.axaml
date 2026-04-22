@@ -4,31 +4,16 @@
              x:Class="ReelsVideoEditor.App.Views.Timeline.ClipFadeOverlayView"
              x:DataType="arrangementVm:TimelineClipItem"
              IsHitTestVisible="False">
-    <UserControl.Resources>
-        <LinearGradientBrush x:Key="ClipFadeInBrush" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#6E000000" Offset="0" />
-            <GradientStop Color="#2A000000" Offset="0.7" />
-            <GradientStop Color="#00000000" Offset="1" />
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="ClipFadeOutBrush" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#00000000" Offset="0" />
-            <GradientStop Color="#2A000000" Offset="0.3" />
-            <GradientStop Color="#6E000000" Offset="1" />
-        </LinearGradientBrush>
-    </UserControl.Resources>
-
     <Grid ClipToBounds="True">
         <Border HorizontalAlignment="Left"
                 VerticalAlignment="Stretch"
                 Width="{Binding FadeInVisualWidth}"
                 IsVisible="{Binding IsFadeInVisualVisible}">
             <Grid>
-            <Border Background="#22000000" />
-                <Border Background="{StaticResource ClipFadeInBrush}" />
-                <Border HorizontalAlignment="Right"
-                        VerticalAlignment="Stretch"
-                        Width="1"
-                    Background="#5A000000" />
+                <Path Data="M 0,1 L 1,0"
+                      Stretch="Fill"
+                      Stroke="#B9000000"
+                        StrokeThickness="2" />
             </Grid>
         </Border>
 
@@ -37,12 +22,10 @@
                 Width="{Binding FadeOutVisualWidth}"
                 IsVisible="{Binding IsFadeOutVisualVisible}">
             <Grid>
-            <Border Background="#22000000" />
-                <Border Background="{StaticResource ClipFadeOutBrush}" />
-                <Border HorizontalAlignment="Left"
-                        VerticalAlignment="Stretch"
-                        Width="1"
-                        Background="#5A000000" />
+                <Path Data="M 0,0 L 1,1"
+                      Stretch="Fill"
+                      Stroke="#B9000000"
+                        StrokeThickness="2" />
             </Grid>
         </Border>
     </Grid>
