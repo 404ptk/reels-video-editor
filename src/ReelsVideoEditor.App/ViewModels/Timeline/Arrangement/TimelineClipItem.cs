@@ -107,6 +107,24 @@ public sealed partial class TimelineClipItem : ObservableObject
     private double opacity = 1.0;
 
     [ObservableProperty]
+    private double fadeInDurationSeconds;
+
+    [ObservableProperty]
+    private double fadeOutDurationSeconds;
+
+    [ObservableProperty]
+    private double fadeInVisualWidth;
+
+    [ObservableProperty]
+    private double fadeOutVisualWidth;
+
+    [ObservableProperty]
+    private bool isFadeInVisualVisible;
+
+    [ObservableProperty]
+    private bool isFadeOutVisualVisible;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DisplayName))]
     [NotifyPropertyChangedFor(nameof(ClipBackground))]
     [NotifyPropertyChangedFor(nameof(ClipBorderBrush))]
@@ -165,5 +183,40 @@ public sealed partial class TimelineClipItem : ObservableObject
     public IBrush ClipTextBrush => IsMediaMissing
         ? Brushes.White
         : new SolidColorBrush(Color.Parse("#222222"));
+
+    partial void OnDurationSecondsChanged(double value)
+    {
+        UpdateFadeVisualMetrics();
+    }
+
+    partial void OnWidthChanged(double value)
+    {
+        UpdateFadeVisualMetrics();
+    }
+
+    partial void OnFadeInDurationSecondsChanged(double value)
+    {
+        UpdateFadeVisualMetrics();
+    }
+
+    partial void OnFadeOutDurationSecondsChanged(double value)
+    {
+        UpdateFadeVisualMetrics();
+    }
+
+    private void UpdateFadeVisualMetrics()
+    {
+        var safeDuration = Math.Max(0.0001, DurationSeconds);
+        var safeWidth = Math.Max(0, Width);
+
+        var inRatio = Math.Clamp(FadeInDurationSeconds / safeDuration, 0, 1);
+        var outRatio = Math.Clamp(FadeOutDurationSeconds / safeDuration, 0, 1);
+
+        FadeInVisualWidth = safeWidth * inRatio;
+        FadeOutVisualWidth = safeWidth * outRatio;
+
+        IsFadeInVisualVisible = FadeInVisualWidth >= 2;
+        IsFadeOutVisualVisible = FadeOutVisualWidth >= 2;
+    }
 
 }

@@ -22,6 +22,13 @@ public partial class TimelinePanelView : UserControl
         Right
     }
 
+    private enum ClipFadeCorner
+    {
+        None,
+        TopLeft,
+        TopRight
+    }
+
     private readonly Border? _timelineRuler;
     private readonly ScrollViewer? _laneHeaderScrollViewer;
     private readonly ScrollViewer? _timelineScrollViewer;
@@ -30,21 +37,28 @@ public partial class TimelinePanelView : UserControl
     private TimelineClipItem? _activeLevelClip;
     private TimelineClipItem? _draggingVideoClip;
     private TimelineClipItem? _resizingVideoClip;
+    private TimelineClipItem? _fadingVideoClip;
     private Guid? _activeTrimMarkerLinkId;
     private bool _isAdjustingAudioLevel;
     private bool _isDraggingVideoClip;
     private bool _isResizingVideoClip;
+    private bool _isAdjustingVideoFade;
     private ClipResizeEdge _activeResizeEdge;
+    private ClipFadeCorner _activeFadeCorner;
     private double _draggingClipInitialStartSeconds;
     private string _draggingClipInitialLaneLabel = string.Empty;
     private double _draggingClipPointerOffsetSeconds;
     private double _resizingClipInitialStartSeconds;
     private double _resizingClipInitialDurationSeconds;
     private double _resizingClipInitialSourceStartSeconds;
+    private double _fadeClipInitialInSeconds;
+    private double _fadeClipInitialOutSeconds;
     private double? _lastDragOverCanvasX;
     private const double ClipTopEdgeThreshold = 6;
     private const double LevelHandleHitThreshold = 5;
     private const double ClipHorizontalResizeEdgeThreshold = 8;
+    private const double ClipCornerFadeHorizontalThreshold = 12;
+    private const double ClipCornerFadeVerticalThreshold = 12;
     private const double ClipLeftInset = 10;
     private const double MouseWheelVerticalStep = 48;
     private bool _isSyncingVerticalScroll;
@@ -382,6 +396,14 @@ public partial class TimelinePanelView : UserControl
         }
 
         var localPosition = eventArgs.GetPosition(control);
+        var fadeCorner = ResolveClipFadeCorner(control, localPosition);
+        if (fadeCorner is not ClipFadeCorner.None)
+        {
+            StartVideoClipFade(viewModel, clip, fadeCorner);
+            eventArgs.Handled = true;
+            return;
+        }
+
         var resizeEdge = ResolveClipResizeEdge(control, localPosition.X);
         if (resizeEdge is not ClipResizeEdge.None)
         {
@@ -403,7 +425,7 @@ public partial class TimelinePanelView : UserControl
             UpdateVideoClipResizeCursor(hoverViewModel, hoverControl, hoverClip, eventArgs);
         }
 
-        if (_isResizingVideoClip)
+        if (_isResizingVideoClip || _isAdjustingVideoFade)
         {
             return;
         }
@@ -450,6 +472,15 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
+        if (_isAdjustingVideoFade
+            && DataContext is TimelineViewModel fadeViewModel
+            && _fadingVideoClip is TimelineClipItem fadingClip)
+        {
+            EndVideoClipFade(fadingClip, fadeViewModel, commit: true);
+            eventArgs.Handled = true;
+            return;
+        }
+
         if (!_isDraggingVideoClip
             || DataContext is not TimelineViewModel viewModel
             || sender is not Control control
@@ -471,7 +502,7 @@ public partial class TimelinePanelView : UserControl
         }
 
         control.Cursor = null;
-        if (_isDraggingVideoClip || _isResizingVideoClip)
+        if (_isDraggingVideoClip || _isResizingVideoClip || _isAdjustingVideoFade)
         {
             return;
         }
@@ -592,6 +623,28 @@ public partial class TimelinePanelView : UserControl
             return;
         }
 
+        if (_isAdjustingVideoFade)
+        {
+            if (DataContext is TimelineViewModel fadeViewModel && _fadingVideoClip is TimelineClipItem fadingClip)
+            {
+                var timelineCanvasForFade = this.FindControl<Grid>("TimelineCanvas");
+                if (timelineCanvasForFade is not null)
+                {
+                    var fadePointerPoint = eventArgs.GetCurrentPoint(sender as Visual ?? this);
+                    if (!fadePointerPoint.Properties.IsLeftButtonPressed)
+                    {
+                        return;
+                    }
+
+                    var pointerCanvasX = eventArgs.GetPosition(timelineCanvasForFade).X;
+                    var pointerSeconds = (pointerCanvasX - ClipLeftInset) / Math.Max(0.0001, fadeViewModel.TickWidth);
+                    UpdateVideoClipFadeFromPointer(fadeViewModel, fadingClip, pointerSeconds);
+                }
+            }
+
+            return;
+        }
+
         if (_isDraggingVideoClip)
         {
             if (DataContext is TimelineViewModel dragViewModel && _draggingVideoClip is TimelineClipItem draggingClip)
@@ -660,6 +713,13 @@ public partial class TimelinePanelView : UserControl
             && _resizingVideoClip is TimelineClipItem resizingClip)
         {
             EndVideoClipResize(resizingClip, resizeViewModel, commit: true);
+        }
+
+        if (_isAdjustingVideoFade
+            && DataContext is TimelineViewModel fadeViewModel
+            && _fadingVideoClip is TimelineClipItem fadingClip)
+        {
+            EndVideoClipFade(fadingClip, fadeViewModel, commit: true);
         }
 
         if (_isDraggingVideoClip
@@ -838,6 +898,55 @@ public partial class TimelinePanelView : UserControl
         ClearTrimMarker(viewModel);
     }
 
+    private void StartVideoClipFade(TimelineViewModel viewModel, TimelineClipItem clip, ClipFadeCorner fadeCorner)
+    {
+        _fadingVideoClip = clip;
+        _activeFadeCorner = fadeCorner;
+        _isAdjustingVideoFade = true;
+        _dragStartPoint = null;
+
+        _fadeClipInitialInSeconds = clip.FadeInDurationSeconds;
+        _fadeClipInitialOutSeconds = clip.FadeOutDurationSeconds;
+
+        viewModel.SelectSingleVideoClip(clip);
+    }
+
+    private void EndVideoClipFade(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
+    {
+        var previousFadeInSeconds = _fadeClipInitialInSeconds;
+        var previousFadeOutSeconds = _fadeClipInitialOutSeconds;
+
+        if (commit)
+        {
+            viewModel.CommitClipFade(clip, previousFadeInSeconds, previousFadeOutSeconds);
+        }
+
+        _isAdjustingVideoFade = false;
+        _fadingVideoClip = null;
+        _activeFadeCorner = ClipFadeCorner.None;
+        _fadeClipInitialInSeconds = 0;
+        _fadeClipInitialOutSeconds = 0;
+    }
+
+    private void UpdateVideoClipFadeFromPointer(TimelineViewModel viewModel, TimelineClipItem clip, double pointerSeconds)
+    {
+        var clipStart = clip.StartSeconds;
+        var clipEnd = clip.StartSeconds + clip.DurationSeconds;
+
+        if (_activeFadeCorner == ClipFadeCorner.TopLeft)
+        {
+            var requestedFadeIn = pointerSeconds - clipStart;
+            viewModel.AdjustClipFadeFromLeftCorner(clip, requestedFadeIn);
+            return;
+        }
+
+        if (_activeFadeCorner == ClipFadeCorner.TopRight)
+        {
+            var requestedFadeOut = clipEnd - pointerSeconds;
+            viewModel.AdjustClipFadeFromRightCorner(clip, requestedFadeOut);
+        }
+    }
+
     private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
     {
         var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
@@ -882,10 +991,50 @@ public partial class TimelinePanelView : UserControl
         return ClipResizeEdge.None;
     }
 
+    private static ClipFadeCorner ResolveClipFadeCorner(Control control, Point localPosition)
+    {
+        var width = Math.Max(0, control.Bounds.Width);
+        var height = Math.Max(0, control.Bounds.Height);
+        if (width <= 0 || height <= 0)
+        {
+            return ClipFadeCorner.None;
+        }
+
+        var horizontalThreshold = Math.Min(ClipCornerFadeHorizontalThreshold, Math.Max(4, width / 3));
+        var verticalThreshold = Math.Min(ClipCornerFadeVerticalThreshold, Math.Max(4, height / 2));
+        if (localPosition.Y > verticalThreshold)
+        {
+            return ClipFadeCorner.None;
+        }
+
+        if (localPosition.X <= horizontalThreshold)
+        {
+            return ClipFadeCorner.TopLeft;
+        }
+
+        if (localPosition.X >= width - horizontalThreshold)
+        {
+            return ClipFadeCorner.TopRight;
+        }
+
+        return ClipFadeCorner.None;
+    }
+
     private void UpdateVideoClipResizeCursor(TimelineViewModel viewModel, Control control, TimelineClipItem clip, PointerEventArgs eventArgs)
     {
         if (_isDraggingVideoClip)
         {
+            return;
+        }
+
+        if (_isAdjustingVideoFade)
+        {
+            control.Cursor = _activeFadeCorner switch
+            {
+                ClipFadeCorner.TopLeft => new Cursor(StandardCursorType.TopLeftCorner),
+                ClipFadeCorner.TopRight => new Cursor(StandardCursorType.TopRightCorner),
+                _ => null
+            };
             return;
         }
 
@@ -897,6 +1046,16 @@ public partial class TimelinePanelView : UserControl
         }
 
         var localPosition = eventArgs.GetPosition(control);
+        var fadeCorner = ResolveClipFadeCorner(control, localPosition);
+        if (fadeCorner is not ClipFadeCorner.None)
+        {
+            control.Cursor = fadeCorner == ClipFadeCorner.TopLeft
+                ? new Cursor(StandardCursorType.TopLeftCorner)
+                : new Cursor(StandardCursorType.TopRightCorner);
+            SetTrimMarker(viewModel, clip, ClipResizeEdge.None);
+            return;
+        }
+
         var resizeEdge = ResolveClipResizeEdge(control, localPosition.X);
         control.Cursor = resizeEdge is ClipResizeEdge.None
             ? null

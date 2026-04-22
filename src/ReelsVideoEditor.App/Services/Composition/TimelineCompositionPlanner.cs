@@ -84,12 +84,14 @@ public sealed class TimelineCompositionPlanner
                 item.Clip.SourceStartSeconds,
                 item.Clip.SourceStartSeconds + item.Clip.DurationSeconds);
             var localMilliseconds = (long)Math.Round(localSeconds * 1000, MidpointRounding.AwayFromZero);
+            var opacity = ResolveClipOpacityAtTimelineSeconds(item.Clip, timelineSeconds);
 
             result.Add(new CompositionActiveLayer(
                 item.Clip,
                 item.LaneIndex,
                 localMilliseconds,
-                DrawBlurredBackground: i == 0));
+                DrawBlurredBackground: i == 0,
+                Opacity: opacity));
         }
 
         return result;
@@ -252,6 +254,38 @@ public sealed class TimelineCompositionPlanner
 
         return lanes.FirstOrDefault();
     }
+
+    private static double ResolveClipOpacityAtTimelineSeconds(TimelineClipItem clip, double timelineSeconds)
+    {
+        var duration = Math.Max(0, clip.DurationSeconds);
+        if (duration <= 0.0001)
+        {
+            return 0;
+        }
+
+        var clipLocalSeconds = Math.Clamp(timelineSeconds - clip.StartSeconds, 0, duration);
+        var fadeIn = Math.Clamp(clip.FadeInDurationSeconds, 0, duration);
+        var fadeOut = Math.Clamp(clip.FadeOutDurationSeconds, 0, duration);
+
+        var fadeMultiplier = 1.0;
+        if (fadeIn > 0.0001 && clipLocalSeconds < fadeIn)
+        {
+            fadeMultiplier = Math.Min(fadeMultiplier, clipLocalSeconds / fadeIn);
+        }
+
+        if (fadeOut > 0.0001)
+        {
+            var fadeOutStart = Math.Max(0, duration - fadeOut);
+            if (clipLocalSeconds > fadeOutStart)
+            {
+                var secondsToClipEnd = Math.Max(0, duration - clipLocalSeconds);
+                fadeMultiplier = Math.Min(fadeMultiplier, secondsToClipEnd / fadeOut);
+            }
+        }
+
+        var baseOpacity = Math.Clamp(clip.Opacity, 0.0, 1.0);
+        return Math.Clamp(baseOpacity * fadeMultiplier, 0.0, 1.0);
+    }
 }
 
 public sealed record TimelineCompositionPlan(
@@ -265,4 +299,5 @@ public readonly record struct CompositionActiveLayer(
     TimelineClipItem Clip,
     int LaneIndex,
     long PlaybackMilliseconds,
-    bool DrawBlurredBackground);
+    bool DrawBlurredBackground,
+    double Opacity);

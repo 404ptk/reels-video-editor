@@ -437,7 +437,8 @@ public class TimelineExportService
                         (float)layer.CropTop,
                         (float)layer.CropRight,
                         (float)layer.CropBottom,
-                        layer.DrawBlurredBackground));
+                        layer.DrawBlurredBackground,
+                        (float)layer.Opacity));
                 }
 
                 var composed = compositor.ComposeLayers(frameLayers, width, height);

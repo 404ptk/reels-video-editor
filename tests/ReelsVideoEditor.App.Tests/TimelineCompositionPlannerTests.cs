@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using ReelsVideoEditor.App.Services.Composition;
 using ReelsVideoEditor.App.ViewModels.Timeline;
 using ReelsVideoEditor.App.ViewModels.Timeline.Arrangement;
@@ -122,6 +123,30 @@ public class TimelineCompositionPlannerTests
 
         Assert.Single(layers);
         Assert.Equal(1750, layers[0].PlaybackMilliseconds);
+    }
+
+    [Fact]
+    public void ResolveActiveVideoLayers_UsesFadeDurationsToShapeOpacity()
+    {
+        var planner = new TimelineCompositionPlanner();
+        var lanes = new ObservableCollection<VideoLaneItem>
+        {
+            new("VIDEO", true, false, false)
+        };
+        var clip = BuildClip("fade", "VIDEO", 10, 8);
+        clip.FadeInDurationSeconds = 2;
+        clip.FadeOutDurationSeconds = 2;
+        clip.Opacity = 1.0;
+
+        var plan = planner.BuildPlan(new ObservableCollection<TimelineClipItem> { clip }, lanes);
+
+        var fadeInLayer = planner.ResolveActiveVideoLayers(plan, timelineSeconds: 11).Single();
+        var middleLayer = planner.ResolveActiveVideoLayers(plan, timelineSeconds: 14).Single();
+        var fadeOutLayer = planner.ResolveActiveVideoLayers(plan, timelineSeconds: 17).Single();
+
+        Assert.Equal(0.5, fadeInLayer.Opacity, 3);
+        Assert.Equal(1.0, middleLayer.Opacity, 3);
+        Assert.Equal(0.5, fadeOutLayer.Opacity, 3);
     }
 
     private static TimelineClipItem BuildClip(

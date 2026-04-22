@@ -69,7 +69,7 @@ public partial class TimelineViewModel
                 CropTop: clip.CropTop,
                 CropRight: clip.CropRight,
                 CropBottom: clip.CropBottom,
-                Opacity: clip.Opacity));
+                Opacity: layer.Opacity));
         }
 
         return result;

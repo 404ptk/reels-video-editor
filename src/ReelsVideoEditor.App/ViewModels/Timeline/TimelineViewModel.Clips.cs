@@ -490,6 +490,35 @@ public partial class TimelineViewModel
         });
     }
 
+    public void AdjustClipFadeFromLeftCorner(TimelineClipItem clip, double requestedFadeInSeconds)
+    {
+        var maxFadeIn = Math.Max(0, clip.DurationSeconds - Math.Max(0, clip.FadeOutDurationSeconds));
+        var nextFadeIn = Math.Clamp(requestedFadeInSeconds, 0, maxFadeIn);
+        ApplyClipFadeDurations(clip, nextFadeIn, clip.FadeOutDurationSeconds);
+    }
+
+    public void AdjustClipFadeFromRightCorner(TimelineClipItem clip, double requestedFadeOutSeconds)
+    {
+        var maxFadeOut = Math.Max(0, clip.DurationSeconds - Math.Max(0, clip.FadeInDurationSeconds));
+        var nextFadeOut = Math.Clamp(requestedFadeOutSeconds, 0, maxFadeOut);
+        ApplyClipFadeDurations(clip, clip.FadeInDurationSeconds, nextFadeOut);
+    }
+
+    public void CommitClipFade(TimelineClipItem clip, double previousFadeInDurationSeconds, double previousFadeOutDurationSeconds)
+    {
+        var changedFadeIn = Math.Abs(clip.FadeInDurationSeconds - previousFadeInDurationSeconds) >= 0.0001;
+        var changedFadeOut = Math.Abs(clip.FadeOutDurationSeconds - previousFadeOutDurationSeconds) >= 0.0001;
+        if (!changedFadeIn && !changedFadeOut)
+        {
+            return;
+        }
+
+        undoStack.Push(() =>
+        {
+            ApplyClipFadeDurations(clip, previousFadeInDurationSeconds, previousFadeOutDurationSeconds);
+        });
+    }
+
     public void CommitClipMove(TimelineClipItem clip, double previousStartSeconds, string previousLaneLabel)
     {
         var currentStartSeconds = clip.StartSeconds;
@@ -730,6 +759,7 @@ public partial class TimelineViewModel
         clip.StartSeconds = boundedStartSeconds;
         clip.DurationSeconds = boundedDurationSeconds;
         clip.SourceStartSeconds = boundedSourceStartSeconds;
+        NormalizeClipFadeDurations(clip);
         TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
 
         var linkedAudio = AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
@@ -745,6 +775,49 @@ public partial class TimelineViewModel
         NotifyPreviewClipIfChanged();
         UpdatePreviewLevels();
         NotifyTextOverlayStateChanged();
+    }
+
+    private void ApplyClipFadeDurations(TimelineClipItem clip, double fadeInDurationSeconds, double fadeOutDurationSeconds)
+    {
+        var boundedFadeIn = Math.Max(0, fadeInDurationSeconds);
+        var boundedFadeOut = Math.Max(0, fadeOutDurationSeconds);
+        var maxFadeTotal = Math.Max(0, clip.DurationSeconds);
+        var fadeTotal = boundedFadeIn + boundedFadeOut;
+        if (fadeTotal > maxFadeTotal && fadeTotal > 0.0001)
+        {
+            var scale = maxFadeTotal / fadeTotal;
+            boundedFadeIn *= scale;
+            boundedFadeOut *= scale;
+        }
+
+        if (Math.Abs(clip.FadeInDurationSeconds - boundedFadeIn) < 0.0001
+            && Math.Abs(clip.FadeOutDurationSeconds - boundedFadeOut) < 0.0001)
+        {
+            return;
+        }
+
+        clip.FadeInDurationSeconds = boundedFadeIn;
+        clip.FadeOutDurationSeconds = boundedFadeOut;
+
+        NotifyPreviewClipIfChanged();
+    }
+
+    private static void NormalizeClipFadeDurations(TimelineClipItem clip)
+    {
+        var boundedFadeIn = Math.Max(0, clip.FadeInDurationSeconds);
+        var boundedFadeOut = Math.Max(0, clip.FadeOutDurationSeconds);
+        var maxFadeTotal = Math.Max(0, clip.DurationSeconds);
+        var fadeTotal = boundedFadeIn + boundedFadeOut;
+
+        if (fadeTotal > maxFadeTotal && fadeTotal > 0.0001)
+        {
+            var scale = maxFadeTotal / fadeTotal;
+            boundedFadeIn *= scale;
+            boundedFadeOut *= scale;
+        }
+
+        clip.FadeInDurationSeconds = boundedFadeIn;
+        clip.FadeOutDurationSeconds = boundedFadeOut;
     }
 
     private double ResolvePreviewClipStartSeconds()
