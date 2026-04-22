@@ -521,7 +521,6 @@
                                                                     Background="#22C2D8C4"
                                                                     IsHitTestVisible="False"
                                                                     IsVisible="{Binding IsSelected}" />
-                                                            <timelineViews:ClipFadeOverlayView />
                                                             <Border Width="2"
                                                                 HorizontalAlignment="Left"
                                                                 VerticalAlignment="Stretch"
@@ -544,6 +543,7 @@
                                                                        FontWeight="SemiBold"
                                                                        Text="{Binding DisplayName}"
                                                                        TextTrimming="CharacterEllipsis" />
+                                                            <timelineViews:ClipFadeOverlayView />
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
