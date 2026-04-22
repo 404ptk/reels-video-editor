@@ -15,36 +15,16 @@ namespace ReelsVideoEditor.App.Views.Timeline;
 
 public partial class TimelinePanelView : UserControl
 {
-    private enum ClipResizeEdge
-    {
-        None,
-        Left,
-        Right
-    }
-
     private readonly Border? _timelineRuler;
     private readonly ScrollViewer? _laneHeaderScrollViewer;
     private readonly ScrollViewer? _timelineScrollViewer;
     private readonly ScrollBar? _timelineVerticalScrollBar;
     private Point? _dragStartPoint;
     private TimelineClipItem? _activeLevelClip;
-    private TimelineClipItem? _draggingVideoClip;
-    private TimelineClipItem? _resizingVideoClip;
-    private Guid? _activeTrimMarkerLinkId;
     private bool _isAdjustingAudioLevel;
-    private bool _isDraggingVideoClip;
-    private bool _isResizingVideoClip;
-    private ClipResizeEdge _activeResizeEdge;
-    private double _draggingClipInitialStartSeconds;
-    private string _draggingClipInitialLaneLabel = string.Empty;
-    private double _draggingClipPointerOffsetSeconds;
-    private double _resizingClipInitialStartSeconds;
-    private double _resizingClipInitialDurationSeconds;
-    private double _resizingClipInitialSourceStartSeconds;
     private double? _lastDragOverCanvasX;
     private const double ClipTopEdgeThreshold = 6;
     private const double LevelHandleHitThreshold = 5;
-    private const double ClipHorizontalResizeEdgeThreshold = 8;
     private const double ClipLeftInset = 10;
     private const double MouseWheelVerticalStep = 48;
     private bool _isSyncingVerticalScroll;
@@ -849,78 +829,6 @@ public partial class TimelinePanelView : UserControl
         }
     }
 
-    private void EndVideoClipDrag(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
-    {
-        var previousStartSeconds = _draggingClipInitialStartSeconds;
-        var previousLaneLabel = _draggingClipInitialLaneLabel;
-
-        if (commit)
-        {
-            viewModel.CommitClipMove(clip, previousStartSeconds, previousLaneLabel);
-        }
-
-        _isDraggingVideoClip = false;
-        _draggingVideoClip = null;
-        _draggingClipPointerOffsetSeconds = 0;
-        _draggingClipInitialStartSeconds = 0;
-        _draggingClipInitialLaneLabel = string.Empty;
-        ClearTrimMarker(viewModel);
-    }
-
-    private void StartVideoClipResize(TimelineViewModel viewModel, TimelineClipItem clip, ClipResizeEdge resizeEdge)
-    {
-        _resizingVideoClip = clip;
-        _activeResizeEdge = resizeEdge;
-        _isResizingVideoClip = true;
-        _dragStartPoint = null;
-
-        _resizingClipInitialStartSeconds = clip.StartSeconds;
-        _resizingClipInitialDurationSeconds = clip.DurationSeconds;
-        _resizingClipInitialSourceStartSeconds = clip.SourceStartSeconds;
-        SetTrimMarker(viewModel, clip, resizeEdge);
-
-        viewModel.SelectSingleVideoClip(clip);
-    }
-
-    private void EndVideoClipResize(TimelineClipItem clip, TimelineViewModel viewModel, bool commit)
-    {
-        var previousStartSeconds = _resizingClipInitialStartSeconds;
-        var previousDurationSeconds = _resizingClipInitialDurationSeconds;
-        var previousSourceStartSeconds = _resizingClipInitialSourceStartSeconds;
-
-        if (commit)
-        {
-            viewModel.CommitClipResize(clip, previousStartSeconds, previousDurationSeconds, previousSourceStartSeconds);
-        }
-
-        _isResizingVideoClip = false;
-        _resizingVideoClip = null;
-        _activeResizeEdge = ClipResizeEdge.None;
-        _resizingClipInitialStartSeconds = 0;
-        _resizingClipInitialDurationSeconds = 0;
-        _resizingClipInitialSourceStartSeconds = 0;
-        ClearTrimMarker(viewModel);
-    }
-
-
-    private void StartVideoClipDrag(TimelineViewModel viewModel, Control timelineCanvas, TimelineClipItem clip, PointerPressedEventArgs eventArgs)
-    {
-        var pointerCanvasX = eventArgs.GetPosition(timelineCanvas).X;
-        var clipLeftInCanvas = ClipLeftInset + clip.Left;
-        _draggingClipPointerOffsetSeconds = Math.Clamp(
-            (pointerCanvasX - clipLeftInCanvas) / Math.Max(0.0001, viewModel.TickWidth),
-            0,
-            clip.DurationSeconds);
-
-        _draggingVideoClip = clip;
-        _draggingClipInitialStartSeconds = clip.StartSeconds;
-        _draggingClipInitialLaneLabel = clip.VideoLaneLabel;
-        _dragStartPoint = null;
-        _isDraggingVideoClip = true;
-
-        viewModel.SelectSingleVideoClip(clip);
-    }
-
     private static bool IsPointerOnAudioLevelLine(TimelineClipItem clip, double localY)
     {
         if (!clip.IsAudioLevelLineVisible)
@@ -931,127 +839,6 @@ public partial class TimelinePanelView : UserControl
         return Math.Abs(localY - clip.AudioLevelLineTop) <= LevelHandleHitThreshold;
     }
 
-    private static ClipResizeEdge ResolveClipResizeEdge(Control control, double localX)
-    {
-        var threshold = Math.Min(ClipHorizontalResizeEdgeThreshold, Math.Max(2, control.Bounds.Width / 3));
-        if (localX <= threshold)
-        {
-            return ClipResizeEdge.Left;
-        }
-
-        if (localX >= control.Bounds.Width - threshold)
-        {
-            return ClipResizeEdge.Right;
-        }
-
-        return ClipResizeEdge.None;
-    }
-
-    private void UpdateVideoClipResizeCursor(TimelineViewModel viewModel, Control control, TimelineClipItem clip, PointerEventArgs eventArgs)
-    {
-        if (_isDraggingVideoClip)
-        {
-            return;
-        }
-
-        if (_isAdjustingVideoFade)
-        {
-            control.Cursor = _activeFadeCorner switch
-            {
-                ClipFadeCorner.TopLeft => new Cursor(StandardCursorType.TopLeftCorner),
-                ClipFadeCorner.TopRight => new Cursor(StandardCursorType.TopRightCorner),
-                _ => null
-            };
-            return;
-        }
-
-        if (_isResizingVideoClip)
-        {
-            SetTrimMarker(viewModel, clip, _activeResizeEdge);
-            control.Cursor = _activeResizeEdge is ClipResizeEdge.None ? null : new Cursor(StandardCursorType.SizeWestEast);
-            return;
-        }
-
-        var localPosition = eventArgs.GetPosition(control);
-        var fadeCorner = ResolveClipFadeCorner(control, localPosition);
-        if (fadeCorner is not ClipFadeCorner.None)
-        {
-            control.Cursor = fadeCorner == ClipFadeCorner.TopLeft
-                ? new Cursor(StandardCursorType.TopLeftCorner)
-                : new Cursor(StandardCursorType.TopRightCorner);
-            SetTrimMarker(viewModel, clip, ClipResizeEdge.None);
-            return;
-        }
-
-        var resizeEdge = ResolveClipResizeEdge(control, localPosition.X);
-        control.Cursor = resizeEdge is ClipResizeEdge.None
-            ? null
-            : new Cursor(StandardCursorType.SizeWestEast);
-
-        SetTrimMarker(viewModel, clip, resizeEdge);
-    }
-
-    private void SetTrimMarker(TimelineViewModel viewModel, TimelineClipItem clip, ClipResizeEdge edge)
-    {
-        var showLeft = edge == ClipResizeEdge.Left;
-        var showRight = edge == ClipResizeEdge.Right;
-
-        if (!showLeft && !showRight)
-        {
-            ClearTrimMarker(viewModel);
-            return;
-        }
-
-        if (_activeTrimMarkerLinkId.HasValue && _activeTrimMarkerLinkId.Value != clip.LinkId)
-        {
-            ClearTrimMarker(viewModel);
-        }
-
-        clip.IsLeftTrimMarkerVisible = showLeft;
-        clip.IsRightTrimMarkerVisible = showRight;
-
-        var linkedAudio = viewModel.AudioClips.FirstOrDefault(audio => audio.LinkId == clip.LinkId);
-        if (linkedAudio is not null)
-        {
-            linkedAudio.IsLeftTrimMarkerVisible = showLeft;
-            linkedAudio.IsRightTrimMarkerVisible = showRight;
-        }
-
-        _activeTrimMarkerLinkId = clip.LinkId;
-    }
-
-    private void ClearTrimMarker(TimelineViewModel viewModel)
-    {
-        if (!_activeTrimMarkerLinkId.HasValue)
-        {
-            return;
-        }
-
-        var linkId = _activeTrimMarkerLinkId.Value;
-        foreach (var candidate in viewModel.VideoClips)
-        {
-            if (candidate.LinkId != linkId)
-            {
-                continue;
-            }
-
-            candidate.IsLeftTrimMarkerVisible = false;
-            candidate.IsRightTrimMarkerVisible = false;
-        }
-
-        foreach (var candidate in viewModel.AudioClips)
-        {
-            if (candidate.LinkId != linkId)
-            {
-                continue;
-            }
-
-            candidate.IsLeftTrimMarkerVisible = false;
-            candidate.IsRightTrimMarkerVisible = false;
-        }
-
-        _activeTrimMarkerLinkId = null;
-    }
 
     private static bool TryGetClipPayload(DragEventArgs eventArgs, out string name, out double durationSeconds, out string path)
     {
@@ -1136,26 +923,4 @@ public partial class TimelinePanelView : UserControl
         return null;
     }
 
-    private string? ResolveLaneLabelFromPointer(TimelineViewModel viewModel, PointerEventArgs eventArgs)
-    {
-        var timelineCanvas = this.FindControl<Grid>("TimelineCanvas");
-        if (timelineCanvas is null || viewModel.VideoLanes.Count == 0)
-        {
-            return null;
-        }
-
-        var y = eventArgs.GetPosition(timelineCanvas).Y;
-        y -= 62;
-        if (y < 0)
-        {
-            return null;
-        }
-
-        var laneHeight = viewModel.LaneContainerHeight;
-        var laneStep = laneHeight + 8;
-        var laneIndex = (int)Math.Floor(y / laneStep);
-        laneIndex = Math.Clamp(laneIndex, 0, viewModel.VideoLanes.Count - 1);
-
-        return viewModel.VideoLanes[laneIndex].Label;
-    }
 }
