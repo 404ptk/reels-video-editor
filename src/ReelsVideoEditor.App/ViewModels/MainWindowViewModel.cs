@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ReelsVideoEditor.App.ViewModels.Effects;
 using ReelsVideoEditor.App.ViewModels.Export;
@@ -14,6 +16,10 @@ namespace ReelsVideoEditor.App.ViewModels;
 
 public sealed partial class MainWindowViewModel : ViewModelBase
 {
+    private const string TestingModeFileName = "testing_mode.txt";
+
+    private const string TestingMediaFileName = "testing.mp4";
+
     private bool isSyncingPreviewTransformFromTimeline;
     private bool? lastHasSyntheticVideoContent;
 
@@ -262,6 +268,134 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Text.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         Subtitles.SyncSelectedTextClip(Timeline.ResolveSelectedTextClipState());
         Watermarks.SyncSelectedWatermarkClip(Timeline.ResolveSelectedWatermarkClipState());
+
+        _ = InitializeTestingModeAsync();
+    }
+
+    private async Task InitializeTestingModeAsync()
+    {
+        if (!IsTestingModeEnabled())
+        {
+            return;
+        }
+
+        try
+        {
+            var testingMediaPath = ResolveTestingMediaPath();
+            if (string.IsNullOrWhiteSpace(testingMediaPath) || !File.Exists(testingMediaPath))
+            {
+                return;
+            }
+
+            var existingFile = VideoFiles.Files.FirstOrDefault(file =>
+                string.Equals(file.Path, testingMediaPath, StringComparison.OrdinalIgnoreCase));
+
+            if (existingFile is null)
+            {
+                await VideoFiles.AddDroppedFilesAsync([testingMediaPath]);
+                existingFile = VideoFiles.Files.FirstOrDefault(file =>
+                    string.Equals(file.Path, testingMediaPath, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (existingFile is null)
+            {
+                return;
+            }
+
+            var alreadyOnTimeline = Timeline.VideoClips.Any(clip =>
+                string.Equals(clip.Path, testingMediaPath, StringComparison.OrdinalIgnoreCase));
+            if (alreadyOnTimeline)
+            {
+                return;
+            }
+
+            var durationSeconds = existingFile.DurationSeconds > 0 ? existingFile.DurationSeconds : 5;
+            Timeline.AddClipFromExplorer(existingFile.Name, existingFile.Path, durationSeconds, dropX: 0);
+        }
+        catch
+        {
+            // Keep startup resilient in case test media probing fails.
+        }
+    }
+
+    private static bool IsTestingModeEnabled()
+    {
+        var flagPath = ResolveProjectFilePath(TestingModeFileName);
+        if (string.IsNullOrWhiteSpace(flagPath) || !File.Exists(flagPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            var raw = File.ReadAllText(flagPath).Trim();
+            if (bool.TryParse(raw, out var enabled))
+            {
+                return enabled;
+            }
+
+            const string key = "testing_mode=";
+            if (raw.StartsWith(key, StringComparison.OrdinalIgnoreCase))
+            {
+                var value = raw[key.Length..].Trim();
+                if (bool.TryParse(value, out enabled))
+                {
+                    return enabled;
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
+    }
+
+    private static string? ResolveTestingMediaPath()
+    {
+        return ResolveProjectFilePath(TestingMediaFileName);
+    }
+
+    private static string? ResolveProjectFilePath(string fileName)
+    {
+        var startingDirectories = new[]
+        {
+            AppContext.BaseDirectory,
+            Directory.GetCurrentDirectory()
+        };
+
+        foreach (var directory in startingDirectories)
+        {
+            var resolved = TryResolveProjectFilePathFrom(directory, fileName);
+            if (!string.IsNullOrWhiteSpace(resolved))
+            {
+                return resolved;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? TryResolveProjectFilePathFrom(string? startingDirectory, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(startingDirectory))
+        {
+            return null;
+        }
+
+        var current = new DirectoryInfo(startingDirectory);
+        while (current is not null)
+        {
+            var candidatePath = Path.Combine(current.FullName, fileName);
+            if (File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+
+            current = current.Parent;
+        }
+
+        return null;
     }
 
     private void RefreshPreviewRenderAvailabilityIfNeeded(bool force = false)
