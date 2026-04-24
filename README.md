@@ -28,6 +28,10 @@ Desktop short-form video editor (reels/shorts) built with `C#`, `.NET 8`, and `A
 
 ## Current Features
 
+### Interface & Navigation
+- **Top application menu bar** — click-open placeholder menus for `Project`, `Timeline`, `View`, and `About`,
+- **Menu interaction model** — top menu dropdowns open on click for predictable navigation behavior.
+
 ### Timeline Editing
 - **Multi-track editing** — up to 9 independent video lanes with individual track controls,
 - **Clip arrangement** — drag-and-drop clip positioning and reordering on timeline,
@@ -239,6 +243,10 @@ dotnet publish -c Release -o .\build --self-contained .\src\ReelsVideoEditor.App
 | Zoom In | Ctrl+Scroll ↑ |
 | Zoom Out | Ctrl+Scroll ↓ |
 | Toggle Mute | M (on selected track) |
+| Select Mouse Tool | A |
+| Select Cutter Tool | S |
+
+Tool-switch shortcuts (`A`, `S`) and playback toggle (`Space`) are ignored while an editable text input is focused.
 
 ## Roadmap
 
