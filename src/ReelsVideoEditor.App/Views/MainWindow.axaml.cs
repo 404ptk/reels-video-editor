@@ -83,7 +83,7 @@ public partial class MainWindow : Window
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs eventArgs)
     {
-        if (eventArgs.Key != Key.Space)
+        if (eventArgs.KeyModifiers != KeyModifiers.None)
         {
             return;
         }
@@ -104,6 +104,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (TryHandleTimelineToolShortcut(eventArgs, viewModel))
+        {
+            eventArgs.Handled = true;
+            return;
+        }
+
+        if (eventArgs.Key != Key.Space)
+        {
+            return;
+        }
+
         var command = viewModel.Preview.TogglePlayPauseCommand;
         if (command.CanExecute(null))
         {
@@ -111,6 +122,37 @@ public partial class MainWindow : Window
         }
 
         eventArgs.Handled = true;
+    }
+
+    private static bool TryHandleTimelineToolShortcut(KeyEventArgs eventArgs, MainWindowViewModel viewModel)
+    {
+        switch (eventArgs.Key)
+        {
+            case Key.A:
+            {
+                var command = viewModel.Timeline.SelectMouseToolCommand;
+                if (!command.CanExecute(null))
+                {
+                    return false;
+                }
+
+                command.Execute(null);
+                return true;
+            }
+            case Key.S:
+            {
+                var command = viewModel.Timeline.SelectCutterToolCommand;
+                if (!command.CanExecute(null))
+                {
+                    return false;
+                }
+
+                command.Execute(null);
+                return true;
+            }
+            default:
+                return false;
+        }
     }
 
     private static bool IsTextInputFocused(object? focusedElement)
