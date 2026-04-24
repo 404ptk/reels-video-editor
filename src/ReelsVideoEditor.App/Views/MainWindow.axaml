@@ -28,6 +28,23 @@
         <local:BoolToForegroundConverter x:Key="ActiveSectionFgConverter" />
     </Window.Resources>
 
+    <Window.Styles>
+        <Style Selector="ContextMenu.top-menu-context">
+            <Setter Property="Background" Value="{StaticResource BaseBg}" />
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <Style Selector="ContextMenu.top-menu-context MenuItem">
+            <Setter Property="Foreground" Value="{StaticResource Accent}" />
+            <Setter Property="Background" Value="{StaticResource BaseBg}" />
+        </Style>
+
+        <Style Selector="ContextMenu.top-menu-context MenuItem:pointerover">
+            <Setter Property="Background" Value="{StaticResource BaseBgSoft}" />
+        </Style>
+    </Window.Styles>
+
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
@@ -54,7 +71,7 @@
                             FontWeight="SemiBold"
                             CornerRadius="0">
                         <Button.ContextMenu>
-                            <ContextMenu Placement="Bottom">
+                            <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
                                 <MenuItem Header="Coming soon"
                                           IsEnabled="False" />
                             </ContextMenu>
@@ -72,7 +89,7 @@
                             FontWeight="SemiBold"
                             CornerRadius="0">
                         <Button.ContextMenu>
-                            <ContextMenu Placement="Bottom">
+                            <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
                                 <MenuItem Header="Coming soon"
                                           IsEnabled="False" />
                             </ContextMenu>
@@ -90,7 +107,7 @@
                             FontWeight="SemiBold"
                             CornerRadius="0">
                         <Button.ContextMenu>
-                            <ContextMenu Placement="Bottom">
+                            <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
                                 <MenuItem Header="Coming soon"
                                           IsEnabled="False" />
                             </ContextMenu>
@@ -108,7 +125,7 @@
                             FontWeight="SemiBold"
                             CornerRadius="0">
                         <Button.ContextMenu>
-                            <ContextMenu Placement="Bottom">
+                            <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
                                 <MenuItem Header="Github"
                                           Click="AboutGithubMenuItem_OnClick" />
                                 <MenuItem Header="License"
