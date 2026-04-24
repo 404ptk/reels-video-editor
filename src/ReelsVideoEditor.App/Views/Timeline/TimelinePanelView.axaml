@@ -96,7 +96,7 @@
                             VerticalAlignment="Center"
                             Spacing="2">
                     <ToggleButton Classes="timeline-tool"
-                                  ToolTip.Tip="Mouse tool"
+                                  ToolTip.Tip="Mouse tool (A)"
                                   IsChecked="{Binding IsMouseToolActive, Mode=OneWay}"
                                   Command="{Binding SelectMouseToolCommand}">
                         <Viewbox Width="18" Height="18">
@@ -112,7 +112,7 @@
                     </ToggleButton>
 
                     <ToggleButton Classes="timeline-tool"
-                                  ToolTip.Tip="Cutter tool"
+                                  ToolTip.Tip="Cutter tool (S)"
                                   IsChecked="{Binding IsCutterToolActive, Mode=OneWay}"
                                   Command="{Binding SelectCutterToolCommand}">
                         <Viewbox Width="18" Height="18">

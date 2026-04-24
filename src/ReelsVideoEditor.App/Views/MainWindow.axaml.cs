@@ -181,6 +181,17 @@ public partial class MainWindow : Window
         var editableComboAncestor = focusedVisual.FindAncestorOfType<ComboBox>();
         return editableComboAncestor?.IsEditable == true;
     }
+
+    private void TopMenuButton_OnClick(object? sender, RoutedEventArgs eventArgs)
+    {
+        if (sender is not Button button || button.ContextMenu is not ContextMenu contextMenu)
+        {
+            return;
+        }
+
+        contextMenu.Open(button);
+        eventArgs.Handled = true;
+    }
 }
 
 public sealed class BoolToBackgroundConverter : IValueConverter

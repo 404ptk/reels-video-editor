@@ -33,7 +33,91 @@
     </Design.DataContext>
 
     <Grid Background="{StaticResource BaseBg}">
-        <Grid IsVisible="{Binding IsEditorLayoutVisible}">
+        <Grid RowDefinitions="Auto,*">
+            <Border Grid.Row="0"
+                    Margin="0"
+                    Padding="12,6"
+                    Background="{StaticResource BaseBg}"
+                    BorderBrush="{StaticResource Accent}"
+                    BorderThickness="0,0,0,1">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="4"
+                            VerticalAlignment="Center">
+                    <Button x:Name="ProjectMenuButton"
+                            Content="Project"
+                            Click="TopMenuButton_OnClick"
+                            Background="Transparent"
+                            Foreground="{StaticResource Accent}"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Padding="12,6"
+                            FontWeight="SemiBold"
+                            CornerRadius="0">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom">
+                                <MenuItem Header="Coming soon"
+                                          IsEnabled="False" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <Button x:Name="TimelineMenuButton"
+                            Content="Timeline"
+                            Click="TopMenuButton_OnClick"
+                            Background="Transparent"
+                            Foreground="{StaticResource Accent}"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Padding="12,6"
+                            FontWeight="SemiBold"
+                            CornerRadius="0">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom">
+                                <MenuItem Header="Coming soon"
+                                          IsEnabled="False" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <Button x:Name="ViewMenuButton"
+                            Content="View"
+                            Click="TopMenuButton_OnClick"
+                            Background="Transparent"
+                            Foreground="{StaticResource Accent}"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Padding="12,6"
+                            FontWeight="SemiBold"
+                            CornerRadius="0">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom">
+                                <MenuItem Header="Coming soon"
+                                          IsEnabled="False" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <Button x:Name="AboutMenuButton"
+                            Content="About"
+                            Click="TopMenuButton_OnClick"
+                            Background="Transparent"
+                            Foreground="{StaticResource Accent}"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Padding="12,6"
+                            FontWeight="SemiBold"
+                            CornerRadius="0">
+                        <Button.ContextMenu>
+                            <ContextMenu Placement="Bottom">
+                                <MenuItem Header="Coming soon"
+                                          IsEnabled="False" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="1" IsVisible="{Binding IsEditorLayoutVisible}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="3*" MinHeight="140" />
                 <RowDefinition Height="8" />
@@ -257,9 +341,10 @@
                     BorderThickness="1">
                 <timelineViews:TimelinePanelView DataContext="{Binding Timeline}" />
             </Border>
-        </Grid>
+            </Grid>
 
-        <Border IsVisible="{Binding IsExportSection}"
+            <Border Grid.Row="1"
+                IsVisible="{Binding IsExportSection}"
                 Margin="16"
                 Padding="16"
                 CornerRadius="16"
@@ -283,7 +368,8 @@
                     <exportViews:ExportPanelView DataContext="{Binding Export}" />
                 </Border>
             </Grid>
-        </Border>
+            </Border>
+        </Grid>
     </Grid>
 
 </Window>
