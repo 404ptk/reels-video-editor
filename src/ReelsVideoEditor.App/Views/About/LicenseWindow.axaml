@@ -1,0 +1,32 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ReelsVideoEditor.App.Views.About.LicenseWindow"
+        Width="560"
+        Height="320"
+        MinWidth="480"
+        MinHeight="280"
+        CanResize="False"
+        Title="License">
+    <Border Background="#222222"
+            Padding="16">
+        <StackPanel Spacing="12">
+            <TextBlock Text="License Information"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#C2D8C4" />
+
+            <TextBlock TextWrapping="Wrap"
+                       Foreground="#C2D8C4"
+                       Text="This project is currently distributed under a placeholder license notice. Version: 1.0.0 (Draft). All rights and permissions will be defined in the final LICENSE file. Author: Reels Video Editor contributors. This window contains temporary text and will be replaced with the finalized legal terms in a future update." />
+
+            <Button Content="Close"
+                    HorizontalAlignment="Right"
+                    Padding="14,6"
+                    Background="Transparent"
+                    BorderBrush="#C2D8C4"
+                    BorderThickness="1"
+                    Foreground="#C2D8C4"
+                    Click="CloseButton_OnClick" />
+        </StackPanel>
+    </Border>
+</Window>

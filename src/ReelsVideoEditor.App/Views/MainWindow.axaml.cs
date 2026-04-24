@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,6 +9,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Controls.Shapes;
 using Avalonia.VisualTree;
+using ReelsVideoEditor.App.Views.About;
 using ReelsVideoEditor.App.ViewModels;
 
 namespace ReelsVideoEditor.App.Views;
@@ -190,6 +192,28 @@ public partial class MainWindow : Window
         }
 
         contextMenu.Open(button);
+        eventArgs.Handled = true;
+    }
+
+    private void AboutGithubMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "https://github.com/404ptk/reels-video-editor",
+            UseShellExecute = true
+        });
+
+        eventArgs.Handled = true;
+    }
+
+    private async void AboutLicenseMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
+    {
+        var licenseWindow = new LicenseWindow
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        await licenseWindow.ShowDialog(this);
         eventArgs.Handled = true;
     }
 }

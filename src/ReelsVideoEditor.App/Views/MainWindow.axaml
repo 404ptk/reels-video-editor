@@ -109,8 +109,10 @@
                             CornerRadius="0">
                         <Button.ContextMenu>
                             <ContextMenu Placement="Bottom">
-                                <MenuItem Header="Coming soon"
-                                          IsEnabled="False" />
+                                <MenuItem Header="Github"
+                                          Click="AboutGithubMenuItem_OnClick" />
+                                <MenuItem Header="License"
+                                          Click="AboutLicenseMenuItem_OnClick" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
