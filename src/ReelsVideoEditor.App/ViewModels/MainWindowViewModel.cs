@@ -467,6 +467,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         SelectedSection = SidebarSection.Export;
     }
 
+    [RelayCommand]
+    private void SetPreviewQuality(string quality)
+    {
+        if (Enum.TryParse<PreviewQuality>(quality, out var parsed))
+        {
+            Preview.SelectedQuality = parsed;
+        }
+    }
+
     partial void OnSelectedSectionChanged(SidebarSection value)
     {
         OnPropertyChanged(nameof(IsExplorerSection));

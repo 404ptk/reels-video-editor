@@ -108,8 +108,11 @@
                             CornerRadius="0">
                         <Button.ContextMenu>
                             <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
-                                <MenuItem Header="Coming soon"
-                                          IsEnabled="False" />
+                                <MenuItem Header="Preview Quality">
+                                    <MenuItem Header="High" Command="{Binding SetPreviewQualityCommand}" CommandParameter="High" />
+                                    <MenuItem Header="Mid" Command="{Binding SetPreviewQualityCommand}" CommandParameter="Mid" />
+                                    <MenuItem Header="Low" Command="{Binding SetPreviewQualityCommand}" CommandParameter="Low" />
+                                </MenuItem>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
