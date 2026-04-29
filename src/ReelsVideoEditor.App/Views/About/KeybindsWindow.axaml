@@ -1,0 +1,88 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ReelsVideoEditor.App.Views.About.KeybindsWindow"
+        Width="480"
+        Height="420"
+        MinWidth="400"
+        MinHeight="360"
+        CanResize="False"
+        Title="Keybinds">
+    <Border Background="#222222"
+            Padding="16">
+        <StackPanel Spacing="16">
+            <TextBlock Text="Keyboard Shortcuts"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#C2D8C4" />
+
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                  ColumnDefinitions="Auto,*"
+                  Margin="0,8,0,16">
+                
+                <!-- Play/Pause -->
+                <Border Grid.Row="0" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Space" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="Play / Pause preview" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Copy -->
+                <Border Grid.Row="1" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Ctrl + C" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="Copy selected clip" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Paste -->
+                <Border Grid.Row="2" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Ctrl + V" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Paste clip at playhead" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Delete -->
+                <Border Grid.Row="3" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Delete" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="Delete selected clip" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Undo -->
+                <Border Grid.Row="4" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Ctrl + Z" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="Undo last action" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Mouse Tool -->
+                <Border Grid.Row="5" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="A" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="Select Mouse Tool" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Cutter Tool -->
+                <Border Grid.Row="6" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="S" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="6" Grid.Column="1" Text="Select Cutter Tool" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Zoom Timeline -->
+                <Border Grid.Row="7" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Ctrl + Scroll" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="7" Grid.Column="1" Text="Zoom in / out on timeline" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+                <!-- Lane Height -->
+                <Border Grid.Row="8" Grid.Column="0" Background="#33C2D8C4" CornerRadius="4" Padding="6,2" Margin="0,4,12,4" HorizontalAlignment="Left">
+                    <TextBlock Text="Alt + Scroll" Foreground="#C2D8C4" FontWeight="Bold" FontSize="12" />
+                </Border>
+                <TextBlock Grid.Row="8" Grid.Column="1" Text="Change timeline lane height" Foreground="#C2D8C4" VerticalAlignment="Center" />
+
+            </Grid>
+
+            <Button Content="Close"
+                    HorizontalAlignment="Right"
+                    Padding="14,6"
+                    Background="Transparent"
+                    BorderBrush="#C2D8C4"
+                    BorderThickness="1"
+                    Foreground="#C2D8C4"
+                    Click="CloseButton_OnClick" />
+        </StackPanel>
+    </Border>
+</Window>

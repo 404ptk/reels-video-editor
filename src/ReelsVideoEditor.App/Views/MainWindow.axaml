@@ -131,6 +131,8 @@
                             CornerRadius="0">
                         <Button.ContextMenu>
                             <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
+                                <MenuItem Header="Keybinds"
+                                          Click="AboutKeybindsMenuItem_OnClick" />
                                 <MenuItem Header="Github"
                                           Click="AboutGithubMenuItem_OnClick" />
                                 <MenuItem Header="License"

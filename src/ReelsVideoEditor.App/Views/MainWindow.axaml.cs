@@ -195,6 +195,17 @@ public partial class MainWindow : Window
         eventArgs.Handled = true;
     }
 
+    private async void AboutKeybindsMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
+    {
+        var keybindsWindow = new KeybindsWindow
+        {
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        await keybindsWindow.ShowDialog(this);
+        eventArgs.Handled = true;
+    }
+
     private void AboutGithubMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
         Process.Start(new ProcessStartInfo
