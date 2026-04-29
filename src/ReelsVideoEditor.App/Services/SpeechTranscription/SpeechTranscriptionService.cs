@@ -24,6 +24,7 @@ public sealed class SpeechTranscriptionService
 
     public async Task<IReadOnlyList<TranscriptionChunk>> TranscribeAsync(
         IReadOnlyList<AudioInputForTranscription> audioInputs,
+        string modelName = "base",
         IProgress<TranscriptionProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -32,6 +33,7 @@ public sealed class SpeechTranscriptionService
             return [];
         }
 
+        modelManager.ModelName = modelName;
         progress?.Report(new TranscriptionProgress("Downloading Whisper model...", 0));
         await modelManager.EnsureModelAsync(
             new Progress<double>(pct =>
@@ -188,7 +190,7 @@ public sealed class SpeechTranscriptionService
         {
             segmentCount++;
             var pct = 40 + Math.Min(segmentCount * 2, 48);
-            progress?.Report(new TranscriptionProgress("Transkrypcja mowy...", pct));
+            progress?.Report(new TranscriptionProgress("Transcribing...", pct));
 
             var text = result.Text?.Trim();
             if (string.IsNullOrWhiteSpace(text))

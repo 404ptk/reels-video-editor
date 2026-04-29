@@ -175,6 +175,22 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
+            var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+            string selectedModel = "base";
+            if (mainWindow != null)
+            {
+                var dialog = new ReelsVideoEditor.App.Views.Subtitles.SelectWhisperModelWindow
+                {
+                    WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner
+                };
+                var result = await dialog.ShowDialog<string>(mainWindow);
+                if (string.IsNullOrEmpty(result))
+                {
+                    return;
+                }
+                selectedModel = result;
+            }
+
             Subtitles.IsTranscribing = true;
             Subtitles.IsApplyingSubtitles = false;
             Subtitles.TranscriptionProgress = 0;
@@ -187,7 +203,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     Subtitles.TranscriptionProgress = p.Percent;
                 });
 
-                var chunks = await service.TranscribeAsync(audioInputs, progress);
+                var chunks = await service.TranscribeAsync(audioInputs, selectedModel, progress);
                 Subtitles.TranscriptionStatus = "Dodawanie napisów do timeline...";
                 Subtitles.IsApplyingSubtitles = true;
                 await Task.Yield();

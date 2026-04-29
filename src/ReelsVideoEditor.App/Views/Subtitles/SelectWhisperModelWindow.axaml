@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ReelsVideoEditor.App.Views.Subtitles.SelectWhisperModelWindow"
+        Width="400"
+        Height="240"
+        CanResize="False"
+        Title="Select Quality">
+    <Border Background="#222222" Padding="20">
+        <StackPanel Spacing="16">
+            <TextBlock Text="Select Transcription Accuracy"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#C2D8C4" />
+
+            <TextBlock Text="The 'Medium' model is significantly more accurate, but requires downloading about 1.5GB of data and takes longer to process."
+                       Foreground="#99C2D8C4"
+                       TextWrapping="Wrap" />
+
+            <ComboBox x:Name="ModelComboBox"
+                      HorizontalAlignment="Stretch"
+                      SelectedIndex="0">
+                <ComboBoxItem Content="Fast (Base)" Tag="base" />
+                <ComboBoxItem Content="Accurate (Medium)" Tag="medium" />
+            </ComboBox>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+                <Button Content="Cancel"
+                        Click="CancelButton_OnClick"
+                        Background="Transparent"
+                        BorderBrush="#55C2D8C4"
+                        BorderThickness="1"
+                        Foreground="#C2D8C4"
+                        Padding="16,8" />
+                <Button Content="Confirm"
+                        Click="ConfirmButton_OnClick"
+                        Background="#C2D8C4"
+                        Foreground="#222222"
+                        FontWeight="SemiBold"
+                        Padding="16,8" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

@@ -8,9 +8,9 @@ namespace ReelsVideoEditor.App.Services.SpeechTranscription;
 
 public sealed class WhisperModelManager
 {
-    private const string ModelFileName = "ggml-base.bin";
-    private const string ModelDownloadUrl =
-        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin";
+    public string ModelName { get; set; } = "base";
+    private string ModelFileName => $"ggml-{ModelName}.bin";
+    private string ModelDownloadUrl => $"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{ModelFileName}";
 
     private static readonly string ModelsDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
