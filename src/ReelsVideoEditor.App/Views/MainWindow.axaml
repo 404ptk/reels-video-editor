@@ -72,8 +72,10 @@
                             CornerRadius="0">
                         <Button.ContextMenu>
                             <ContextMenu Placement="BottomEdgeAlignedLeft" Classes="top-menu-context">
-                                <MenuItem Header="Coming soon"
-                                          IsEnabled="False" />
+                                <MenuItem Header="Save" IsEnabled="False" />
+                                <MenuItem Header="Open" IsEnabled="False" />
+                                <MenuItem Header="-" />
+                                <MenuItem Header="Exit" IsEnabled="False" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
