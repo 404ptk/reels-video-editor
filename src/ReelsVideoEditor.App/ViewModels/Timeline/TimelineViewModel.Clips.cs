@@ -63,15 +63,18 @@ public partial class TimelineViewModel
             TickWidth,
             TimelineDurationSeconds);
         clip.VideoLaneLabel = targetLane?.Label ?? string.Empty;
-        clip.TextContent = preset.DisplayText;
-        clip.TextColorHex = preset.ColorHex;
-        clip.TextOutlineColorHex = preset.OutlineColorHex;
-        clip.TextOutlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
-        clip.TextFontFamily = preset.FontFamily;
-        clip.TextFontSize = preset.FontSize;
-        clip.TextLineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
-        clip.TextLetterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
-        clip.TextRevealEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
+        clip.ApplyTextSettings(new TextClipSettings(
+            clip.Name,
+            preset.DisplayText,
+            preset.ColorHex,
+            preset.OutlineColorHex,
+            Math.Clamp(preset.OutlineThickness, 0, 24),
+            preset.FontSize,
+            preset.FontFamily,
+            Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5),
+            Math.Clamp(preset.LetterSpacing, 0, 20),
+            Models.TextRevealEffect.Normalize(preset.TextRevealEffect)
+        ));
         clip.TransformY = -72;
         VideoClips.Add(clip);
 
@@ -172,15 +175,18 @@ public partial class TimelineViewModel
 
                 clip.VideoLaneLabel = laneLabel;
                 clip.IsSubtitle = true;
-                clip.TextContent = chunk.Text;
-                clip.TextColorHex = preset.ColorHex;
-                clip.TextOutlineColorHex = preset.OutlineColorHex;
-                clip.TextOutlineThickness = Math.Clamp(preset.OutlineThickness, 0, 24);
-                clip.TextFontFamily = preset.FontFamily;
-                clip.TextFontSize = preset.FontSize;
-                clip.TextLineHeightMultiplier = Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5);
-                clip.TextLetterSpacing = Math.Clamp(preset.LetterSpacing, 0, 20);
-                clip.TextRevealEffect = Models.TextRevealEffect.Normalize(preset.TextRevealEffect);
+                clip.ApplyTextSettings(new TextClipSettings(
+                    clip.Name,
+                    chunk.Text,
+                    preset.ColorHex,
+                    preset.OutlineColorHex,
+                    Math.Clamp(preset.OutlineThickness, 0, 24),
+                    preset.FontSize,
+                    preset.FontFamily,
+                    Math.Clamp(preset.LineHeightMultiplier, 0.7, 2.5),
+                    Math.Clamp(preset.LetterSpacing, 0, 20),
+                    Models.TextRevealEffect.Normalize(preset.TextRevealEffect)
+                ));
                 clip.TransformY = 72;
 
                 TimelineClipArrangementService.RebuildLayouts([clip], TickWidth);
@@ -269,31 +275,24 @@ public partial class TimelineViewModel
                 normalizedOutlineColorHex = parsedOutlineColor.ToString();
             }
 
-            if (string.Equals(clip.Name, normalizedDisplayName, StringComparison.Ordinal)
-                && string.Equals(clip.TextContent, normalizedTextContent, StringComparison.Ordinal)
-                && string.Equals(clip.TextColorHex, normalizedColorHex, StringComparison.Ordinal)
-                && string.Equals(clip.TextOutlineColorHex, normalizedOutlineColorHex, StringComparison.Ordinal)
-                && Math.Abs(clip.TextOutlineThickness - normalizedOutlineThickness) < 0.001
-                && Math.Abs(clip.TextFontSize - normalizedFontSize) < 0.001
-                && Math.Abs(clip.TextLineHeightMultiplier - normalizedLineHeightMultiplier) < 0.001
-                && Math.Abs(clip.TextLetterSpacing - normalizedLetterSpacing) < 0.001
-                && string.Equals(clip.TextRevealEffect, normalizedTextRevealEffect, StringComparison.Ordinal)
-                && string.Equals(clip.TextFontFamily, normalizedFontFamily, StringComparison.Ordinal))
+            var newSettings = new TextClipSettings(
+                normalizedDisplayName,
+                normalizedTextContent,
+                normalizedColorHex,
+                normalizedOutlineColorHex,
+                normalizedOutlineThickness,
+                normalizedFontSize,
+                normalizedFontFamily,
+                normalizedLineHeightMultiplier,
+                normalizedLetterSpacing,
+                normalizedTextRevealEffect);
+
+            if (clip.GetTextSettings() == newSettings)
             {
                 continue;
             }
 
-            clip.Name = normalizedDisplayName;
-            clip.TextContent = normalizedTextContent;
-            clip.TextColorHex = normalizedColorHex;
-            clip.TextOutlineColorHex = normalizedOutlineColorHex;
-            clip.TextOutlineThickness = normalizedOutlineThickness;
-            clip.TextFontSize = normalizedFontSize;
-            clip.TextFontFamily = normalizedFontFamily;
-            clip.TextLineHeightMultiplier = normalizedLineHeightMultiplier;
-            clip.TextLetterSpacing = normalizedLetterSpacing;
-            clip.TextRevealEffect = normalizedTextRevealEffect;
-
+            clip.ApplyTextSettings(newSettings);
             changed = true;
         }
 
