@@ -69,6 +69,16 @@ public sealed partial class PreviewViewModel : ViewModelBase
     [ObservableProperty]
     private string zoomText = "Zoom: 100%";
 
+    [RelayCommand]
+    private void SetZoom(string parameter)
+    {
+        if (double.TryParse(parameter, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double zoom))
+        {
+            CurrentZoom = zoom;
+            ZoomText = $"Zoom: {Math.Round(CurrentZoom * 100)}%";
+        }
+    }
+
     [ObservableProperty]
     private PreviewQuality selectedQuality = PreviewQuality.Mid;
 

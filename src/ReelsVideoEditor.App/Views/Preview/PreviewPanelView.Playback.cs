@@ -56,6 +56,14 @@ public partial class PreviewPanelView
             case nameof(PreviewViewModel.CropTop):
             case nameof(PreviewViewModel.CropRight):
             case nameof(PreviewViewModel.CropBottom):
+            case nameof(PreviewViewModel.CurrentZoom):
+                if (Math.Abs(currentZoom - boundViewModel.CurrentZoom) > 0.001)
+                {
+                    currentZoom = boundViewModel.CurrentZoom;
+                    ConstrainPan();
+                    ApplyTransform();
+                }
+                break;
             case nameof(PreviewViewModel.UseBlurredBackground):
                 if (!boundViewModel.IsPlaying)
                 {

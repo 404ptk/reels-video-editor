@@ -115,6 +115,11 @@
                                     <MenuItem Header="Mid" Command="{Binding SetPreviewQualityCommand}" CommandParameter="Mid" />
                                     <MenuItem Header="Low" Command="{Binding SetPreviewQualityCommand}" CommandParameter="Low" />
                                 </MenuItem>
+                                <MenuItem Header="Zoom">
+                                    <MenuItem Header="50%" Command="{Binding Preview.SetZoomCommand}" CommandParameter="0.5" />
+                                    <MenuItem Header="100%" Command="{Binding Preview.SetZoomCommand}" CommandParameter="1.0" />
+                                    <MenuItem Header="200%" Command="{Binding Preview.SetZoomCommand}" CommandParameter="2.0" />
+                                </MenuItem>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
