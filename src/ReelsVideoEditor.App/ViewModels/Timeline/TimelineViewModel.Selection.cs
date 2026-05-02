@@ -7,33 +7,8 @@ namespace ReelsVideoEditor.App.ViewModels.Timeline;
 
 public partial class TimelineViewModel
 {
-    private TimelineClipCopyPayload? copiedClipPayload;
+    private TimelineClipItem? copiedClipPayload;
     private double? nextPasteStartSeconds;
-
-    private sealed record TimelineClipCopyPayload(
-        string Name,
-        string Path,
-        double DurationSeconds,
-        double SourceStartSeconds,
-        double SourceDurationSeconds,
-        double VolumeLevel,
-        string VideoLaneLabel,
-        double TransformX,
-        double TransformY,
-        double TransformScale,
-        double CropLeft,
-        double CropTop,
-        double CropRight,
-        double CropBottom,
-        string TextContent,
-        string TextColorHex,
-        string TextOutlineColorHex,
-        double TextOutlineThickness,
-        double TextFontSize,
-        string TextFontFamily,
-        double TextLineHeightMultiplier,
-        double TextLetterSpacing,
-        string TextRevealEffect);
 
     public void CopySelectedClip()
     {
@@ -51,31 +26,8 @@ public partial class TimelineViewModel
             return;
         }
 
-        copiedClipPayload = new TimelineClipCopyPayload(
-            source.Name,
-            source.Path,
-            source.DurationSeconds,
-            source.SourceStartSeconds,
-            source.SourceDurationSeconds,
-            source.VolumeLevel,
-            source.VideoLaneLabel,
-            source.TransformX,
-            source.TransformY,
-            source.TransformScale,
-            source.CropLeft,
-            source.CropTop,
-            source.CropRight,
-            source.CropBottom,
-            source.TextContent,
-            source.TextColorHex,
-            source.TextOutlineColorHex,
-            source.TextOutlineThickness,
-            source.TextFontSize,
-            source.TextFontFamily,
-            source.TextLineHeightMultiplier,
-            source.TextLetterSpacing,
-            source.TextRevealEffect);
-            nextPasteStartSeconds = null;
+        copiedClipPayload = source.Clone();
+        nextPasteStartSeconds = null;
     }
 
     public bool PasteCopiedClipAtPlayhead()
@@ -104,33 +56,9 @@ public partial class TimelineViewModel
             MinClipDurationSeconds,
             maxDurationOnTimeline);
 
-        var pastedClip = new TimelineClipItem(
-            copiedClipPayload.Name,
-            copiedClipPayload.Path,
-            startSeconds,
-            durationSeconds,
-            null,
-            copiedClipPayload.SourceStartSeconds,
-            copiedClipPayload.SourceDurationSeconds)
-        {
-            VideoLaneLabel = copiedClipPayload.VideoLaneLabel,
-            TransformX = copiedClipPayload.TransformX,
-            TransformY = copiedClipPayload.TransformY,
-            TransformScale = copiedClipPayload.TransformScale,
-            CropLeft = copiedClipPayload.CropLeft,
-            CropTop = copiedClipPayload.CropTop,
-            CropRight = copiedClipPayload.CropRight,
-            CropBottom = copiedClipPayload.CropBottom,
-            TextContent = copiedClipPayload.TextContent,
-            TextColorHex = copiedClipPayload.TextColorHex,
-            TextOutlineColorHex = copiedClipPayload.TextOutlineColorHex,
-            TextOutlineThickness = copiedClipPayload.TextOutlineThickness,
-            TextFontSize = copiedClipPayload.TextFontSize,
-            TextFontFamily = copiedClipPayload.TextFontFamily,
-            TextLineHeightMultiplier = copiedClipPayload.TextLineHeightMultiplier,
-            TextLetterSpacing = copiedClipPayload.TextLetterSpacing,
-            TextRevealEffect = copiedClipPayload.TextRevealEffect
-        };
+        var pastedClip = copiedClipPayload.Clone(Guid.NewGuid());
+        pastedClip.StartSeconds = startSeconds;
+        pastedClip.DurationSeconds = durationSeconds;
 
         TimelineClipArrangementService.RebuildLayouts([pastedClip], TickWidth);
         VideoClips.Add(pastedClip);

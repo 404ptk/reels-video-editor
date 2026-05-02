@@ -278,18 +278,13 @@ public partial class TimelineViewModel
             return;
         }
 
-        var leftClip = BuildClipFragment(
-            targetClip,
-            targetClip.StartSeconds,
-            leftDuration,
-            targetClip.SourceStartSeconds,
-            targetClip.SourceDurationSeconds);
-        var rightClip = BuildClipFragment(
-            targetClip,
-            cutSeconds,
-            rightDuration,
-            targetClip.SourceStartSeconds + leftDuration,
-            targetClip.SourceDurationSeconds);
+        var leftClip = targetClip.Clone();
+        leftClip.DurationSeconds = leftDuration;
+
+        var rightClip = targetClip.Clone();
+        rightClip.StartSeconds = cutSeconds;
+        rightClip.DurationSeconds = rightDuration;
+        rightClip.SourceStartSeconds = targetClip.SourceStartSeconds + leftDuration;
 
         VideoClips.RemoveAt(clipIndex);
         VideoClips.Insert(clipIndex, leftClip);
@@ -300,68 +295,19 @@ public partial class TimelineViewModel
         if (targetAudio != null)
         {
             var audioIndex = AudioClips.IndexOf(targetAudio);
-            var leftAudio = BuildClipFragment(
-                targetAudio,
-                leftClip.StartSeconds,
-                leftClip.DurationSeconds,
-                leftClip.SourceStartSeconds,
-                leftClip.SourceDurationSeconds,
-                leftClip.LinkId);
-            var rightAudio = BuildClipFragment(
-                targetAudio,
-                rightClip.StartSeconds,
-                rightClip.DurationSeconds,
-                rightClip.SourceStartSeconds,
-                rightClip.SourceDurationSeconds,
-                rightClip.LinkId);
+            
+            var leftAudio = targetAudio.Clone(leftClip.LinkId);
+            leftAudio.DurationSeconds = leftDuration;
+
+            var rightAudio = targetAudio.Clone(rightClip.LinkId);
+            rightAudio.StartSeconds = cutSeconds;
+            rightAudio.DurationSeconds = rightDuration;
+            rightAudio.SourceStartSeconds = targetAudio.SourceStartSeconds + leftDuration;
 
             AudioClips.RemoveAt(audioIndex);
             AudioClips.Insert(audioIndex, leftAudio);
             AudioClips.Insert(audioIndex + 1, rightAudio);
         }
-    }
-
-    private TimelineClipItem BuildClipFragment(
-        TimelineClipItem source,
-        double startSeconds,
-        double durationSeconds,
-        double sourceStartSeconds,
-        double sourceDurationSeconds,
-        Guid? linkId = null)
-    {
-        var clip = new TimelineClipItem(
-            source.Name,
-            source.Path,
-            startSeconds,
-            durationSeconds,
-            linkId,
-            sourceStartSeconds,
-            sourceDurationSeconds)
-        {
-            IsSelected = source.IsSelected,
-            VolumeLevel = source.VolumeLevel,
-            VideoLaneLabel = source.VideoLaneLabel,
-            TransformX = source.TransformX,
-            TransformY = source.TransformY,
-            TransformScale = source.TransformScale,
-            CropLeft = source.CropLeft,
-            CropTop = source.CropTop,
-            CropRight = source.CropRight,
-            CropBottom = source.CropBottom,
-            TextContent = source.TextContent,
-            TextColorHex = source.TextColorHex,
-            TextOutlineColorHex = source.TextOutlineColorHex,
-            TextOutlineThickness = source.TextOutlineThickness,
-            TextFontSize = source.TextFontSize,
-            TextFontFamily = source.TextFontFamily,
-            TextLineHeightMultiplier = source.TextLineHeightMultiplier,
-            TextLetterSpacing = source.TextLetterSpacing,
-            TextRevealEffect = source.TextRevealEffect
-        };
-
-        clip.Left = clip.StartSeconds * TickWidth;
-        clip.Width = Math.Max(24, clip.DurationSeconds * TickWidth);
-        return clip;
     }
 
     private void ExecuteClipBatchUpdate(Action updateAction, double targetPlayheadSeconds)
@@ -396,44 +342,19 @@ public partial class TimelineViewModel
         UpdatePreviewLevels();
     }
 
-    private static List<ClipSnapshot> CaptureClipSnapshots(IEnumerable<TimelineClipItem> clips)
+    private static List<TimelineClipItem> CaptureClipSnapshots(IEnumerable<TimelineClipItem> clips)
     {
-        return clips.Select(clip => new ClipSnapshot(
-            clip.Name,
-            clip.Path,
-            clip.StartSeconds,
-            clip.DurationSeconds,
-            clip.SourceStartSeconds,
-            clip.SourceDurationSeconds,
-            clip.VolumeLevel,
-            clip.IsSelected,
-            clip.VideoLaneLabel,
-            clip.TransformX,
-            clip.TransformY,
-            clip.TransformScale,
-            clip.CropLeft,
-            clip.CropTop,
-            clip.CropRight,
-            clip.CropBottom,
-            clip.TextContent,
-            clip.TextColorHex,
-            clip.TextOutlineColorHex,
-            clip.TextOutlineThickness,
-            clip.TextFontSize,
-            clip.TextFontFamily,
-            clip.TextLineHeightMultiplier,
-            clip.TextLetterSpacing,
-            clip.TextRevealEffect)).ToList();
+        return clips.Select(clip => clip.Clone()).ToList();
     }
 
-    private void RestoreClipSnapshots(List<ClipSnapshot> videoSnapshots, List<ClipSnapshot> audioSnapshots, double playheadSeconds)
+    private void RestoreClipSnapshots(List<TimelineClipItem> videoSnapshots, List<TimelineClipItem> audioSnapshots, double playheadSeconds)
     {
         ExecuteClipBatchUpdate(() =>
         {
             VideoClips.Clear();
             foreach (var snapshot in videoSnapshots)
             {
-                VideoClips.Add(BuildClipFromSnapshot(snapshot));
+                VideoClips.Add(snapshot.Clone());
             }
         }, playheadSeconds);
 
@@ -442,55 +363,12 @@ public partial class TimelineViewModel
         UpdatePreviewLevels();
     }
 
-    private TimelineClipItem BuildClipFromSnapshot(ClipSnapshot snapshot)
-    {
-        var clip = new TimelineClipItem(
-            snapshot.Name,
-            snapshot.Path,
-            snapshot.StartSeconds,
-            snapshot.DurationSeconds,
-            null,
-            snapshot.SourceStartSeconds,
-            snapshot.SourceDurationSeconds)
-        {
-            VolumeLevel = snapshot.VolumeLevel,
-            IsSelected = snapshot.IsSelected,
-            VideoLaneLabel = snapshot.VideoLaneLabel,
-            TransformX = snapshot.TransformX,
-            TransformY = snapshot.TransformY,
-            TransformScale = snapshot.TransformScale,
-            CropLeft = snapshot.CropLeft,
-            CropTop = snapshot.CropTop,
-            CropRight = snapshot.CropRight,
-            CropBottom = snapshot.CropBottom,
-            TextContent = snapshot.TextContent,
-            TextColorHex = snapshot.TextColorHex,
-            TextOutlineColorHex = snapshot.TextOutlineColorHex,
-            TextOutlineThickness = snapshot.TextOutlineThickness,
-            TextFontSize = snapshot.TextFontSize,
-            TextFontFamily = snapshot.TextFontFamily,
-            TextLineHeightMultiplier = snapshot.TextLineHeightMultiplier,
-            TextLetterSpacing = snapshot.TextLetterSpacing,
-            TextRevealEffect = snapshot.TextRevealEffect
-        };
-
-        clip.Left = clip.StartSeconds * TickWidth;
-        clip.Width = Math.Max(24, clip.DurationSeconds * TickWidth);
-        return clip;
-    }
-
-    private void ApplyAudioVolumes(IEnumerable<ClipSnapshot> audioSnapshots)
+    private void ApplyAudioVolumes(IEnumerable<TimelineClipItem> audioSnapshots)
     {
         var volumeByKey = audioSnapshots.ToDictionary(BuildClipKey, snapshot => snapshot.VolumeLevel);
         foreach (var audioClip in AudioClips)
         {
-            var clipKey = BuildClipKey(
-                audioClip.Name,
-                audioClip.Path,
-                audioClip.StartSeconds,
-                audioClip.DurationSeconds,
-                audioClip.SourceStartSeconds,
-                audioClip.SourceDurationSeconds);
+            var clipKey = BuildClipKey(audioClip);
             if (volumeByKey.TryGetValue(clipKey, out var volumeLevel))
             {
                 audioClip.VolumeLevel = volumeLevel;
@@ -498,7 +376,7 @@ public partial class TimelineViewModel
         }
     }
 
-    private static string BuildClipKey(ClipSnapshot snapshot)
+    private static string BuildClipKey(TimelineClipItem snapshot)
     {
         return BuildClipKey(
             snapshot.Name,
@@ -519,33 +397,6 @@ public partial class TimelineViewModel
     {
         return $"{path}|{startSeconds:F3}|{durationSeconds:F3}|{sourceStartSeconds:F3}|{sourceDurationSeconds:F3}|{name}";
     }
-
-    private readonly record struct ClipSnapshot(
-        string Name,
-        string Path,
-        double StartSeconds,
-        double DurationSeconds,
-        double SourceStartSeconds,
-        double SourceDurationSeconds,
-        double VolumeLevel,
-        bool IsSelected,
-        string VideoLaneLabel,
-        double TransformX,
-        double TransformY,
-        double TransformScale,
-        double CropLeft,
-        double CropTop,
-        double CropRight,
-        double CropBottom,
-        string TextContent,
-        string TextColorHex,
-        string TextOutlineColorHex,
-        double TextOutlineThickness,
-        double TextFontSize,
-        string TextFontFamily,
-        double TextLineHeightMultiplier,
-        double TextLetterSpacing,
-        string TextRevealEffect);
 }
 
 public enum TimelineTool

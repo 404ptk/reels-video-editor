@@ -219,4 +219,57 @@ public sealed partial class TimelineClipItem : ObservableObject
         IsFadeOutVisualVisible = FadeOutVisualWidth >= 2;
     }
 
+    public TimelineClipItem Clone(Guid? newLinkId = null)
+    {
+        return new TimelineClipItem(
+            Name,
+            Path,
+            StartSeconds,
+            DurationSeconds,
+            newLinkId ?? LinkId,
+            SourceStartSeconds,
+            SourceDurationSeconds)
+        {
+            Left = Left,
+            Width = Width,
+            WaveformImage = WaveformImage,
+            IsSelected = IsSelected,
+            VideoLaneLabel = VideoLaneLabel,
+            VolumeLevel = VolumeLevel,
+            AudioLevelLineTop = AudioLevelLineTop,
+            IsAudioLevelLineVisible = IsAudioLevelLineVisible,
+            AudioWaveformVisualHeight = AudioWaveformVisualHeight,
+            AudioWaveformVisualTop = AudioWaveformVisualTop,
+            AudioWaveformVisualWidth = AudioWaveformVisualWidth,
+            AudioWaveformVisualOffsetX = AudioWaveformVisualOffsetX,
+            IsLeftTrimMarkerVisible = IsLeftTrimMarkerVisible,
+            IsRightTrimMarkerVisible = IsRightTrimMarkerVisible,
+            TextContent = TextContent,
+            TextColorHex = TextColorHex,
+            TextOutlineColorHex = TextOutlineColorHex,
+            TextOutlineThickness = TextOutlineThickness,
+            TextFontSize = TextFontSize,
+            TextFontFamily = TextFontFamily,
+            TextLineHeightMultiplier = TextLineHeightMultiplier,
+            TextLetterSpacing = TextLetterSpacing,
+            TextRevealEffect = TextRevealEffect,
+            IsSubtitle = IsSubtitle,
+            IsWatermark = IsWatermark,
+            Opacity = Opacity,
+            FadeInDurationSeconds = FadeInDurationSeconds,
+            FadeOutDurationSeconds = FadeOutDurationSeconds,
+            FadeInVisualWidth = FadeInVisualWidth,
+            FadeOutVisualWidth = FadeOutVisualWidth,
+            IsFadeInVisualVisible = IsFadeInVisualVisible,
+            IsFadeOutVisualVisible = IsFadeOutVisualVisible,
+            IsMediaMissing = IsMediaMissing,
+            TransformX = TransformX,
+            TransformY = TransformY,
+            TransformScale = TransformScale,
+            CropLeft = CropLeft,
+            CropTop = CropTop,
+            CropRight = CropRight,
+            CropBottom = CropBottom
+        };
+    }
 }
