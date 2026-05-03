@@ -156,6 +156,9 @@ public static class TimelineTextOverlayRenderer
 
         totalWidth += letterSpacing * (text.Length - 1);
 
+        var originalAlign = paint.TextAlign;
+        paint.TextAlign = SKTextAlign.Left;
+
         var penX = centerX - (totalWidth / 2f);
         for (var i = 0; i < text.Length; i++)
         {
@@ -163,6 +166,8 @@ public static class TimelineTextOverlayRenderer
             canvas.DrawText(glyph, penX, baselineY, paint);
             penX += glyphWidths[i] + letterSpacing;
         }
+
+        paint.TextAlign = originalAlign;
     }
 
     private static List<string> WrapTextLines(string[] lines, SKPaint paint, float maxWidth, float letterSpacing)
