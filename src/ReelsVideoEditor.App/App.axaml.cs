@@ -36,14 +36,29 @@ public partial class App : Application
             // Avoid duplicate validations from both Avalonia and the CommunityToolkit. 
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
-            var mainWindow = new MainWindow
+
+            var projectBrowserViewModel = new ProjectBrowserViewModel();
+            var projectBrowserWindow = new ProjectBrowserWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = projectBrowserViewModel
             };
 
-            RestoreMainWindowLaunchState(mainWindow);
-            AttachMainWindowLaunchStatePersistence(mainWindow);
-            desktop.MainWindow = mainWindow;
+            projectBrowserViewModel.OnNewProjectRequested = () =>
+            {
+                var mainWindow = new MainWindow
+                {
+                    DataContext = new MainWindowViewModel(),
+                };
+
+                RestoreMainWindowLaunchState(mainWindow);
+                AttachMainWindowLaunchStatePersistence(mainWindow);
+                
+                desktop.MainWindow = mainWindow;
+                mainWindow.Show();
+                projectBrowserWindow.Close();
+            };
+
+            desktop.MainWindow = projectBrowserWindow;
         }
 
         base.OnFrameworkInitializationCompleted();

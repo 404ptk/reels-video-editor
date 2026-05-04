@@ -1,0 +1,104 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ReelsVideoEditor.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+        Width="1000" Height="600"
+        WindowStartupLocation="CenterScreen"
+        x:Class="ReelsVideoEditor.App.Views.ProjectBrowserWindow"
+        x:DataType="vm:ProjectBrowserViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="Projects">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="BaseBg" Color="#222222" />
+        <SolidColorBrush x:Key="BaseBgSoft" Color="#DD222222" />
+        <SolidColorBrush x:Key="Accent" Color="#C2D8C4" />
+        <SolidColorBrush x:Key="AccentMuted" Color="#99C2D8C4" />
+        <SolidColorBrush x:Key="AccentSubtle" Color="#33C2D8C4" />
+    </Window.Resources>
+
+    <Grid Background="{StaticResource BaseBg}" RowDefinitions="Auto, *, Auto">
+        <!-- Header -->
+        <Border Grid.Row="0"
+                Padding="16,12"
+                BorderBrush="{StaticResource AccentSubtle}"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <TextBlock Grid.Column="0"
+                           Text="Projects"
+                           Foreground="{StaticResource Accent}"
+                           FontWeight="Bold"
+                           FontSize="16"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <ScrollViewer Grid.Row="1" Padding="24">
+            <WrapPanel Orientation="Horizontal" ItemWidth="200" ItemHeight="160">
+                <!-- Mockup Project Tile -->
+                <Button Command="{Binding NewProjectCommand}"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Padding="0"
+                        Margin="0,0,16,16"
+                        Cursor="Hand">
+                    <Grid RowDefinitions="*, Auto">
+                        <!-- Thumbnail Area -->
+                        <Border Grid.Row="0"
+                                Background="#1A1A1A"
+                                BorderBrush="{StaticResource Accent}"
+                                BorderThickness="2"
+                                CornerRadius="4"
+                                Height="110">
+                            <!-- Placeholder icon (triangle inside circle) -->
+                            <Path Data="M 100, 100 m -50, 0 a 50,50 0 1,0 100,0 a 50,50 0 1,0 -100,0 M 85, 75 L 125, 100 L 85, 125 Z"
+                                  Fill="{StaticResource AccentSubtle}"
+                                  Stretch="Uniform"
+                                  Width="48"
+                                  Height="48"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                        </Border>
+                        
+                        <!-- Project Name -->
+                        <TextBlock Grid.Row="1"
+                                   Text="Untitled Project"
+                                   Foreground="{StaticResource Accent}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"
+                                   FontWeight="SemiBold" />
+                    </Grid>
+                </Button>
+            </WrapPanel>
+        </ScrollViewer>
+
+        <!-- Bottom Footer -->
+        <Border Grid.Row="2"
+                Padding="16"
+                BorderBrush="{StaticResource AccentSubtle}"
+                BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="16">
+                <Button Content="New Project"
+                        Command="{Binding NewProjectCommand}"
+                        Background="Transparent"
+                        Foreground="{StaticResource Accent}"
+                        BorderBrush="{StaticResource AccentSubtle}"
+                        BorderThickness="1"
+                        Padding="16,8"
+                        CornerRadius="20" />
+                
+                <Button Content="Open"
+                        IsEnabled="False"
+                        Background="Transparent"
+                        Foreground="{StaticResource AccentSubtle}"
+                        BorderBrush="{StaticResource AccentSubtle}"
+                        BorderThickness="1"
+                        Padding="16,8"
+                        CornerRadius="20" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
