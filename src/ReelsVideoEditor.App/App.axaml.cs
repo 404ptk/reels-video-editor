@@ -37,31 +37,48 @@ public partial class App : Application
             // More info: https://docs.avaloniaui.net/docs/guides/development-guides/data-validation#manage-validationplugins
             DisableAvaloniaDataAnnotationValidation();
 
+            ShowProjectBrowser();
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    public static void ShowProjectBrowser()
+    {
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
             var projectBrowserViewModel = new ProjectBrowserViewModel();
             var projectBrowserWindow = new ProjectBrowserWindow
             {
                 DataContext = projectBrowserViewModel
             };
 
-            projectBrowserViewModel.OnNewProjectRequested = () =>
-            {
-                var mainWindow = new MainWindow
-                {
-                    DataContext = new MainWindowViewModel(),
-                };
+            projectBrowserViewModel.OnNewProjectRequested = StartMainEditor;
 
-                RestoreMainWindowLaunchState(mainWindow);
-                AttachMainWindowLaunchStatePersistence(mainWindow);
-                
-                desktop.MainWindow = mainWindow;
-                mainWindow.Show();
-                projectBrowserWindow.Close();
+            var oldWindow = desktop.MainWindow;
+            desktop.MainWindow = projectBrowserWindow;
+            projectBrowserWindow.Show();
+            oldWindow?.Close();
+        }
+    }
+
+    public static void StartMainEditor()
+    {
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var mainWindow = new MainWindow
+            {
+                DataContext = new MainWindowViewModel(),
             };
 
-            desktop.MainWindow = projectBrowserWindow;
+            RestoreMainWindowLaunchState(mainWindow);
+            AttachMainWindowLaunchStatePersistence(mainWindow);
+            
+            var oldWindow = desktop.MainWindow;
+            desktop.MainWindow = mainWindow;
+            mainWindow.Show();
+            oldWindow?.Close();
         }
-
-        base.OnFrameworkInitializationCompleted();
     }
 
     private static void DisableAvaloniaDataAnnotationValidation()

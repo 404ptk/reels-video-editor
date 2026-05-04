@@ -1,0 +1,67 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+        Width="400" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        x:Class="ReelsVideoEditor.App.Views.Common.ConfirmDialogWindow"
+        Title="Confirmation"
+        Icon="/Assets/avalonia-logo.ico"
+        Background="#222222">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Accent" Color="#C2D8C4" />
+        <SolidColorBrush x:Key="AccentSubtle" Color="#33C2D8C4" />
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="20">
+        <!-- Title -->
+        <TextBlock x:Name="TitleText"
+                   Grid.Row="0"
+                   Text="Are you sure?"
+                   Foreground="{StaticResource Accent}"
+                   FontWeight="Bold"
+                   FontSize="18"
+                   Margin="0,0,0,16" />
+
+        <!-- Message -->
+        <TextBlock x:Name="MessageText"
+                   Grid.Row="1"
+                   Text="You have unsaved changes. Do you really want to proceed?"
+                   Foreground="{StaticResource Accent}"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Top" />
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="12"
+                    Margin="0,20,0,0">
+            <Button x:Name="CancelButton"
+                    Content="Cancel"
+                    Click="CancelButton_OnClick"
+                    Background="Transparent"
+                    Foreground="{StaticResource Accent}"
+                    BorderBrush="{StaticResource AccentSubtle}"
+                    BorderThickness="1"
+                    Padding="16,8"
+                    CornerRadius="8"
+                    Cursor="Hand" />
+            
+            <Button x:Name="ConfirmButton"
+                    Content="Confirm"
+                    Click="ConfirmButton_OnClick"
+                    Background="{StaticResource Accent}"
+                    Foreground="#222222"
+                    FontWeight="SemiBold"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    Padding="16,8"
+                    CornerRadius="8"
+                    Cursor="Hand" />
+        </StackPanel>
+    </Grid>
+</Window>
