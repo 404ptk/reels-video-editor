@@ -77,7 +77,7 @@
                                 <MenuItem Header="Save" IsEnabled="False" />
                                 <MenuItem Header="Open" IsEnabled="False" />
                                 <MenuItem Header="-" />
-                                <MenuItem Header="Exit" IsEnabled="False" />
+                                <MenuItem Header="Exit" Command="{Binding ExitAppCommand}" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

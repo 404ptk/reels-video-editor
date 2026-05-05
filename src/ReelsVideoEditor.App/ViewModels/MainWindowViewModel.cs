@@ -466,6 +466,26 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ExitApp()
+    {
+        var lifetime = Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime;
+        var mainWindow = lifetime?.MainWindow;
+        if (mainWindow != null)
+        {
+            var dialog = new ReelsVideoEditor.App.Views.Common.AlertDialogWindow(
+                "Unsaved changes",
+                "Are you sure you want to exit? Unsaved changes may be lost."
+            );
+
+            var result = await dialog.ShowDialog<bool>(mainWindow);
+            if (result)
+            {
+                lifetime?.Shutdown();
+            }
+        }
+    }
+
+    [RelayCommand]
     private void ShowExplorer()
     {
         SelectedSection = SidebarSection.Explorer;
