@@ -3,10 +3,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
-        Width="400" Height="200"
+        SizeToContent="WidthAndHeight"
+        MinWidth="400" MinHeight="200" MaxWidth="600" MaxHeight="500"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
-        x:Class="ReelsVideoEditor.App.Views.Common.ConfirmDialogWindow"
+        x:Class="ReelsVideoEditor.App.Views.Common.AlertDialogWindow"
         Title="Confirmation"
         Icon="/Assets/avalonia-logo.ico"
         Background="#222222">
@@ -17,7 +18,6 @@
     </Window.Resources>
 
     <Grid RowDefinitions="Auto, *, Auto" Margin="20">
-        <!-- Title -->
         <TextBlock x:Name="TitleText"
                    Grid.Row="0"
                    Text="Are you sure?"
@@ -26,15 +26,10 @@
                    FontSize="18"
                    Margin="0,0,0,16" />
 
-        <!-- Message -->
-        <TextBlock x:Name="MessageText"
-                   Grid.Row="1"
-                   Text="You have unsaved changes. Do you really want to proceed?"
-                   Foreground="{StaticResource Accent}"
-                   TextWrapping="Wrap"
-                   VerticalAlignment="Top" />
+        <ContentPresenter x:Name="DialogContent"
+                          Grid.Row="1"
+                          VerticalAlignment="Top" />
 
-        <!-- Buttons -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"

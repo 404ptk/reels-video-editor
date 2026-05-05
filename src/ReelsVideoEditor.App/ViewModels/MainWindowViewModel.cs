@@ -452,7 +452,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         var mainWindow = (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         if (mainWindow != null)
         {
-            var dialog = new ReelsVideoEditor.App.Views.Common.ConfirmDialogWindow(
+            var dialog = new ReelsVideoEditor.App.Views.Common.AlertDialogWindow(
                 "Unsaved changes",
                 "Are you sure you want to go back to the project manager? Unsaved changes may be lost."
             );

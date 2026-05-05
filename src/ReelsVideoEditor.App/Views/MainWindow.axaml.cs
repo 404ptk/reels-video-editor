@@ -197,12 +197,15 @@ public partial class MainWindow : Window
 
     private async void AboutKeybindsMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
-        var keybindsWindow = new KeybindsWindow
-        {
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
+        var keybindsView = new ReelsVideoEditor.App.Views.About.KeybindsView();
+        var dialog = new ReelsVideoEditor.App.Views.Common.AlertDialogWindow(
+            "Keyboard Shortcuts",
+            keybindsView,
+            showCancel: false,
+            confirmText: "Close"
+        );
 
-        await keybindsWindow.ShowDialog(this);
+        await dialog.ShowDialog(this);
         eventArgs.Handled = true;
     }
 
@@ -219,12 +222,15 @@ public partial class MainWindow : Window
 
     private async void AboutLicenseMenuItem_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
-        var licenseWindow = new LicenseWindow
-        {
-            WindowStartupLocation = WindowStartupLocation.CenterOwner
-        };
+        var licenseText = "This project is currently distributed under a placeholder license notice. Version: 1.0.0 (Draft). All rights and permissions will be defined in the final LICENSE file. Author: Reels Video Editor contributors. This window contains temporary text and will be replaced with the finalized legal terms in a future update.";
+        var dialog = new ReelsVideoEditor.App.Views.Common.AlertDialogWindow(
+            "License Information",
+            licenseText,
+            showCancel: false,
+            confirmText: "Close"
+        );
 
-        await licenseWindow.ShowDialog(this);
+        await dialog.ShowDialog(this);
         eventArgs.Handled = true;
     }
 }

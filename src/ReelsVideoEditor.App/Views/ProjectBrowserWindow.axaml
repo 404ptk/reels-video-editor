@@ -9,7 +9,7 @@
         x:Class="ReelsVideoEditor.App.Views.ProjectBrowserWindow"
         x:DataType="vm:ProjectBrowserViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Projects">
+        Title="Reels Video Editor">
 
     <Window.Resources>
         <SolidColorBrush x:Key="BaseBg" Color="#222222" />
@@ -20,14 +20,13 @@
     </Window.Resources>
 
     <Grid Background="{StaticResource BaseBg}" RowDefinitions="Auto, *, Auto">
-        <!-- Header -->
         <Border Grid.Row="0"
                 Padding="16,12"
                 BorderBrush="{StaticResource AccentSubtle}"
                 BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="Auto, *, Auto">
                 <TextBlock Grid.Column="0"
-                           Text="Projects"
+                           Text="Project Manager"
                            Foreground="{StaticResource Accent}"
                            FontWeight="Bold"
                            FontSize="16"
@@ -35,10 +34,8 @@
             </Grid>
         </Border>
 
-        <!-- Main Content -->
         <ScrollViewer Grid.Row="1" Padding="24">
             <WrapPanel Orientation="Horizontal" ItemWidth="200" ItemHeight="160">
-                <!-- Mockup Project Tile -->
                 <Button Command="{Binding NewProjectCommand}"
                         Background="Transparent"
                         BorderBrush="Transparent"
@@ -46,14 +43,12 @@
                         Margin="0,0,16,16"
                         Cursor="Hand">
                     <Grid RowDefinitions="*, Auto">
-                        <!-- Thumbnail Area -->
                         <Border Grid.Row="0"
                                 Background="#1A1A1A"
                                 BorderBrush="{StaticResource Accent}"
                                 BorderThickness="2"
                                 CornerRadius="4"
                                 Height="110">
-                            <!-- Placeholder icon (triangle inside circle) -->
                             <Path Data="M 100, 100 m -50, 0 a 50,50 0 1,0 100,0 a 50,50 0 1,0 -100,0 M 85, 75 L 125, 100 L 85, 125 Z"
                                   Fill="{StaticResource AccentSubtle}"
                                   Stretch="Uniform"
@@ -63,7 +58,6 @@
                                   VerticalAlignment="Center" />
                         </Border>
                         
-                        <!-- Project Name -->
                         <TextBlock Grid.Row="1"
                                    Text="Untitled Project"
                                    Foreground="{StaticResource Accent}"
@@ -75,7 +69,6 @@
             </WrapPanel>
         </ScrollViewer>
 
-        <!-- Bottom Footer -->
         <Border Grid.Row="2"
                 Padding="16"
                 BorderBrush="{StaticResource AccentSubtle}"
